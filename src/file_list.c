@@ -472,6 +472,9 @@ extern const file_hint_t file_hint_hdr;
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_hds)
 extern const file_hint_t file_hint_hds;
 #endif
+#if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_heic)
+extern const file_hint_t file_hint_heic;
+#endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_hfsp)
 extern const file_hint_t file_hint_hfsp;
 #endif
@@ -526,6 +529,9 @@ extern const file_hint_t file_hint_jks;
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_jpg)
 extern const file_hint_t file_hint_journal;
 extern const file_hint_t file_hint_jpg;
+#endif
+#if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_jp2)
+extern const file_hint_t file_hint_jp2;
 #endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_jsonlz4)
 extern const file_hint_t file_hint_jsonlz4;
@@ -697,6 +703,9 @@ extern const file_hint_t file_hint_pap;
 #endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_par2)
 extern const file_hint_t file_hint_par2;
+#endif
+#if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_parquet)
+extern const file_hint_t file_hint_parquet;
 #endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_pcap)
 extern const file_hint_t file_hint_pcap;
@@ -994,6 +1003,9 @@ extern const file_hint_t file_hint_wallet;
 #endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_wdp)
 extern const file_hint_t file_hint_wdp;
+#endif
+#if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_webp)
+extern const file_hint_t file_hint_webp;
 #endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_wee)
 extern const file_hint_t file_hint_wee;
@@ -1529,6 +1541,9 @@ file_enable_t array_file_enable[]=
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_hds)
   { .enable=0, .file_hint=&file_hint_hds  },
 #endif
+#if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_heic)
+  { .enable=0, .file_hint=&file_hint_heic },
+#endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_hfsp)
   { .enable=0, .file_hint=&file_hint_hfsp },
 #endif
@@ -1583,6 +1598,9 @@ file_enable_t array_file_enable[]=
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_jpg)
   { .enable=0, .file_hint=&file_hint_journal  },
   { .enable=0, .file_hint=&file_hint_jpg  },
+#endif
+#if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_jp2)
+  { .enable=0, .file_hint=&file_hint_jp2  },
 #endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_jsonlz4)
   { .enable=0, .file_hint=&file_hint_jsonlz4  },
@@ -1754,6 +1772,9 @@ file_enable_t array_file_enable[]=
 #endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_par2)
   { .enable=0, .file_hint=&file_hint_par2  },
+#endif
+#if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_parquet)
+  { .enable=0, .file_hint=&file_hint_parquet },
 #endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_pcap)
   { .enable=0, .file_hint=&file_hint_pcap },
@@ -2051,6 +2072,9 @@ file_enable_t array_file_enable[]=
 #endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_wdp)
   { .enable=0, .file_hint=&file_hint_wdp  },
+#endif
+#if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_webp)
+  { .enable=0, .file_hint=&file_hint_webp },
 #endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_wee)
   { .enable=0, .file_hint=&file_hint_wee  },

@@ -187,14 +187,14 @@ void FormatSelectorDialog::onQuickPhoto()
 {
     QSet<QString> exts = {"jpg","jpeg","mov","png","gif","bmp","avi","mp4","mkv","webp","svg",
                           "mts","m2ts","3gp","wmv","flv","ico","tif","tiff","psd","cr2","nef",
-                          "orf","dng","raw","arw"};
+                          "orf","dng","raw","arw","heic","jp2"};
     selectFormats(exts, m_listWidget);
 }
 
 void FormatSelectorDialog::onQuickDocuments()
 {
     QSet<QString> exts = {"pdf","doc","docx","xls","xlsx","ppt","pptx","txt","rtf","csv",
-                          "html","xml","json","odt","ods","odp"};
+                          "html","xml","json","odt","ods","odp","parquet"};
     selectFormats(exts, m_listWidget);
 }
 
