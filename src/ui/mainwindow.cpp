@@ -289,20 +289,28 @@ partition_t *MainWindow::decryptLUKSAndRedetect()
 void MainWindow::runScannerOperation(bool deep)
 {
     m_selectedPartIdx = m_partPage->selectedPartitionIndex();
-    if (m_selectedPartIdx < -1)
-        m_selectedPartIdx = 0;
 
-    if (m_selectedPartIdx < 0 || m_selectedPartIdx >= m_partitions.size())
-        return;
+    partition_t *part = nullptr;
+    partition_t *wholeDiskPart = nullptr;
 
-    partition_t *part = m_partList.rawAt(m_selectedPartIdx);
-    if (!part)
-        return;
+    if (m_selectedPartIdx == -2) {
+        wholeDiskPart = m_partList.wholeDiskPartition(m_currentDisk);
+        if (!wholeDiskPart)
+            return;
+        part = wholeDiskPart;
+    } else {
+        if (m_selectedPartIdx < 0 || m_selectedPartIdx >= m_partitions.size())
+            return;
 
-    if (m_partitions[m_selectedPartIdx].encrypted) {
-        part = decryptLUKSAndRedetect();
+        part = m_partList.rawAt(m_selectedPartIdx);
         if (!part)
             return;
+
+        if (m_partitions[m_selectedPartIdx].encrypted) {
+            part = decryptLUKSAndRedetect();
+            if (!part)
+                return;
+        }
     }
 
     qDebug() << "runScannerOperation: deep=" << deep << "part="
@@ -371,6 +379,8 @@ void MainWindow::runScannerOperation(bool deep)
     dlg.exec();
 
     m_progressCb->uninstallAllCallbacks();
+    if (wholeDiskPart)
+        free(wholeDiskPart);
     if (m_scanTree && m_scanTree->root)
         showBrowser();
 }
@@ -388,24 +398,33 @@ void MainWindow::onDeepScanRequested()
 void MainWindow::onCarveRequested()
 {
     m_selectedPartIdx = m_partPage->selectedPartitionIndex();
-    if (m_selectedPartIdx < -1)
-        m_selectedPartIdx = 0;
-    if (m_selectedPartIdx < 0 || m_selectedPartIdx >= m_partitions.size())
-        return;
 
-    partition_t *part = m_partList.rawAt(m_selectedPartIdx);
-    if (!part)
-        return;
+    partition_t *part = nullptr;
+    partition_t *wholeDiskPart = nullptr;
 
-    if (m_partitions[m_selectedPartIdx].encrypted) {
-        QMessageBox::StandardButton reply = QMessageBox::question(this,
-            tr("LUKS Encryption"),
-            tr("Decrypt LUKS volume before carving?"),
-            QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
-        if (reply == QMessageBox::Yes) {
-            part = decryptLUKSAndRedetect();
-            if (!part)
-                return;
+    if (m_selectedPartIdx == -2) {
+        wholeDiskPart = m_partList.wholeDiskPartition(m_currentDisk);
+        if (!wholeDiskPart)
+            return;
+        part = wholeDiskPart;
+    } else {
+        if (m_selectedPartIdx < 0 || m_selectedPartIdx >= m_partitions.size())
+            return;
+
+        part = m_partList.rawAt(m_selectedPartIdx);
+        if (!part)
+            return;
+
+        if (m_partitions[m_selectedPartIdx].encrypted) {
+            QMessageBox::StandardButton reply = QMessageBox::question(this,
+                tr("LUKS Encryption"),
+                tr("Decrypt LUKS volume before carving?"),
+                QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+            if (reply == QMessageBox::Yes) {
+                part = decryptLUKSAndRedetect();
+                if (!part)
+                    return;
+            }
         }
     }
 
@@ -456,6 +475,8 @@ void MainWindow::onCarveRequested()
 
     dlg.exec();
     m_progressCb->uninstallAllCallbacks();
+    if (wholeDiskPart)
+        free(wholeDiskPart);
     if (m_scanTree && m_scanTree->root)
         showBrowser();
 }
@@ -597,13 +618,18 @@ void MainWindow::onRestoreFromBrowser()
         return;
 
     partition_t *part = nullptr;
+    partition_t *wholeDiskPart = nullptr;
     if (m_selectedPartIdx >= 0 && m_selectedPartIdx < m_partitions.size())
         part = m_partList.rawAt(m_selectedPartIdx);
-    if (!part) {
+    else if (m_selectedPartIdx == -2)
+        wholeDiskPart = m_partList.wholeDiskPartition(m_currentDisk);
+    if (!part && !wholeDiskPart) {
         QMessageBox::warning(this, tr("Error"),
             tr("No valid partition for restore."));
         return;
     }
+    if (wholeDiskPart)
+        part = wholeDiskPart;
 
     ProgressDialog dlg(this);
     dlg.setWindowTitle(tr("Restoring Files"));
@@ -641,6 +667,8 @@ void MainWindow::onRestoreFromBrowser()
 
     dlg.exec();
     m_progressCb->uninstallAllCallbacks();
+    if (wholeDiskPart)
+        free(wholeDiskPart);
 }
 
 void MainWindow::onBrowserQuit()
@@ -684,15 +712,22 @@ void MainWindow::onPreviewRequested(const QModelIndex &idx)
 
     disk_t *diskPtr = m_currentDisk.raw();
     partition_t *part = nullptr;
+    partition_t *wholeDiskPart = nullptr;
     if (m_selectedPartIdx >= 0 && m_selectedPartIdx < m_partitions.size())
         part = m_partList.rawAt(m_selectedPartIdx);
-    if (!diskPtr || !part) {
+    else if (m_selectedPartIdx == -2)
+        wholeDiskPart = m_partList.wholeDiskPartition(m_currentDisk);
+    if (!diskPtr || (!part && !wholeDiskPart)) {
         m_browserPage->setStatusMessage(tr("Cannot read disk"));
         return;
     }
+    if (wholeDiskPart)
+        part = wholeDiskPart;
 
     size_t dataSize = 0;
     unsigned char *rawData = read_file_bytes(m_scanTree, diskPtr, part, node, &dataSize);
+    if (wholeDiskPart)
+        free(wholeDiskPart);
     if (!rawData || dataSize == 0) {
         m_browserPage->setStatusMessage(tr("Failed to read file data"));
         return;

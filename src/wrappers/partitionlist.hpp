@@ -61,6 +61,7 @@ public:
 
     QVector<PartitionInfo> partitions() const;
     partition_t* rawAt(int index) const;
+    partition_t* wholeDiskPartition(const class Disk& disk) const;
     int count() const;
 
     bool isValid() const;

@@ -239,5 +239,17 @@ partition_t* PartitionList::rawAt(int index) const
     return nullptr;
 }
 
+partition_t* PartitionList::wholeDiskPartition(const Disk& disk) const
+{
+    partition_t* p = partition_new(&arch_none);
+    if (!p)
+        return nullptr;
+    p->part_offset = 0;
+    p->part_size = disk.raw()->disk_size;
+    strncpy(p->fsname, "Whole disk", sizeof(p->fsname) - 1);
+    detect_fs_type(disk.raw(), p);
+    return p;
+}
+
 int PartitionList::count() const { return m_count; }
 bool PartitionList::isValid() const { return m_partList != nullptr; }

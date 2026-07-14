@@ -116,12 +116,13 @@ void PartitionSelectionWidget::setupUi()
     connect(m_tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
             this, [this]() {
         int idx = selectedPartitionIndex();
-        bool valid = idx >= 0;
-        m_scanBtn->setEnabled(valid);
-        m_carveBtn->setEnabled(valid);
-        m_deepScanBtn->setEnabled(valid);
-        m_backupBtn->setEnabled(valid);
-        m_restoreBtn->setEnabled(valid);
+        bool partValid = idx >= 0;
+        bool diskOpsValid = (idx == -2) || (idx >= 0);
+        m_scanBtn->setEnabled(partValid);
+        m_carveBtn->setEnabled(diskOpsValid);
+        m_deepScanBtn->setEnabled(diskOpsValid);
+        m_backupBtn->setEnabled(partValid);
+        m_restoreBtn->setEnabled(partValid);
     });
 }
 
