@@ -66,12 +66,34 @@ This fork adds significant functionality beyond the original PhotoRec:
 
 ## Build
 
+### Dependencies
+
+| Dependency | Debian/Ubuntu package | Purpose |
+|-----------|----------------------|---------|
+| Qt6 Core + Widgets | `qt6-base-dev` | GUI framework |
+| libntfs-3g | `ntfs-3g-dev` | NTFS filesystem access |
+| libext2fs | `libext2fs-dev` | ext2/3/4 filesystem access |
+| com_err | `comerr-dev` | Error reporting for ext2fs |
+| zlib | `zlib1g-dev` | Compression support |
+| libuuid | `uuid-dev` | UUID generation |
+| cryptsetup | `cryptsetup-bin`, `libcryptsetup-dev` | LUKS decryption (runtime) |
+| CMake | `cmake` | Build system |
+| C/C++ compiler | `build-essential` | GCC, make, headers |
+| pkg-config | `pkg-config` | Library detection |
+
+```bash
+sudo apt install build-essential cmake pkg-config qt6-base-dev \
+  ntfs-3g-dev libext2fs-dev comerr-dev zlib1g-dev uuid-dev \
+  libcryptsetup-dev
+```
+
+### Compile
+
 ```bash
 cmake -S . -B build && cmake --build build -- -j$(nproc)
 ```
 
-Binary is at `build/recovery-qt`. Requires Qt6 (Core + Widgets), libntfs-3g,
-libext2fs, zlib, and libuuid.
+Binary is at `build/recovery-qt`.
 
 ## Carve vs. Deep FS Scan
 
