@@ -100,6 +100,7 @@ private slots:
 private:
     void setupUi();
     void applyTheme();
+    void applyToSelected(bool mark);
     void setSourceModelAndExpand(QAbstractItemModel *sourceModel);
 
     QLineEdit *m_pathDisplay;

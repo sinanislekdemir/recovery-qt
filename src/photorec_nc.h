@@ -69,6 +69,8 @@ file_node_t *tree_add_path(scan_tree_t *tree, const char *path, int is_dir,
     uint64_t size, uint64_t first_sector, uint64_t num_sectors,
     time_t mtime, unsigned int sector_size, int deleted);
 file_node_t *tree_find_path(scan_tree_t *tree, const char *path);
+char *tree_get_path(const file_node_t *node, const file_node_t *root,
+    char *buf, size_t bufsize);
 void tree_free(scan_tree_t *tree);
 uint64_t tree_count_marked(const file_node_t *dir, uint64_t *size_out);
 void tree_count_changes(const file_node_t *dir, uint64_t *del_out,

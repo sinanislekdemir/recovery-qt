@@ -33,13 +33,10 @@ Carver::Carver(QObject *parent)
 void Carver::start(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
                    const QString &extFilter, bool deepScan)
 {
-    if (m_running.load())
-        return;
+    ProgressCallback *pc = beginOperation();
+    if (!pc) return;
 
     QByteArray extBytes = extFilter.toLocal8Bit();
-
-    ProgressCallback *pc = ProgressCallback::instance();
-    pc->reset();
 
     storeConnection(connect(pc, &ProgressCallback::carverProgress,
             this, &Carver::progressUpdated, Qt::DirectConnection));
@@ -48,10 +45,8 @@ void Carver::start(scan_tree_t *tree, disk_t *disk, const partition_t *partition
         pc->installCarverCallbacks();
         int result = carver_run(tree, disk, partition,
             extBytes.constData(), deepScan ? 1 : 0);
-
-        if (result < 0) {
+        if (result < 0)
             emit errorOccurred(tr("Carving failed"));
-        }
         emit finished(result);
         m_running.store(false);
     });

@@ -55,6 +55,13 @@ private:
     std::atomic<bool> m_cancelled;
     static ProgressCallback* s_instance;
 
+    template<typename Fn>
+    static void emitToInstance(ProgressCallback *instance, Fn &&fn)
+    {
+        if (!instance) return;
+        QMetaObject::invokeMethod(instance, std::forward<Fn>(fn), Qt::QueuedConnection);
+    }
+
     static void cScannerProgress(uint64_t deleted, uint64_t total, const char *path);
     static void cScannerIndxProgress(const char *msg, uint64_t cur, uint64_t tot, uint64_t found);
     static int  cIsCancelled();

@@ -31,6 +31,7 @@
 #include "wrappers/scanner.hpp"
 #include "wrappers/carver.hpp"
 #include "wrappers/restorer.hpp"
+#include "wrappers/simpleworker.hpp"
 #include "wrappers/luksmanager.hpp"
 #include "wrappers/signatureregistry.hpp"
 #include "common/format_utils.hpp"
@@ -68,11 +69,33 @@ MainWindow::MainWindow(QWidget *parent)
       m_luks(new LUKSManager(this)),
       m_selectedPartIdx(-1),
       m_scanTree(nullptr)
+/*
+ * ARCHITECTURE NOTE: Operation Lifecycle Pattern
+ *
+ * All scan/carve/restore/deep-scan operations follow this identical flow:
+ *   1. Validate selection, get partition pointer
+ *   2. Handle LUKS decryption if encrypted
+ *   3. Free + re-allocate m_scanTree via tree_new()
+ *   4. Create ProgressDialog, wire progress signals via ProgressCallback bridge
+ *   5. Call worker->start() which launches a QThread running C core code
+ *   6. dlg.exec() blocks the UI until finished or cancelled
+ *   7. uninstallAllCallbacks() on return
+ *   8. showBrowser() to display results
+ *
+ * WARNING: Major code duplication. onScanRequested, onDeepScanRequested,
+ * onCarveRequested, and onRestoreFromBrowser repeat steps 1-8 almost verbatim.
+ * A unified runOperation() helper accepting a lambda for the specific worker
+ * call would consolidate ~200 lines of duplicate progress-dialog wiring.
+ * The backup/restore operations (onBackupRequested, onRestoreRequested)
+ * use a slightly different pattern (QThread::create directly instead of
+ * WorkerBase), adding further inconsistency.
+ */
 {
     m_progressCb = new ProgressCallback(this);
     m_scanner = new Scanner(this);
     m_carver = new Carver(this);
     m_restorer = new Restorer(this);
+    m_simpleWorker = new SimpleWorker(this);
 
     setWindowTitle(tr("recovery-qt - Deleted File Recovery"));
     setMinimumSize(800, 600);
@@ -258,7 +281,12 @@ partition_t *MainWindow::decryptLUKSAndRedetect()
     return part;
 }
 
-void MainWindow::onScanRequested()
+/*
+ * Unified scanner operation: handles both normal scan (deep=false) and
+ * deep FS scan (deep=true). The deep variant scans free clusters byte-by-byte
+ * for deleted directory entries in addition to normal filesystem traversal.
+ */
+void MainWindow::runScannerOperation(bool deep)
 {
     m_selectedPartIdx = m_partPage->selectedPartitionIndex();
     if (m_selectedPartIdx < -1)
@@ -277,7 +305,7 @@ void MainWindow::onScanRequested()
             return;
     }
 
-    qDebug() << "onScanRequested: starting scanner, part="
+    qDebug() << "runScannerOperation: deep=" << deep << "part="
              << part->fsname << "offset=" << part->part_offset;
 
     if (m_scanTree) {
@@ -286,42 +314,75 @@ void MainWindow::onScanRequested()
     }
     m_scanTree = tree_new();
 
+    uint64_t partSize = part->part_size;
+
     ProgressDialog dlg(this);
-    dlg.setWindowTitle(tr("Scanning Filesystem"));
-    dlg.setStatusText(tr("Searching for deleted files..."));
+    dlg.setWindowTitle(deep ? tr("Deep Filesystem Scan") : tr("Scanning Filesystem"));
+    dlg.setStatusText(deep
+        ? tr("Scanning filesystem with deep search...")
+        : tr("Searching for deleted files..."));
     dlg.showFileName(true);
     dlg.showCancelButton(true);
     dlg.setIndeterminate(true);
 
     connect(&dlg, &ProgressDialog::cancelled, ProgressCallback::instance(), &ProgressCallback::cancel);
+
     QMetaObject::Connection sConn1 = connect(m_scanner, &Scanner::progressUpdated, this, [&dlg](uint64_t deleted, uint64_t total, const QString &path) {
         dlg.setIndeterminate(true);
         dlg.setStatusText(QString("%1 deleted / %2 total").arg(deleted).arg(total));
         if (!path.isEmpty())
             dlg.setFileName(path);
     });
-    QMetaObject::Connection sConn2 = connect(m_scanner, &Scanner::indxProgressUpdated, this, [&dlg](const QString &msg, uint64_t current, uint64_t total, uint64_t found) {
-        unsigned int pct = (total > 0) ? (unsigned int)(current * 100 / total) : 0;
-        if (pct > 100) pct = 100;
-        dlg.setIndeterminate(false);
-        dlg.updateProgress((int)pct,
-            QString("%1  %2/%3 clusters  (%4 found)")
-                .arg(msg).arg(current).arg(total).arg(found));
-    });
-    connect(m_scanner, &Scanner::finished, this, [&dlg, sConn1, sConn2](int result) {
+
+    QMetaObject::Connection sConn2;
+    if (deep) {
+        sConn2 = connect(m_scanner, &Scanner::indxProgressUpdated, this, [&dlg, partSize](const QString &, uint64_t current, uint64_t total, uint64_t found) {
+            unsigned int pct = (total > 0) ? (unsigned int)(current * 100 / total) : 0;
+            if (pct > 100) pct = 100;
+            dlg.setIndeterminate(false);
+            uint64_t scannedBytes = (total > 0) ? (current * partSize / total) : 0;
+            double scannedGB = scannedBytes / (1024.0 * 1024.0 * 1024.0);
+            double totalGB = partSize / (1024.0 * 1024.0 * 1024.0);
+            dlg.updateProgress((int)pct,
+                QString::asprintf("%.2f / %.2f GB  ·  %llu found", scannedGB, totalGB, (unsigned long long)found));
+        });
+    } else {
+        sConn2 = connect(m_scanner, &Scanner::indxProgressUpdated, this, [&dlg](const QString &msg, uint64_t current, uint64_t total, uint64_t found) {
+            unsigned int pct = (total > 0) ? (unsigned int)(current * 100 / total) : 0;
+            if (pct > 100) pct = 100;
+            dlg.setIndeterminate(false);
+            dlg.updateProgress((int)pct,
+                QString("%1  %2/%3 clusters  (%4 found)")
+                    .arg(msg).arg(current).arg(total).arg(found));
+        });
+    }
+
+    connect(m_scanner, &Scanner::finished, this, [&dlg, sConn1, sConn2, deep](int result) {
         disconnect(sConn1);
         disconnect(sConn2);
         dlg.setFinished(result >= 0,
-            result >= 0 ? tr("Scan complete.") : tr("No filesystem detected."));
+            result >= 0
+                ? (deep ? tr("Deep scan complete.") : tr("Scan complete."))
+                : tr("No filesystem detected."));
     });
 
-    m_scanner->start(m_scanTree, m_currentDisk.raw(), part, 0);
+    m_scanner->start(m_scanTree, m_currentDisk.raw(), part, deep ? 1 : 0);
     dlg.showFileName(true);
     dlg.exec();
 
     m_progressCb->uninstallAllCallbacks();
     if (m_scanTree && m_scanTree->root)
         showBrowser();
+}
+
+void MainWindow::onScanRequested()
+{
+    runScannerOperation(false);
+}
+
+void MainWindow::onDeepScanRequested()
+{
+    runScannerOperation(true);
 }
 
 void MainWindow::onCarveRequested()
@@ -376,11 +437,10 @@ void MainWindow::onCarveRequested()
             this, [&dlg](uint64_t scanned, uint64_t total, unsigned int files, uint64_t recovered) {
         int pct = (total > 0) ? (int)(scanned * 100 / total) : 0;
         if (pct > 100) pct = 100;
-
+        Q_UNUSED(recovered);
         QString status;
         double scannedF = scanned / (1024.0 * 1024.0 * 1024.0);
         double totalF = total / (1024.0 * 1024.0 * 1024.0);
-        Q_UNUSED(recovered);
         status = QString::asprintf("Scanned %.2f / %.2f GB  ·  %u files recovered", scannedF, totalF, files);
         dlg.updateProgress(pct, status);
     });
@@ -400,73 +460,10 @@ void MainWindow::onCarveRequested()
         showBrowser();
 }
 
-void MainWindow::onDeepScanRequested()
-{
-    m_selectedPartIdx = m_partPage->selectedPartitionIndex();
-    if (m_selectedPartIdx < -1)
-        m_selectedPartIdx = 0;
-    if (m_selectedPartIdx < 0 || m_selectedPartIdx >= m_partitions.size())
-        return;
-
-    partition_t *part = m_partList.rawAt(m_selectedPartIdx);
-    if (!part)
-        return;
-
-    if (m_partitions[m_selectedPartIdx].encrypted) {
-        part = decryptLUKSAndRedetect();
-        if (!part)
-            return;
-    }
-
-    if (m_scanTree) {
-        tree_free(m_scanTree);
-        m_scanTree = nullptr;
-    }
-    m_scanTree = tree_new();
-
-    uint64_t partSize = part->part_size;
-
-    ProgressDialog dlg(this);
-    dlg.setWindowTitle(tr("Deep Filesystem Scan"));
-    dlg.setStatusText(tr("Scanning filesystem with deep search..."));
-    dlg.showFileName(true);
-    dlg.showCancelButton(true);
-    dlg.setIndeterminate(true);
-
-    connect(&dlg, &ProgressDialog::cancelled, ProgressCallback::instance(), &ProgressCallback::cancel);
-    QMetaObject::Connection dsConn1 = connect(m_scanner, &Scanner::progressUpdated, this, [&dlg](uint64_t deleted, uint64_t total, const QString &path) {
-        dlg.setIndeterminate(true);
-        dlg.setStatusText(QString("%1 deleted / %2 total").arg(deleted).arg(total));
-        if (!path.isEmpty())
-            dlg.setFileName(path);
-    });
-    QMetaObject::Connection dsConn2 = connect(m_scanner, &Scanner::indxProgressUpdated, this, [&dlg, partSize](const QString &, uint64_t current, uint64_t total, uint64_t found) {
-        unsigned int pct = (total > 0) ? (unsigned int)(current * 100 / total) : 0;
-        if (pct > 100) pct = 100;
-        dlg.setIndeterminate(false);
-
-        uint64_t scannedBytes = (total > 0) ? (current * partSize / total) : 0;
-        double scannedGB = scannedBytes / (1024.0 * 1024.0 * 1024.0);
-        double totalGB = partSize / (1024.0 * 1024.0 * 1024.0);
-        dlg.updateProgress((int)pct,
-            QString::asprintf("%.2f / %.2f GB  ·  %llu found", scannedGB, totalGB, (unsigned long long)found));
-    });
-    connect(m_scanner, &Scanner::finished, this, [&dlg, dsConn1, dsConn2](int result) {
-        disconnect(dsConn1);
-        disconnect(dsConn2);
-        dlg.setFinished(result >= 0,
-            result >= 0 ? tr("Deep scan complete.") : tr("No filesystem detected."));
-    });
-
-    m_scanner->start(m_scanTree, m_currentDisk.raw(), part, 1);
-    dlg.showFileName(true);
-    dlg.exec();
-
-    m_progressCb->uninstallAllCallbacks();
-    if (m_scanTree && m_scanTree->total_files > 0)
-        showBrowser();
-}
-
+/*
+ * BACKUP operation: Live filesystem index backup to .dsk file.
+ * Now uses SimpleWorker (WorkerBase subclass) instead of raw QThread::create().
+ */
 void MainWindow::onBackupRequested()
 {
     m_selectedPartIdx = m_partPage->selectedPartitionIndex();
@@ -494,21 +491,22 @@ void MainWindow::onBackupRequested()
     QByteArray dirBytes = destDir.toLocal8Bit();
     disk_t *diskPtr = m_currentDisk.raw();
 
-    QThread *thread = QThread::create([this, diskPtr, part, dirBytes, &dlg]() {
-        int result = backup_create(diskPtr, part, dirBytes.constData());
-        QMetaObject::invokeMethod(this, [&dlg, result]() {
-            if (result != 0)
-                dlg.setFinished(false, tr("Backup failed."));
-            else
-                dlg.setFinished(true, tr("Backup created successfully."));
-        }, Qt::QueuedConnection);
+    connect(m_simpleWorker, &SimpleWorker::finished, this, [&dlg](int result) {
+        dlg.setFinished(result == 0,
+            result == 0 ? tr("Backup created successfully.") : tr("Backup failed."));
     });
-    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
-    thread->start();
+
+    m_simpleWorker->start([diskPtr, part, dirBytes]() {
+        return backup_create(diskPtr, part, dirBytes.constData());
+    });
 
     dlg.exec();
 }
 
+/*
+ * RESTORE-FROM-BACKUP operation: Parse .dsk file and compare against live FS.
+ * Now uses SimpleWorker for consistent WorkerBase lifecycle.
+ */
 void MainWindow::onRestoreRequested()
 {
     m_selectedPartIdx = m_partPage->selectedPartitionIndex();
@@ -544,17 +542,14 @@ void MainWindow::onRestoreRequested()
     disk_t *diskPtr = m_currentDisk.raw();
     scan_tree_t *tree = m_scanTree;
 
-    QThread *thread = QThread::create([this, tree, diskPtr, part, pathBytes, &dlg]() {
-        int result = backup_restore(tree, diskPtr, part, pathBytes.constData());
-        QMetaObject::invokeMethod(this, [&dlg, result]() {
-            if (result != 0)
-                dlg.setFinished(false, tr("Restore failed."));
-            else
-                dlg.setFinished(true, tr("Restore complete."));
-        }, Qt::QueuedConnection);
+    connect(m_simpleWorker, &SimpleWorker::finished, this, [&dlg](int result) {
+        dlg.setFinished(result == 0,
+            result == 0 ? tr("Restore complete.") : tr("Restore failed."));
     });
-    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
-    thread->start();
+
+    m_simpleWorker->start([tree, diskPtr, part, pathBytes]() {
+        return backup_restore(tree, diskPtr, part, pathBytes.constData());
+    });
 
     dlg.exec();
     m_progressCb->uninstallAllCallbacks();
@@ -568,6 +563,18 @@ void MainWindow::onBackToDisks()
     m_diskPage->refreshDisks();
 }
 
+/*
+ * RESTORE operation: Copy marked files from scan/carve tree to local disk.
+ * From BrowserWidget, user marks files and presses F5.
+ * For NORMAL files: uses FS-specific copy_file() drivers (fat/ntfs/ext).
+ * For ORPHAN/BACKUP files: reads raw sectors from disk via first_sector/cluster_list.
+ *
+ * Progress bridged through ProgressCallback::restoreProgress signal chain.
+ * Uses Restorer worker (restore_files() in C core, src/prestore.c).
+ *
+ * DUPLICATION: Same ProgressDialog→worker→exec→uninstallCallbacks pattern
+ * as onScanRequested/onCarveRequested/onDeepScanRequested.
+ */
 void MainWindow::onRestoreFromBrowser()
 {
     if (!m_fileModel || !m_scanTree)
@@ -642,6 +649,21 @@ void MainWindow::onBrowserQuit()
     m_diskPage->refreshDisks();
 }
 
+/*
+ * IMAGE PREVIEW: Read file bytes from disk and display as image.
+ * User presses Enter on a file whose extension matches the previewable list
+ * (jpg, png, gif, bmp, etc. - see SignatureRegistry::isPreviewableImage()).
+ *
+ * Data reading path (src/prestore.c:read_file_bytes):
+ *   1. cluster_list present? → read from EXT/backup clusters (64MB cap)
+ *   2. orphan with first_sector? → read from raw sector offset (64MB cap)
+ *   3. normal FS file? → uses memory_capture: runs a fake restore_file_node()
+ *      and captures the bytes written by the FS-specific copy_file() driver
+ *
+ * WARNING: Path 3 (normal FS files) is expensive - it does a full filesystem
+ * driver restore just to capture bytes in memory. Consider caching or
+ * implementing direct FS-read for preview instead.
+ */
 void MainWindow::onPreviewRequested(const QModelIndex &idx)
 {
     QVariant v = idx.data(FileNodeRole);
@@ -694,6 +716,11 @@ void MainWindow::onAbout()
     dlg.exec();
 }
 
+/*
+ * Transfers scan_tree_t to FileTreeModel and switches view to BrowserWidget.
+ * Called after every scan/carve/deep-scan/backup-restore completes.
+ * The FileTreeModel wraps the C tree; BrowserWidget displays via QTreeView.
+ */
 void MainWindow::showBrowser()
 {
     if (!m_scanTree)

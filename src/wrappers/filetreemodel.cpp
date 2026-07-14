@@ -374,6 +374,22 @@ bool FileTreeModel::showDeletedOnly() const
     return m_showDeletedOnly;
 }
 
+/*
+ * toStandardModel: Converts the C file_node_t tree into a QStandardItemModel.
+ * Recursively visits every node, creates QStandardItem for each, applies
+ * color coding. Used by BrowserWidget for display because QStandardItemModel
+ * makes color/formatting easier than QAbstractItemModel's data() roles.
+ *
+ * PERFORMANCE: Full O(n) tree rebuild. Called after every mark/unmark
+ * operation (BrowserWidget::refreshFromFileModel) and on filter toggle.
+ * For large trees (millions of nodes from deep FS scan), this causes
+ * significant UI lag because every QStandardItem is re-allocated.
+ *
+ * ALTERNATIVE: Use FileTreeModel directly (QAbstractItemModel) + a
+ * QStyledItemDelegate that reads color from FileTreeModel::colorForNode().
+ * Then mark/unmark only needs beginResetModel()/endResetModel() or
+ * targeted dataChanged() signals instead of full rebuild.
+ */
 QStandardItemModel *FileTreeModel::toStandardModel(QObject *parent) const
 {
     if (!m_tree || !m_tree->root)
@@ -476,13 +492,9 @@ QString FileTreeModel::nodePath(const QModelIndex &index) const
     file_node_t *node = nodeFromIndex(index);
     if (!node)
         return QString();
-    QStringList parts;
-    file_node_t *cur = node;
-    while (cur && cur != m_tree->root) {
-        parts.prepend(QString::fromUtf8(cur->name));
-        cur = cur->parent;
-    }
-    return "/" + parts.join("/");
+    char buf[4096];
+    tree_get_path(node, m_tree->root, buf, sizeof(buf));
+    return QString::fromUtf8(buf);
 }
 
 QString FileTreeModel::formatSize(uint64_t bytes) const

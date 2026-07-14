@@ -212,6 +212,16 @@ void BrowserWidget::setupUi()
         m_treeView->expandAll();
     });
 
+    /*
+     * Selection change handler: updates path display bar and toggles
+     * the Preview button visibility based on file extension.
+     *
+     * DUPLICATION: The path-building from parent chain (lines 227-232)
+     * duplicates the same logic in restore_orphan() (prestore.c) and
+     * restore_file() (prestore.c) and FileTreeModel::nodePath().
+     * All four locations walk a parent chain to build "/path/to/file".
+     * Consider extracting to tree_get_path() in ptree.c.
+     */
     connect(m_treeView->selectionModel(), &QItemSelectionModel::currentChanged,
             this, [this](const QModelIndex &current, const QModelIndex &) {
         if (!m_fileModel || !current.isValid()) {
@@ -223,14 +233,10 @@ void BrowserWidget::setupUi()
         if (v.isValid()) {
             file_node_t *node = (file_node_t*)v.value<quintptr>();
             if (node && node->name) {
-                QStringList parts;
-                file_node_t *cur = node;
-                while (cur && cur != m_fileModel->tree()->root) {
-                    if (cur->name)
-                        parts.prepend(QString::fromUtf8(cur->name));
-                    cur = cur->parent;
-                }
-                m_pathDisplay->setText("/" + parts.join("/"));
+                char pathBuf[4096];
+                tree_get_path(node, m_fileModel->tree()->root,
+                    pathBuf, sizeof(pathBuf));
+                m_pathDisplay->setText(QString::fromUtf8(pathBuf));
 
                 const char *ext = strrchr(node->name, '.');
                 bool show = ext && SignatureRegistry::isPreviewableImage(
@@ -271,6 +277,16 @@ void BrowserWidget::setModel(QAbstractItemModel *model)
     setSourceModelAndExpand(model);
 }
 
+/*
+ * setFileModel / resetModel: Both set the FileTreeModel pointer and rebuild
+ * display. setFileModel uses toStandardModel() (rebuilds entire tree as
+ * QStandardItemModel), while resetModel uses FileTreeModel directly as
+ * QAbstractItemModel.
+ *
+ * DUPLICATION: These two functions are nearly identical. setFileModel is
+ * used from MainWindow::showBrowser(), resetModel appears unused in current
+ * code paths.
+ */
 void BrowserWidget::setFileModel(FileTreeModel *model)
 {
     m_fileModel = model;
@@ -300,7 +316,15 @@ FileTreeModel *BrowserWidget::model() const
     return m_fileModel;
 }
 
-void BrowserWidget::onMark()
+/*
+ * onMark/onUnmark/markSelected: Three near-identical loops that iterate
+ * selected rows, map proxy→source, extract file_node_t*, and set marked flag.
+ * DUPLICATION: All three share the proxy→source→FileNodeRole→node→marked
+ * pattern. Only difference: onMark sets marked=1, onUnmark sets marked=0,
+ * markSelected does the same as onMark but is called externally (from
+ * onRestoreFromBrowser). Consider a common applyToSelected(bool mark) helper.
+ */
+void BrowserWidget::applyToSelected(bool mark)
 {
     QModelIndexList sel = m_treeView->selectionModel()->selectedRows();
     if (sel.isEmpty() || !m_fileModel || !m_fileModel->tree()) return;
@@ -311,27 +335,20 @@ void BrowserWidget::onMark()
         if (v.isValid()) {
             file_node_t *node = (file_node_t*)v.value<quintptr>();
             if (node && node->type == NODE_FILE)
-                node->marked = 1;
+                node->marked = mark ? 1 : 0;
         }
     }
     refreshFromFileModel();
 }
 
+void BrowserWidget::onMark()
+{
+    applyToSelected(true);
+}
+
 void BrowserWidget::onUnmark()
 {
-    QModelIndexList sel = m_treeView->selectionModel()->selectedRows();
-    if (sel.isEmpty() || !m_fileModel || !m_fileModel->tree()) return;
-
-    for (const QModelIndex &idx : sel) {
-        QModelIndex srcIdx = m_proxyModel->mapToSource(idx);
-        QVariant v = m_proxyModel->sourceModel()->data(srcIdx, FileNodeRole);
-        if (v.isValid()) {
-            file_node_t *node = (file_node_t*)v.value<quintptr>();
-            if (node)
-                node->marked = 0;
-        }
-    }
-    refreshFromFileModel();
+    applyToSelected(false);
 }
 
 void BrowserWidget::onUnmarkAll()
@@ -355,6 +372,21 @@ void BrowserWidget::onToggleMark(const QModelIndex &idx)
     }
 }
 
+/*
+ * refreshFromFileModel: Rebuilds QStandardItemModel from the C tree and
+ * sets it as the proxy source. Called after every mark/unmark operation.
+ *
+ * PERFORMANCE ISSUE: toStandardModel() traverses the ENTIRE C tree and
+ * creates new QStandardItem allocations for every visible node. This is
+ * O(n) in tree size and runs after every Space keystroke. With large trees
+ * (millions of files from deep scan), this causes UI lag.
+ *
+ * The FileTreeModel QAbstractItemModel supports direct manipulation without
+ * rebuilding (setMark + dataChanged signal), but is not used because
+ * BrowserWidget uses toStandardModel() for displayed colors.
+ * Consider using FileTreeModel directly and moving color logic to a
+ * QStyledItemDelegate instead.
+ */
 void BrowserWidget::refreshFromFileModel()
 {
     if (!m_fileModel || !m_fileModel->tree()) return;
@@ -366,19 +398,7 @@ void BrowserWidget::refreshFromFileModel()
 
 void BrowserWidget::markSelected()
 {
-    QModelIndexList sel = m_treeView->selectionModel()->selectedRows();
-    if (sel.isEmpty() || !m_fileModel || !m_fileModel->tree()) return;
-
-    for (const QModelIndex &idx : sel) {
-        QModelIndex srcIdx = m_proxyModel->mapToSource(idx);
-        QVariant v = m_proxyModel->sourceModel()->data(srcIdx, FileNodeRole);
-        if (v.isValid()) {
-            file_node_t *node = (file_node_t*)v.value<quintptr>();
-            if (node && node->type == NODE_FILE)
-                node->marked = 1;
-        }
-    }
-    refreshFromFileModel();
+    applyToSelected(true);
 }
 
 void BrowserWidget::onExpandAll()

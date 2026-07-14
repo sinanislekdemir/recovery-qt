@@ -50,11 +50,6 @@ signals:
     void indxProgressUpdated(const QString &msg, uint64_t current, uint64_t total, uint64_t found);
     void finished(int deletedFiles);
     void errorOccurred(const QString &message);
-
-private:
-    scan_tree_t *m_tree;
-    disk_t *m_disk;
-    const partition_t *m_partition;
 };
 
 #endif

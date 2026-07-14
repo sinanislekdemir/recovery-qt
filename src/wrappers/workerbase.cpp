@@ -81,3 +81,12 @@ void WorkerBase::disconnectAllConnections()
         disconnect(conn);
     m_connections.clear();
 }
+
+ProgressCallback *WorkerBase::beginOperation()
+{
+    if (m_running.load())
+        return nullptr;
+    ProgressCallback *pc = ProgressCallback::instance();
+    pc->reset();
+    return pc;
+}

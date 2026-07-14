@@ -35,16 +35,13 @@ Restorer::Restorer(QObject *parent)
 void Restorer::start(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
                      const QString &destDir, file_node_t *onlyNode)
 {
-    if (m_running.load())
-        return;
+    ProgressCallback *pc = beginOperation();
+    if (!pc) return;
 
     m_okCount.store(0);
     m_failCount.store(0);
 
     QByteArray dirBytes = destDir.toLocal8Bit();
-
-    ProgressCallback *pc = ProgressCallback::instance();
-    pc->reset();
 
     storeConnection(connect(pc, &ProgressCallback::restoreProgress,
             this, &Restorer::progressUpdated, Qt::DirectConnection));

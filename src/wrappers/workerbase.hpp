@@ -44,6 +44,7 @@ protected:
     void startThread(std::function<void()> workFn);
     void storeConnection(QMetaObject::Connection conn);
     void disconnectAllConnections();
+    ProgressCallback *beginOperation();
 
     std::atomic<bool> m_running;
     QThread *m_thread;

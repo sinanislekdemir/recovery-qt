@@ -52,22 +52,18 @@ bool ProgressCallback::isCancelled() const { return m_cancelled.load(); }
 
 void ProgressCallback::cScannerProgress(uint64_t deleted, uint64_t total, const char *path)
 {
-    if (!s_scannerInstance)
-        return;
-    QMetaObject::invokeMethod(s_scannerInstance, [=]() {
+    emitToInstance(s_scannerInstance, [=]() {
         emit s_scannerInstance->scannerProgress(deleted, total,
             path ? QString::fromUtf8(path) : QString());
-    }, Qt::QueuedConnection);
+    });
 }
 
 void ProgressCallback::cScannerIndxProgress(const char *msg, uint64_t cur, uint64_t tot, uint64_t found)
 {
-    if (!s_scannerInstance)
-        return;
-    QMetaObject::invokeMethod(s_scannerInstance, [=]() {
+    emitToInstance(s_scannerInstance, [=]() {
         emit s_scannerInstance->scannerIndxProgress(
             msg ? QString::fromUtf8(msg) : QString(), cur, tot, found);
-    }, Qt::QueuedConnection);
+    });
 }
 
 int ProgressCallback::cIsCancelled()
@@ -78,11 +74,9 @@ int ProgressCallback::cIsCancelled()
 void ProgressCallback::cCarverProgress(uint64_t scanned, uint64_t total,
     unsigned int files, uint64_t recovered)
 {
-    if (!s_carverInstance)
-        return;
-    QMetaObject::invokeMethod(s_carverInstance, [=]() {
+    emitToInstance(s_carverInstance, [=]() {
         emit s_carverInstance->carverProgress(scanned, total, files, recovered);
-    }, Qt::QueuedConnection);
+    });
 }
 
 int ProgressCallback::cCarverCancelled()
@@ -92,22 +86,18 @@ int ProgressCallback::cCarverCancelled()
 
 void ProgressCallback::cRestoreProgress(int pct, const char *file, int total, int done)
 {
-    if (!s_restoreInstance)
-        return;
-    QMetaObject::invokeMethod(s_restoreInstance, [=]() {
+    emitToInstance(s_restoreInstance, [=]() {
         emit s_restoreInstance->restoreProgress(pct,
             file ? QString::fromUtf8(file) : QString(), total, done);
-    }, Qt::QueuedConnection);
+    });
 }
 
 void ProgressCallback::cRestoreFile(const char *path, int ok)
 {
-    if (!s_restoreInstance)
-        return;
-    QMetaObject::invokeMethod(s_restoreInstance, [=]() {
+    emitToInstance(s_restoreInstance, [=]() {
         emit s_restoreInstance->fileRestored(
             path ? QString::fromUtf8(path) : QString(), ok != 0);
-    }, Qt::QueuedConnection);
+    });
 }
 
 int ProgressCallback::cRestoreCancelled()

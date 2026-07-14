@@ -232,6 +232,7 @@ set(CPP_SOURCES
     src/wrappers/scanner.cpp
     src/wrappers/carver.cpp
     src/wrappers/restorer.cpp
+    src/wrappers/simpleworker.cpp
     src/wrappers/luksmanager.cpp
     src/ui/mainwindow.cpp
     src/ui/diskselectionwidget.cpp

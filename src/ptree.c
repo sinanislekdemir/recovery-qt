@@ -200,6 +200,52 @@ file_node_t *tree_find_path(scan_tree_t *tree, const char *path)
   return current;
 }
 
+/*
+ * Walk the parent chain from node up to (but not including) root,
+ * build a path like /dir1/dir2/filename. Writes into buf.
+ * Returns buf for chaining convenience.
+ */
+char *tree_get_path(const file_node_t *node, const file_node_t *root,
+    char *buf, size_t bufsize)
+{
+  const file_node_t *chain[128];
+  int count;
+  int i;
+  size_t pos;
+  const file_node_t *p;
+
+  if (node == NULL || buf == NULL || bufsize == 0)
+    return buf;
+
+  buf[0] = '\0';
+
+  count = 0;
+  p = node;
+  while (p && p != root)
+  {
+    if (count >= 128)
+      break;
+    chain[count++] = p;
+    p = p->parent;
+  }
+
+  pos = 0;
+  for (i = count - 1; i >= 0; i--)
+  {
+    size_t rem;
+    int written;
+    rem = bufsize - pos;
+    if (rem <= 1)
+      break;
+    written = snprintf(buf + pos, rem, "/%s", chain[i]->name);
+    if (written < 0 || (size_t)written >= rem)
+      break;
+    pos += (size_t)written;
+  }
+
+  return buf;
+}
+
 void tree_free(scan_tree_t *tree)
 {
   if (tree->root)

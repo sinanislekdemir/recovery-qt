@@ -40,6 +40,7 @@ class Scanner;
 class Carver;
 class Restorer;
 class LUKSManager;
+class SimpleWorker;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -65,6 +66,7 @@ private:
     void applyTheme();
     void showBrowser();
     void detectPartitions();
+    void runScannerOperation(bool deep);
     partition_t *decryptLUKSAndRedetect();
 
     QStackedWidget *m_stack;
@@ -77,6 +79,7 @@ private:
     Scanner *m_scanner;
     Carver *m_carver;
     Restorer *m_restorer;
+    SimpleWorker *m_simpleWorker;
     LUKSManager *m_luks;
 
     Disk m_currentDisk;
