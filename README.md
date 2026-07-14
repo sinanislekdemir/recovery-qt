@@ -8,12 +8,11 @@ file restoration, raw file carving, filesystem backup/restore, and LUKS-encrypte
 volume support.
 
 ## Features
-
-<img width="900" height="654" alt="Screenshot_20260714_110858" src="https://github.com/user-attachments/assets/0eb75c77-c6af-44e8-bb4f-358d6a8f063c" />
-<img width="900" height="654" alt="Screenshot_20260714_110830" src="https://github.com/user-attachments/assets/7d950e66-d282-4e03-80b2-1a87be5f4f31" />
-<img width="900" height="654" alt="Screenshot_20260714_110757" src="https://github.com/user-attachments/assets/45ef6618-3213-4c30-9973-f6c5674533ea" />
-<img width="900" height="654" alt="Screenshot_20260714_110515" src="https://github.com/user-attachments/assets/c5a0c3e5-400d-43f4-9fb7-94a2602d45ca" />
-<img width="900" height="650" alt="Screenshot_20260714_110415" src="https://github.com/user-attachments/assets/3c50dda3-9de1-46c1-8e5c-1a19726b17f5" />
+<img width="900" height="654" alt="Screenshot_20260714_110515" src="https://github.com/user-attachments/assets/2d1d3a19-ebb9-4068-9f04-f4e2a0deabb8" />
+<img width="900" height="654" alt="Screenshot_20260714_110757" src="https://github.com/user-attachments/assets/c46ea400-edb6-481e-9675-e4665a824900" />
+<img width="900" height="654" alt="Screenshot_20260714_110830" src="https://github.com/user-attachments/assets/2c26a855-5faf-47d0-8f12-ceb5cae94d3b" />
+<img width="900" height="650" alt="Screenshot_20260714_110415" src="https://github.com/user-attachments/assets/eae52f2e-2465-4e92-beda-df472e04c5fc" />
+<img width="900" height="654" alt="Screenshot_20260714_110858" src="https://github.com/user-attachments/assets/44c6c22a-cec7-4911-bcb1-8760324131c3" />
 
 ### Recovery Operations
 
