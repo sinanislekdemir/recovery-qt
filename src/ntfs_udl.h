@@ -24,6 +24,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "dir_common.h"
+#include "photorec_nc.h"
 
 /*@
   @ requires \valid(disk_car);
@@ -32,6 +34,24 @@ extern "C" {
   @ requires \separated(disk_car, partition);
   @*/
 int ntfs_undelete_part(disk_t *disk_car, const partition_t *partition, const int verbose, char **current_cmd);
+
+#if defined(HAVE_LIBNTFS) || defined(HAVE_LIBNTFS3G)
+#if defined(HAVE_LIBNTFS)
+#include <ntfs/volume.h>
+#elif defined(HAVE_LIBNTFS3G)
+#include <ntfs-3g/volume.h>
+#endif
+#ifdef HAVE_ICONV_H
+#include <iconv.h>
+#endif
+#include "ntfs_inc.h"
+void scan_disk(ntfs_volume *vol, file_info_t *dir_list);
+void ntfs_fill_clusters(file_node_t *node, ntfs_volume *vol, uint64_t inode);
+typedef void (*scan_progress_cb)(const char *msg, uint64_t current, uint64_t total, uint64_t found);
+void scanner_deep_ntfs(scan_tree_t *tree, disk_t *disk,
+		const partition_t *partition, ntfs_volume *vol,
+		scan_progress_cb progress_cb);
+#endif
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

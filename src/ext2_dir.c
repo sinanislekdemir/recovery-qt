@@ -228,18 +228,24 @@ static int list_dir_proc2(ext2_ino_t dir,
   const struct ext2_dir_struct *ls = (const struct ext2_dir_struct *) privateinfo;
   file_info_t *new_file;
   errcode_t retval;
-  if(entry==DIRENT_DELETED_FILE && (ls->dir_data->param & FLAG_LIST_DELETED)==0)
-    return 0;
   ino = dirent->inode;
   if(ino==0)
-    return 0;
-  if ((retval=ext2fs_read_inode(ls->current_fs,ino, &inode))!=0)
   {
-    log_error("ext2fs_read_inode(ino=%u) failed with error %ld.\n",(unsigned)ino, (long)retval);
-    return 0;
+    if((ls->dir_data->param & FLAG_LIST_DELETED)==0)
+      return 0;
+    if(dirent->name_len==0 || dirent->name[0]==0)
+      return 0;
   }
-  if(inode.i_mode==0)
-    return 0;
+  if(ino!=0)
+  {
+    if ((retval=ext2fs_read_inode(ls->current_fs,ino, &inode))!=0)
+    {
+      log_error("ext2fs_read_inode(ino=%u) failed with error %ld.\n",(unsigned)ino, (long)retval);
+      return 0;
+    }
+    if(inode.i_mode==0)
+      return 0;
+  }
   new_file=(file_info_t *)MALLOC(sizeof(*new_file));
   {
     const unsigned int thislen = ((dirent->name_len & 0xFF) < EXT2_NAME_LEN) ?
@@ -248,22 +254,33 @@ static int list_dir_proc2(ext2_ino_t dir,
     memcpy(new_file->name, dirent->name, thislen);
     new_file->name[thislen] = '\0';
   }
-  if(entry==DIRENT_DELETED_FILE)
+  if(entry==DIRENT_DELETED_FILE || ino==0)
     new_file->status=FILE_STATUS_DELETED;
   else
     new_file->status=0;
-  new_file->st_ino=ino;
-  new_file->st_mode=inode.i_mode;
-//  new_file->st_nlink=inode.i_links_count;
-  new_file->st_uid=inode.i_uid;
-  new_file->st_gid=inode.i_gid;
-  new_file->st_size=LINUX_S_ISDIR(inode.i_mode)?inode.i_size:
-    inode.i_size| ((uint64_t)inode.i_size_high << 32);
-//  new_file->st_blksize=blocksize;
-//  new_file->st_blocks=inode.i_blocks;
-  new_file->td_atime=inode.i_atime;
-  new_file->td_mtime=inode.i_mtime;
-  new_file->td_ctime=inode.i_ctime;
+  if(ino!=0)
+  {
+    new_file->st_ino=ino;
+    new_file->st_mode=inode.i_mode;
+    new_file->st_uid=inode.i_uid;
+    new_file->st_gid=inode.i_gid;
+    new_file->st_size=LINUX_S_ISDIR(inode.i_mode)?inode.i_size:
+      inode.i_size| ((uint64_t)inode.i_size_high << 32);
+    new_file->td_atime=inode.i_atime;
+    new_file->td_mtime=inode.i_mtime;
+    new_file->td_ctime=inode.i_ctime;
+  }
+  else
+  {
+    new_file->st_ino=0;
+    new_file->st_mode=LINUX_S_IFREG;
+    new_file->st_uid=0;
+    new_file->st_gid=0;
+    new_file->st_size=0;
+    new_file->td_atime=0;
+    new_file->td_mtime=0;
+    new_file->td_ctime=0;
+  }
   td_list_add_tail(&new_file->list, &ls->dir_list->list);
   return 0;
 }
@@ -363,8 +380,7 @@ dir_partition_t dir_partition_ext2_init(disk_t *disk_car, const partition_t *par
   io_channel ioch;
   my_data_t *my_data;
   ls->dir_list=NULL;
-  /*  ls->flags = DIRENT_FLAG_INCLUDE_EMPTY; */
-  ls->flags = DIRENT_FLAG_INCLUDE_REMOVED;
+  ls->flags = DIRENT_FLAG_INCLUDE_REMOVED | DIRENT_FLAG_INCLUDE_EMPTY;
   ls->dir_data=dir_data;
   my_data=(my_data_t *)MALLOC(sizeof(*my_data));
   my_data->partition=partition;

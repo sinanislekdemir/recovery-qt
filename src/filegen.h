@@ -384,6 +384,10 @@ void register_header_check(const unsigned int offset, const void *value, const u
   @*/
 file_stat_t * init_file_stats(file_enable_t *files_enable);
 
+const file_hint_t *carver_check_header(const unsigned char *buffer,
+    unsigned int buffer_size, uint64_t offset,
+    file_stat_t *in_file_stat, uint64_t current_file_size);
+
 /*@
   @ requires \valid(file_recovery);
   @ requires valid_file_recovery(file_recovery);

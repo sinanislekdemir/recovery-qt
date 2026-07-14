@@ -26,6 +26,11 @@ extern "C" {
 #endif
 #include "dir_common.h"
 
+struct fat_dir_struct
+{
+  struct fat_boot_sector *boot_sector;
+};
+
 /*@
   @ requires \valid_read(buffer + (0 .. size-1));
   @ requires \initialized(buffer + (0 .. size-1));

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=recovery-qt
+GenericName=Data Recovery & File Carving
+Comment=Deleted file browser, raw file carver, and filesystem backup/restore
+Exec=recovery-qt
+Icon=recovery-qt
+Terminal=false
+Categories=Utility;System;FileTools;
+Keywords=recovery;data;filesystem;carve;photo;restore;backup;deleted;LUKS;

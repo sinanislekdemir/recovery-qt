@@ -24,6 +24,17 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#ifdef HAVE_ICONV_H
+#include <iconv.h>
+#endif
+
+struct exfat_dir_struct
+{
+  struct exfat_super_block *boot_sector;
+#ifdef HAVE_ICONV
+  iconv_t cd;
+#endif
+};
 
 /*@
   @ requires \valid(disk_car);
@@ -32,6 +43,13 @@ extern "C" {
   @ requires \separated(disk_car, partition, dir_data);
   @*/
 dir_partition_t dir_partition_exfat_init(disk_t *disk_car, const partition_t *partition, dir_data_t *dir_data, const int verbose);
+
+/*@
+  @ requires \valid(disk_car);
+  @ requires valid_disk(disk_car);
+  @ requires \valid_read(partition);
+  @*/
+unsigned int exfat_get_next_cluster(disk_t *disk_car, const partition_t *partition, const uint64_t offset, const unsigned int cluster);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

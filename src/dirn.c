@@ -68,13 +68,13 @@ static int copy_progress(WINDOW *window, const unsigned int copy_ok, const unsig
     if(has_colors())
     {
       if(copy_bad > 0)
-	wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(1));
+	wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_DELETED));
       else
-	wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(2));
+	wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_MARKED));
     }
     wprintw(window,"Copying, please wait... %u ok, %u failed", copy_ok, copy_bad);
     if(has_colors())
-      wbkgdset(window,' ' | COLOR_PAIR(0));
+      wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
     wrefresh(window);
   }
   return check_enter_key_or_s(window);
@@ -87,9 +87,9 @@ static void copy_done(WINDOW *window, const unsigned int copy_ok, const unsigned
   if(has_colors())
   {
     if(copy_bad > 0)
-      wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(1));
+      wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_DELETED));
     else
-      wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(2));
+      wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_MARKED));
   }
   if(copy_stopped == CD_STOPPED)
     wprintw(window,"Copy stopped! %u ok, %u failed", copy_ok, copy_bad);
@@ -98,7 +98,7 @@ static void copy_done(WINDOW *window, const unsigned int copy_ok, const unsigned
   else
     wprintw(window,"Copy done! %u ok, %u failed", copy_ok, copy_bad);
   if(has_colors())
-    wbkgdset(window,' ' | COLOR_PAIR(0));
+    wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
   wrefresh(window);
 }
 
@@ -144,7 +144,7 @@ static long int dir_aff_ncurses(disk_t *disk, const partition_t *partition, dir_
 	wclrtoeol(window);	/* before addstr for BSD compatibility */
 	if(&current_file->list==pos)
 	{
-	  wattrset(window, A_REVERSE);
+	  if (has_colors()) wattrset(window, COLOR_PAIR(CP_SELECTED));
 	  waddstr(window, ">");
 	}
 	else if((current_file->status&FILE_STATUS_MARKED)!=0)
@@ -154,9 +154,9 @@ static long int dir_aff_ncurses(disk_t *disk, const partition_t *partition, dir_
 	if(has_colors())
 	{
 	  if((current_file->status&FILE_STATUS_MARKED)!=0)
-	    wbkgdset(window,' ' | COLOR_PAIR(2));
+	    wbkgdset(window,' ' | COLOR_PAIR(CP_MARKED));
 	  else if((current_file->status&FILE_STATUS_DELETED)!=0)
-	    wbkgdset(window,' ' | COLOR_PAIR(1));
+	    wbkgdset(window,' ' | COLOR_PAIR(CP_DELETED));
 	}
 	set_datestr((char *)&datestr, sizeof(datestr), current_file->td_mtime);
 	mode_string(current_file->st_mode, str);
@@ -167,9 +167,9 @@ static long int dir_aff_ncurses(disk_t *disk, const partition_t *partition, dir_
 	wprintw(window, " %s %s", datestr, current_file->name);
 	if((current_file->status&(FILE_STATUS_DELETED|FILE_STATUS_MARKED))!=0 &&
 	    has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	if(&current_file->list==pos)
-	  wattroff(window, A_REVERSE);
+	  if (has_colors()) wattroff(window, COLOR_PAIR(CP_SELECTED));
       }
       wmove(window, 6-1, 51);
       wclrtoeol(window);
@@ -192,26 +192,26 @@ static long int dir_aff_ncurses(disk_t *disk, const partition_t *partition, dir_
       if(depth>0)
       {
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	waddstr(window, "Left");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	waddstr(window," arrow to go back, ");
       }
       if(has_colors())
-	wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
       waddstr(window,"Right");
       if(has_colors())
-	wbkgdset(window,' ' | COLOR_PAIR(0));
+	wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
       waddstr(window," to change directory");
       if((dir_data->capabilities&CAPA_LIST_DELETED)!=0)
       {
 	waddstr(window,", ");
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	waddstr(window,"'h'");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	if((dir_data->param&FLAG_LIST_DELETED)==0)
 	  waddstr(window," to unhide deleted files");
 	else
@@ -221,10 +221,10 @@ static long int dir_aff_ncurses(disk_t *disk, const partition_t *partition, dir_
       {
 	waddstr(window,", ");
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	waddstr(window,"'h'");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	if((dir_data->param&FLAG_LIST_ADS)==0)
 	  waddstr(window," to unhide Alternate Data Stream");
 	else
@@ -232,40 +232,40 @@ static long int dir_aff_ncurses(disk_t *disk, const partition_t *partition, dir_
       }
       wmove(window,LINES-2,4);
       if(has_colors())
-	wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
       waddstr(window,"'q'");
       if(has_colors())
-	wbkgdset(window,' ' | COLOR_PAIR(0));
+	wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
       waddstr(window," to quit");
       if(dir_data->copy_file!=NULL)
       {
 	waddstr(window,", ");
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	waddstr(window,"':'");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	waddstr(window," to select the current file, ");
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	waddstr(window,"'a'");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	if((status&FILE_STATUS_MARKED)==FILE_STATUS_MARKED)
 	  waddstr(window," to select all files  ");
 	else
 	  waddstr(window," to deselect all files");
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	mvwaddstr(window,LINES-1,4,"'C'");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	waddstr(window," to copy the selected files, ");
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	waddstr(window,"'c'");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	waddstr(window," to copy the current file");
       }
       wrefresh(window);
@@ -423,10 +423,10 @@ static long int dir_aff_ncurses(disk_t *disk, const partition_t *partition, dir_
 		  }
 		  if(LINUX_S_ISDIR(tmp->st_mode)!=0)
 		    ask_location(dst_directory, sizeof(dst_directory), "Please select a destination where %s and any files below will be copied.",
-			dir_data->current_directory);
+			dir_data->current_directory, 0);
 		  else
 		    ask_location(dst_directory, sizeof(dst_directory), "Please select a destination where %s will be copied.",
-			dir_data->current_directory);
+			dir_data->current_directory, 0);
 		  free(dir_data->local_dir);
 		  dir_data->local_dir=NULL;
 		  if(dst_directory[0]!='\0')
@@ -446,9 +446,9 @@ static long int dir_aff_ncurses(disk_t *disk, const partition_t *partition, dir_
 		  if(LINUX_S_ISDIR(tmp->st_mode)!=0)
 		  {
 		    wmove(window,22,0);
-		    wattrset(window, A_REVERSE);
+		    if (has_colors()) wattrset(window, COLOR_PAIR(CP_SELECTED));
 		    waddstr(window,"  Stop  ");
-		    wattroff(window, A_REVERSE);
+		    if (has_colors()) wattroff(window, COLOR_PAIR(CP_SELECTED));
 		    copy_stopped=copy_dir(window, disk, partition, dir_data, tmp, &copy_ok, &copy_bad);
 		  }
 		  else if(LINUX_S_ISREG(tmp->st_mode)!=0)
@@ -483,7 +483,7 @@ static long int dir_aff_ncurses(disk_t *disk, const partition_t *partition, dir_
 		  strncpy(dst_directory, dir_data->local_dir, sizeof(dst_directory)-1);
 		  dst_directory[sizeof(dst_directory)-1]='\0';
 		}
-		ask_location(dst_directory, sizeof(dst_directory), "Please select a destination where the marked files will be copied.", NULL);
+		ask_location(dst_directory, sizeof(dst_directory), "Please select a destination where the marked files will be copied.", NULL, 0);
 		free(dir_data->local_dir);
 		dir_data->local_dir=NULL;
 		if(dst_directory[0]!='\0')
@@ -501,9 +501,9 @@ static long int dir_aff_ncurses(disk_t *disk, const partition_t *partition, dir_
 		wmove(window,4,0);
 		wprintw(window,"Directory %s\n",dir_data->current_directory);
 		wmove(window,22,0);
-		wattrset(window, A_REVERSE);
+		if (has_colors()) wattrset(window, COLOR_PAIR(CP_SELECTED));
 		waddstr(window,"  Stop  ");
-		wattroff(window, A_REVERSE);
+		if (has_colors()) wattroff(window, COLOR_PAIR(CP_SELECTED));
 		copy_stopped=copy_selection(dir_list, window, disk, partition, dir_data, &copy_ok, &copy_bad);
 		wmove(window,22,0);
 		wclrtoeol(window);

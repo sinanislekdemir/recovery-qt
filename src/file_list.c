@@ -100,9 +100,6 @@ extern const file_hint_t file_hint_ari;
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_arj)
 extern const file_hint_t file_hint_arj;
 #endif
-#if !defined(SINGLE_FORMAT) || defined(SINGLE_FOMART_aseprite)
-extern const file_hint_t file_hint_aseprite;
-#endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_asf)
 extern const file_hint_t file_hint_asf;
 #endif
@@ -1162,9 +1159,6 @@ file_enable_t array_file_enable[]=
 #endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_arj)
   { .enable=0, .file_hint=&file_hint_arj  },
-#endif
-#if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_aseprite)
-  { .enable=0, .file_hint=&file_hint_aseprite },
 #endif
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_asf)
   { .enable=0, .file_hint=&file_hint_asf  },

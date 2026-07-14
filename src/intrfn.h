@@ -65,6 +65,7 @@ void dump2(WINDOW *window, const void *dump_1, const void *dump_2, const unsigne
 void dump(WINDOW *window,const void *nom_dump,unsigned int lng);
 void dump_ncurses(const void *nom_dump, unsigned int lng);
 void not_implemented(const char *msg);
+struct MenuItem;
 int screen_buffer_display_ext(WINDOW *window, const char *options_org, const struct MenuItem *menuItems, unsigned int *menu);
 int screen_buffer_display(WINDOW *window, const char *options_org, const struct MenuItem *menuItems);
 void screen_buffer_to_interface(void);
@@ -80,6 +81,15 @@ int get_string(WINDOW *window, char *str, const int len, const char *def);
 uint64_t ask_int_ncurses(const char *string);
 const char *ask_string_ncurses(const char *string);
 #endif
+
+#define CP_NORMAL    0
+#define CP_DELETED   1
+#define CP_MARKED    2
+#define CP_HEADER    3
+#define CP_SELECTED  4
+#define CP_DIM       5
+#define CP_WARN      6
+#define CP_SPECIAL   7
 
 /*@ assigns \nothing; */
 const char *td_curses_version(void);

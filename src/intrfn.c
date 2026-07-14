@@ -58,6 +58,9 @@
 #ifdef HAVE_LIBGEN_H
 #include <libgen.h>
 #endif
+#ifdef HAVE_LOCALE_H
+#include <locale.h>
+#endif
 #include <errno.h>
 #include "types.h"
 #include "common.h"
@@ -1009,6 +1012,7 @@ static void get_newterm(const char *prog_name)
 
 int start_ncurses(const char *prog_name, const char *real_prog_name)
 {
+  setlocale(LC_ALL, "");
 #if defined(DJGPP) || defined(__MINGW32__)
   if(initscr()==NULL)
   {
@@ -1039,10 +1043,15 @@ int start_ncurses(const char *prog_name, const char *real_prog_name)
   {
     start_color();
 #ifdef HAVE_ASSUME_DEFAULT_COLORS
-    assume_default_colors(COLOR_WHITE,COLOR_BLACK);
+    use_default_colors();
 #endif
-    init_pair(1, COLOR_RED, COLOR_BLACK);
-    init_pair(2, COLOR_GREEN, COLOR_BLACK);
+    init_pair(CP_DELETED,  COLOR_RED,     -1);
+    init_pair(CP_MARKED,   COLOR_GREEN,   -1);
+    init_pair(CP_HEADER,   COLOR_CYAN,    -1);
+    init_pair(CP_SELECTED, COLOR_BLACK,   COLOR_CYAN);
+    init_pair(CP_DIM,      COLOR_BLUE,    -1);
+    init_pair(CP_WARN,     COLOR_YELLOW,  -1);
+    init_pair(CP_SPECIAL,  COLOR_MAGENTA, -1);
   }
   noecho();
 #ifndef DJGPP
@@ -1092,8 +1101,7 @@ int start_ncurses(const char *prog_name, const char *real_prog_name)
 
 int end_ncurses(void)
 {
-  wclear(stdscr);
-  wrefresh(stdscr);
+  curs_set(1);
   nl();
   endwin();
 #if defined(HAVE_DELSCREEN) && !defined(DJGPP) && !defined(__MINGW32__)
@@ -1237,9 +1245,7 @@ uint64_t ask_int_ncurses(const char *string)
 
   local_win = newwin(height, width, starty, startx);
   keypad(local_win, TRUE); 		/* Need it to get arrow key */
-  box(local_win, 0 , 0);		/* 0, 0 gives default characters 
-					 * for the vertical and horizontal
-					 *  lines			*/
+  wborder(local_win, '|', '|', '-', '-', '+', '+', '+', '+');
   wmove(local_win,1,1);
   waddstr(local_win, string);
   wrefresh(local_win);			/* Show that box 		*/
@@ -1253,23 +1259,112 @@ uint64_t ask_int_ncurses(const char *string)
   return min_size;
 }
 
+static unsigned int wrap_text(WINDOW *win, int start_row, int col,
+    int max_width, const char *text)
+{
+  unsigned int row;
+  unsigned int pos;
+  unsigned int len;
+  row = (unsigned int)start_row;
+  len = (unsigned int)strlen(text);
+  pos = 0;
+  while (pos < len)
+  {
+    unsigned int chunk;
+    unsigned int space_at;
+    chunk = len - pos;
+    if (chunk > (unsigned int)(max_width - col))
+      chunk = (unsigned int)(max_width - col);
+    space_at = 0;
+    if (pos + chunk < len)
+    {
+      unsigned int s;
+      for (s = chunk; s > 0; s--)
+      {
+        if (text[pos + s] == ' ')
+        {
+          space_at = s;
+          break;
+        }
+      }
+      if (space_at > 0)
+        chunk = space_at;
+    }
+    mvwaddnstr(win, (int)row, col, text + pos, (int)chunk);
+    pos += chunk;
+    if (pos < len && text[pos] == ' ')
+      pos++;
+    row++;
+  }
+  return row;
+}
+
+static unsigned int count_wrapped_rows(const char *text, int avail_width)
+{
+  unsigned int row;
+  unsigned int pos;
+  unsigned int len;
+  row = 1;
+  len = (unsigned int)strlen(text);
+  pos = 0;
+  while (pos < len)
+  {
+    unsigned int chunk;
+    unsigned int space_at;
+    chunk = len - pos;
+    if (chunk > (unsigned int)avail_width)
+      chunk = (unsigned int)avail_width;
+    space_at = 0;
+    if (pos + chunk < len)
+    {
+      unsigned int s;
+      for (s = chunk; s > 0; s--)
+      {
+        if (text[pos + s] == ' ')
+        {
+          space_at = s;
+          break;
+        }
+      }
+      if (space_at > 0)
+        chunk = space_at;
+    }
+    pos += chunk;
+    if (pos < len && text[pos] == ' ')
+      pos++;
+    row++;
+  }
+  return row;
+}
+
 const char *ask_string_ncurses(const char *string)
 {
   WINDOW *local_win;
-  const int height = 3;
-  const int width = 60;
-  const int starty = (LINES - height) / 2;	/* Calculating for a center placement */
-  const int startx = (COLS - width) / 2;		/* of the window		*/
+  int width;
+  int height;
+  int starty;
+  int startx;
+  unsigned int prompt_rows;
   static char response[128];
 
+  width = COLS * 3 / 4;
+  if (width < 60)
+    width = 60;
+  if (width > COLS - 4)
+    width = COLS - 4;
+  prompt_rows = count_wrapped_rows(string, width - 4);
+  height = (int)prompt_rows + 4;
+  if (height < 3)
+    height = 3;
+  starty = (LINES - height) / 2;
+  startx = (COLS - width) / 2;
+
   local_win = newwin(height, width, starty, startx);
-  keypad(local_win, TRUE); 		/* Need it to get arrow key */
-  box(local_win, 0 , 0);		/* 0, 0 gives default characters 
-					 * for the vertical and horizontal
-					 *  lines			*/
-  wmove(local_win,1,1);
-  waddstr(local_win, string);
-  wrefresh(local_win);			/* Show that box 		*/
+  keypad(local_win, TRUE);
+  wborder(local_win, '|', '|', '-', '-', '+', '+', '+', '+');
+  prompt_rows = wrap_text(local_win, 1, 2, width - 4, string);
+  wmove(local_win, (int)prompt_rows, 2);
+  wrefresh(local_win);
   get_string(local_win, response, 120, NULL);
   wborder(local_win, ' ', ' ', ' ',' ',' ',' ',' ',' ');
   wrefresh(local_win);

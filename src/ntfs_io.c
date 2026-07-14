@@ -163,21 +163,37 @@ static int ntfs_device_testdisk_io_stat(struct ntfs_device *dev, struct stat *bu
 static int ntfs_device_testdisk_io_ioctl(struct ntfs_device *dev, int request,
 		void *argp)
 {
-	log_warning( "ntfs_device_testdisk_io_ioctl() unimplemented\n");
+    my_data_t *my_data = (my_data_t*)dev->d_private;
+
+    if (request == (int)BLKGETSIZE && argp != NULL)
+    {
+        *(unsigned long *)argp = (unsigned long)
+            (my_data->partition->part_size / 512);
+        return 0;
+    }
+    log_warning( "ntfs_device_testdisk_io_ioctl() unimplemented\n");
 #ifdef ENOTSUP
-	errno = ENOTSUP;
+    errno = ENOTSUP;
 #endif
-	return -1;
+    return -1;
 }
 #elif defined(NTFS_DEVICE_OPERATIONS_IOCTL_UL)
 static int ntfs_device_testdisk_io_ioctl(struct ntfs_device *dev, unsigned long request,
 		void *argp)
 {
-	log_warning( "ntfs_device_testdisk_io_ioctl() unimplemented\n");
+    my_data_t *my_data = (my_data_t*)dev->d_private;
+
+    if (request == BLKGETSIZE && argp != NULL)
+    {
+        *(unsigned long *)argp = (unsigned long)
+            (my_data->partition->part_size / 512);
+        return 0;
+    }
+    log_warning( "ntfs_device_testdisk_io_ioctl() unimplemented\n");
 #ifdef ENOTSUP
-	errno = ENOTSUP;
+    errno = ENOTSUP;
 #endif
-	return -1;
+    return -1;
 }
 #endif
 

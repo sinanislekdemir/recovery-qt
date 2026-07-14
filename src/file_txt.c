@@ -2125,10 +2125,6 @@ static void header_check_xml_aux(const char *buf, const unsigned int buffer_size
   @ requires separation: \separated(&file_hint_fasttxt, buffer+(..), file_recovery, file_recovery_new);
   @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
   @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures  \result == 1;
-  @ ensures  file_recovery_new->calculated_file_size == 0;
-  @ ensures  file_recovery_new->file_size == 0;
-  @ ensures  file_recovery_new->min_filesize == 0;
   @ ensures  file_recovery_new->data_check == \null ||
 				file_recovery_new->data_check == data_check_html ||
 				file_recovery_new->data_check == data_check_txt;
@@ -2143,7 +2139,17 @@ static void header_check_xml_aux(const char *buf, const unsigned int buffer_size
 static int header_check_xml(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   /* buffer may not be null-terminated */
-  char *buf=(char *)MALLOC(buffer_size+1);
+  char *buf;
+#if !defined(MAIN_txt) && !defined(SINGLE_FORMAT)
+  if(file_recovery->file_stat!=NULL
+      && file_recovery->file_stat->file_hint==&file_hint_doc
+    )
+  {
+    if(header_ignored_adv(file_recovery, file_recovery_new)==0)
+      return 0;
+  }
+#endif
+  buf=(char *)MALLOC(buffer_size+1);
   memcpy(buf, buffer, buffer_size);
   buf[buffer_size]='\0';
   /*@ assert strlen(buf) <= buffer_size; */

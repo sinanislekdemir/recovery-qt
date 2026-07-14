@@ -44,7 +44,7 @@ char *td_getcwd(char *buf, unsigned long size);
   @ requires \separated(dst, msg, src_dir);
   @ assigns  *(dst + (0 .. dst_size-1));
   @*/
-void ask_location(char *dst, const unsigned int dst_size, const char *msg, const char *src_dir);
+void ask_location(char *dst, const unsigned int dst_size, const char *msg, const char *src_dir, const int file_select);
 #endif
 
 // ensures \result == \null || (\freeable(\result) && valid_string(\result));

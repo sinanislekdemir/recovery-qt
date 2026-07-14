@@ -91,10 +91,10 @@ int change_arch_type_ncurses(disk_t *disk, const int verbose)
       wmove(stdscr,19,0);
       wprintw(stdscr, "Hint: ");
       if(has_colors())
-	wbkgdset(stdscr,' ' | COLOR_PAIR(2));
+	wbkgdset(stdscr,' ' | COLOR_PAIR(CP_MARKED));
       wprintw(stdscr, "%s", disk->arch_autodetected->part_name);
       if(has_colors())
-	wbkgdset(stdscr,' ' | COLOR_PAIR(0));
+	wbkgdset(stdscr,' ' | COLOR_PAIR(CP_NORMAL));
       wprintw(stdscr, " partition table type has been detected.");
     }
     if(disk->arch_autodetected!=&arch_none)

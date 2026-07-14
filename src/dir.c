@@ -816,6 +816,10 @@ void mkdir_local_for_file(const char *filename)
   char *dir;
   char *sep;
   dir=strdup(filename);
+  if(dir==NULL)
+  {
+    return;
+  }
   sep=strrchr(dir,'/');
   if(sep!=NULL)
   {

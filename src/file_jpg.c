@@ -974,7 +974,6 @@ static int header_check_jpg(const unsigned char *buffer, const unsigned int buff
       }
       /* Don't recover the thumb instead of the jpg itself */
       if(file_recovery->file_size <= 16384 &&
-	  buffer[3]==0xe0 &&
 	  width>0 && width<200 && height>0 && height<200)
       {
 	if(header_ignored_adv(file_recovery, file_recovery_new)==0)

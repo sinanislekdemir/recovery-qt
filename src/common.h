@@ -519,6 +519,8 @@ struct my_data_struct
 
 /*@
   @ requires size > 0;
+  @ terminates \true;
+  @ exits !is_allocable(size);
   @ ensures \valid(((char *)\result)+(0..size-1));
   @ ensures zero_initialization: \subset(((char *)\result)[0..size-1], {0});
   @ assigns __fc_heap_status;
@@ -594,6 +596,14 @@ time_t td_ntfs2utc (int64_t ntfstime);
     (((uint64_t)(x)&(uint64_t)0x0000000000ff0000ULL)<<24)        | \
     (((uint64_t)(x)&(uint64_t)0x000000000000ff00ULL)<<40)        | \
     (((uint64_t)(x)&(uint64_t)0x00000000000000ffULL)<<56))
+
+#if !defined(TESTDISK_LSB) && !defined(TESTDISK_MSB)
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define TESTDISK_MSB
+#else
+#define TESTDISK_LSB
+#endif
+#endif
 
 #ifdef TESTDISK_LSB
 #define be16(x)  (__swab16(x))

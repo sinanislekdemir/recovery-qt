@@ -53,13 +53,6 @@
 #include "fat.h"
 
 #define EXFAT_MKMODE(a,m) ((m & ((a & ATTR_RO) ? LINUX_S_IRUGO|LINUX_S_IXUGO : LINUX_S_IRWXUGO)) | ((a & ATTR_DIR) ? LINUX_S_IFDIR : LINUX_S_IFREG))
-struct exfat_dir_struct
-{
-  struct exfat_super_block*boot_sector;
-#ifdef HAVE_ICONV
-  iconv_t cd;
-#endif
-};
 
 
 static int exfat_dir(disk_t *disk, const partition_t *partition, dir_data_t *dir_data, const unsigned long int first_cluster, file_info_t *dir_list);
@@ -174,7 +167,7 @@ static unsigned int makeutf8(char *utf8, const char *utf16, int length)
 #define ATTR_DIR     16 /* directory */
 #define ATTR_ARCH    32 /* archived */
 
-static unsigned int exfat_get_next_cluster(disk_t *disk_car,const partition_t *partition, const uint64_t offset, const unsigned int cluster)
+unsigned int exfat_get_next_cluster(disk_t *disk_car,const partition_t *partition, const uint64_t offset, const unsigned int cluster)
 {
   unsigned char *buffer=(unsigned char*)MALLOC(disk_car->sector_size);
   unsigned int next_cluster;

@@ -171,7 +171,7 @@ static void set_parent_directory(char *dst_directory)
 #endif
 }
 
-void ask_location(char *dst_directory, const unsigned int dst_size, const char *msg, const char *src_dir)
+void ask_location(char *dst_directory, const unsigned int dst_size, const char *msg, const char *src_dir, const int file_select)
 {
   int quit;
   WINDOW *window=newwin(LINES, COLS, 0, 0);	/* full screen */
@@ -186,10 +186,10 @@ void ask_location(char *dst_directory, const unsigned int dst_size, const char *
     wmove(window,5,0);
     wclrtoeol(window);	/* before addstr for BSD compatibility */
     if(has_colors())
-      wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+      wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
     waddstr(window,"Directory listing in progress...");
     if(has_colors())
-      wbkgdset(window,' ' | COLOR_PAIR(0));
+      wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
     wrefresh(window);
 #if defined(DJGPP) || defined(__OS2__)
     if(dst_directory[0]=='\0')
@@ -322,24 +322,24 @@ void ask_location(char *dst_directory, const unsigned int dst_size, const char *
         wmove(window, line_directory, 0);
         wprintw(window,"Keys: ");
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	waddstr(window, "Arrow");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	wprintw(window," keys to select another directory");
         wmove(window, ++line_directory, 6);
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	waddstr(window, "C");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	wprintw(window, " when the destination is correct");
         wmove(window, ++line_directory, 6);
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	waddstr(window, "Q");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	waddstr(window," to quit");
 	line_directory++;
 	line_base=line_directory+1;
@@ -358,10 +358,10 @@ void ask_location(char *dst_directory, const unsigned int dst_size, const char *
               wclrtoeol(window);	/* before addstr for BSD compatibility */
               if(file_walker==current_file)
 	      {
-                wattrset(window, A_REVERSE);
+                if (has_colors()) wattrset(window, COLOR_PAIR(CP_SELECTED));
 		waddstr(window, ">");
 		dir_aff_entry(window,file_info);
-                wattroff(window, A_REVERSE);
+                if (has_colors()) wattroff(window, COLOR_PAIR(CP_SELECTED));
 	      }
 	      else
 	      {
@@ -419,6 +419,22 @@ void ask_location(char *dst_directory, const unsigned int dst_size, const char *
             case 'Y':
             case 'c':
             case 'C':
+              if (file_select && current_file != &dir_list.list)
+              {
+                file_info_t *fi;
+                fi = td_list_entry(current_file, file_info_t, list);
+                if (!LINUX_S_ISDIR(fi->st_mode) &&
+                    !LINUX_S_ISLNK(fi->st_mode))
+                {
+                  if (strlen(dst_directory) + 1 +
+                      strlen(fi->name) + 1 <= dst_size)
+                  {
+                    if (dst_directory[1] != '\0')
+                      strcat(dst_directory, SPATH_SEP);
+                    strcat(dst_directory, fi->name);
+                  }
+                }
+              }
               if(dst_directory_ok>0)
               {
                 quit=ASK_LOCATION_QUIT;
@@ -508,6 +524,20 @@ void ask_location(char *dst_directory, const unsigned int dst_size, const char *
 			strcat(dst_directory,SPATH_SEP);
 		    strcat(dst_directory, file_info->name);
 		    quit=ASK_LOCATION_NEWDIR;
+		  }
+		}
+		else if(file_select && current_file!=&dir_list.list)
+		{
+		  if(strlen(dst_directory) + 1 + strlen(file_info->name) + 1 <= dst_size)
+		  {
+#if defined(DJGPP) || defined(__OS2__)
+		    if(dst_directory[0]!='\0'&&dst_directory[1]!='\0'&&dst_directory[2]!='\0'&&dst_directory[3]!='\0')
+#else
+		    if(dst_directory[1]!='\0')
+#endif
+			strcat(dst_directory,SPATH_SEP);
+		    strcat(dst_directory, file_info->name);
+		    quit=ASK_LOCATION_QUIT;
 		  }
 		}
 	      }

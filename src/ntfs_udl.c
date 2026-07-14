@@ -78,6 +78,7 @@
 #include "ntfs_udl.h"
 #include "intrf.h"
 #include "intrfn.h"
+#include "photorec_nc.h"
 
 #ifdef HAVE_LIBNTFS
 #include <ntfs/bootsect.h>
@@ -114,6 +115,7 @@
 #include "ntfs_utl.h"
 #include "askloc.h"
 #include "setdate.h"
+#include "progress_cb.h"
 
 struct options {
 	char		*dest;		/* Save file to this directory */
@@ -438,7 +440,8 @@ static int get_filenames(struct ufile *file, ntfs_volume* vol)
 /**
  * get_data - Read an MFT Record's $DATA attributes
  * @file:  The file object to work with
- * @vol:  An ntfs volume obtained from ntfs_mount
+ * @vol:   An ntfs volume obtained from ntfs_mount
+ * @mrec:  The MFT record buffer to read $DATA from
  *
  * A file may have more than one data stream.  All files will have an unnamed
  * data stream which contains the file's data.  Some Windows applications store
@@ -450,7 +453,7 @@ static int get_filenames(struct ufile *file, ntfs_volume* vol)
  * Return:  n  The number of $FILENAME attributes found
  *	   -1  Error
  */
-static int get_data(struct ufile *file, const ntfs_volume *vol)
+static int get_data(struct ufile *file, const ntfs_volume *vol, MFT_RECORD *mrec)
 {
 	ATTR_RECORD *rec;
 	ntfs_attr_search_ctx *ctx;
@@ -459,7 +462,7 @@ static int get_data(struct ufile *file, const ntfs_volume *vol)
 	if (!file)
 		return -1;
 
-	ctx = ntfs_attr_get_search_ctx(NULL, file->mft);
+	ctx = ntfs_attr_get_search_ctx(NULL, mrec);
 	if (!ctx)
 		return -1;
 
@@ -514,6 +517,191 @@ static int get_data(struct ufile *file, const ntfs_volume *vol)
 }
 
 /**
+ * process_attribute_list - Follow $ATTRIBUTE_LIST to merge $DATA from
+ * external MFT records into the file's data list.
+ * @file:  The file object to work with
+ * @vol:   An ntfs volume obtained from ntfs_mount
+ *
+ * When a file's attributes overflow the base MFT record, an $ATTRIBUTE_LIST
+ * (0x20) points to additional records holding the remaining attributes.
+ * Without this, highly fragmented files with multi-record runlists would
+ * have incomplete data - calc_percentage() would under-report recoverability
+ * and undelete_file() would miss clusters.
+ *
+ * Return:  0  Success
+ *	    -1  Error
+ */
+static int process_attribute_list(struct ufile *file, ntfs_volume *vol)
+{
+	ATTR_RECORD *attr_list_rec;
+	char *attr_list_buf;
+	u32 attr_list_len;
+	char *pos;
+	char *end;
+	MFT_RECORD *ext_rec;
+	ntfs_attr *mft_data;
+	unsigned int ext_records;
+	unsigned int ext_done;
+
+	attr_list_rec = find_first_attribute(AT_ATTRIBUTE_LIST, file->mft);
+	if (!attr_list_rec)
+		return 0;
+
+	if (attr_list_rec->non_resident)
+	{
+		runlist_element *rl;
+		unsigned char *read_buf;
+		u64 total_size;
+		u64 offset;
+		int rl_idx;
+
+		total_size = sle64_to_cpu(attr_list_rec->data_size);
+		if (total_size == 0 || total_size > 256 * 1024)
+		{
+			log_warning("Inode %llu: ATTRIBUTE_LIST non-resident "
+					"size %llu out of range\n",
+					(long long unsigned)file->inode,
+					(long long unsigned)total_size);
+			return -1;
+		}
+		rl = ntfs_mapping_pairs_decompress(vol, attr_list_rec, NULL);
+		if (!rl || rl[0].length <= 0)
+		{
+			log_warning("Inode %llu: failed to decompress "
+					"ATTRIBUTE_LIST runlist\n",
+					(long long unsigned)file->inode);
+			free(rl);
+			return -1;
+		}
+		attr_list_buf = (char *)MALLOC((size_t)total_size);
+		read_buf = (unsigned char *)MALLOC(vol->cluster_size);
+		if (!attr_list_buf || !read_buf)
+		{
+			free(rl);
+			free(attr_list_buf);
+			free(read_buf);
+			return -1;
+		}
+		offset = 0;
+		for (rl_idx = 0; rl[rl_idx].length > 0; rl_idx++)
+		{
+			u64 run_len;
+			u64 run_lcn;
+			u64 j;
+			if (rl[rl_idx].lcn == LCN_RL_NOT_MAPPED ||
+			    rl[rl_idx].lcn == LCN_HOLE)
+				continue;
+			run_len = rl[rl_idx].length;
+			run_lcn = rl[rl_idx].lcn;
+			for (j = 0; j < run_len && offset < total_size; j++)
+			{
+				u64 to_copy;
+				to_copy = total_size - offset;
+				if (to_copy > vol->cluster_size)
+					to_copy = vol->cluster_size;
+				if (ntfs_cluster_read(vol, run_lcn + j, 1,
+				    read_buf) < 1)
+				{
+					log_warning("Inode %llu: cluster read "
+						"failed for ATTRIBUTE_LIST\n",
+						(long long unsigned)file->inode);
+					break;
+				}
+				memcpy(attr_list_buf + offset,
+				    read_buf, to_copy);
+				offset += to_copy;
+			}
+			if (offset >= total_size)
+				break;
+		}
+		free(read_buf);
+		free(rl);
+		if (offset == 0)
+		{
+			free(attr_list_buf);
+			return -1;
+		}
+		attr_list_len = (u32)total_size;
+	}
+	else
+	{
+		attr_list_len = le32_to_cpu(attr_list_rec->value_length);
+		attr_list_buf = (char *)attr_list_rec +
+			le16_to_cpu(attr_list_rec->value_offset);
+	}
+
+	pos = attr_list_buf;
+	end = attr_list_buf + attr_list_len;
+
+	mft_data = ntfs_attr_open(vol->mft_ni, AT_DATA, AT_UNNAMED, 0);
+	if (!mft_data)
+	{
+		if (attr_list_rec->non_resident)
+			free(attr_list_buf);
+		return -1;
+	}
+
+	ext_rec = (MFT_RECORD *)MALLOC(vol->mft_record_size);
+	if (!ext_rec)
+	{
+		ntfs_attr_close(mft_data);
+		if (attr_list_rec->non_resident)
+			free(attr_list_buf);
+		return -1;
+	}
+
+	ext_records = 0;
+	ext_done = 0;
+
+	while (pos + 26 <= end)
+	{
+		ATTR_LIST_ENTRY *ale;
+		u16 entry_len;
+		u64 mref;
+		u64 inode_num;
+
+		ale = (ATTR_LIST_ENTRY *)pos;
+		entry_len = le16_to_cpu(ale->length);
+		if (entry_len < 26 || pos + entry_len > end)
+			break;
+
+		if (ale->type == AT_DATA)
+		{
+			ext_records++;
+			mref = le64_to_cpu(ale->mft_reference);
+			inode_num = MREF(mref);
+
+			if (ntfs_attr_mst_pread(mft_data,
+			    vol->mft_record_size * inode_num, 1,
+			    vol->mft_record_size, ext_rec) >= 1)
+			{
+				if (get_data(file, vol, ext_rec) >= 0)
+					ext_done++;
+			}
+			else
+			{
+				log_warning("Inode %llu: failed to read "
+					"external MFT record %llu\n",
+					(long long unsigned)file->inode,
+					(long long unsigned)inode_num);
+			}
+		}
+
+		pos += entry_len;
+	}
+
+	free(ext_rec);
+	ntfs_attr_close(mft_data);
+	if (attr_list_rec->non_resident)
+		free(attr_list_buf);
+
+	if (ext_records > 0)
+		log_debug("Inode %llu: %u/%u external $DATA records merged\n",
+			(long long unsigned)file->inode, ext_done, ext_records);
+	return 0;
+}
+
+/**
  * read_record - Read an MFT record into memory
  * @vol:     An ntfs volume obtained from ntfs_mount
  * @record:  The record number to read
@@ -562,6 +750,30 @@ static struct ufile * read_record(ntfs_volume *vol, uint64_t record)
 	ntfs_attr_close(mft);
 	mft = NULL;
 
+	if (file->mft->magic != magic_FILE)
+	{
+		log_warning("MFT Record %llu has bad magic, skipping\n",
+				(long long unsigned)record);
+		free_file(file);
+		return NULL;
+	}
+
+	if (le16_to_cpu(file->mft->sequence_number) == 0)
+	{
+		log_debug("MFT Record %llu has zero sequence number (virgin), skipping\n",
+				(long long unsigned)record);
+		free_file(file);
+		return NULL;
+	}
+
+	if (file->mft->flags & MFT_RECORD_IN_USE)
+	{
+		log_warning("MFT Record %llu is flagged in-use (despite free bitmap), skipping\n",
+				(long long unsigned)record);
+		free_file(file);
+		return NULL;
+	}
+
 	attr10 = find_first_attribute(AT_STANDARD_INFORMATION,	file->mft);
 	attr20 = find_first_attribute(AT_ATTRIBUTE_LIST,	file->mft);
 	attr90 = find_first_attribute(AT_INDEX_ROOT,		file->mft);
@@ -583,9 +795,12 @@ static struct ufile * read_record(ntfs_volume *vol, uint64_t record)
 	if (get_filenames(file, vol) < 0) {
 		log_error("ERROR: Couldn't get filenames.\n");
 	}
-	if (get_data(file, vol) < 0) {
+	if (get_data(file, vol, file->mft) < 0) {
 		log_error("ERROR: Couldn't get data streams.\n");
 	}
+
+	if (file->attr_list)
+		process_attribute_list(file, vol);
 
 	return file;
 }
@@ -1109,7 +1324,7 @@ static file_info_t *ufile_to_file_data(const struct ufile *file, const struct da
  * The list can be filtered by name, size and date, using command line options.
  *
  */
-static void scan_disk(ntfs_volume *vol, file_info_t *dir_list)
+void scan_disk(ntfs_volume *vol, file_info_t *dir_list)
 {
   uint64_t nr_mft_records;
   const unsigned int BUFSIZE = 8192;
@@ -1191,6 +1406,395 @@ done:
   td_list_sort(&dir_list->list, filesort);
 }
 
+void ntfs_fill_clusters(file_node_t *node, ntfs_volume *vol, uint64_t inode)
+{
+  ATTR_RECORD *rec;
+  runlist_element *rl;
+  unsigned int cluster_size;
+  unsigned int i;
+  unsigned int total_clusters;
+  uint64_t *clusters;
+  MFT_RECORD *mrec;
+
+  log_info("ntfs_fill_clusters: inode=%llu size=%llu\n",
+      (unsigned long long)inode, (unsigned long long)node->size);
+
+  if (!node || !vol || node->size == 0)
+  {
+    log_info("ntfs_fill_clusters: early exit (null or zero size)\n");
+    return;
+  }
+
+  cluster_size = (unsigned int)vol->cluster_size;
+  mrec = (MFT_RECORD *)MALLOC(vol->mft_record_size);
+  {
+    ntfs_attr *mft_attr;
+    mft_attr = ntfs_attr_open(vol->mft_ni, AT_DATA, AT_UNNAMED, 0);
+    if (!mft_attr)
+    {
+      free(mrec);
+      return;
+    }
+    if (ntfs_attr_mst_pread(mft_attr, vol->mft_record_size * inode,
+        1, vol->mft_record_size, mrec) < 1)
+    {
+      ntfs_attr_close(mft_attr);
+      free(mrec);
+      return;
+    }
+    ntfs_attr_close(mft_attr);
+  }
+
+  rec = find_first_attribute(AT_DATA, mrec);
+  if (!rec || !rec->non_resident)
+  {
+    if (rec && !rec->non_resident)
+    {
+      log_info("ntfs_fill_clusters: resident data\n");
+      node->cluster_list = (uint64_t *)MALLOC(sizeof(uint64_t));
+      node->cluster_list[0] = 0;
+      node->cluster_count = 1;
+      node->cluster_size = cluster_size;
+    }
+    else
+    {
+      log_info("ntfs_fill_clusters: no DATA attribute found\n");
+    }
+    free(mrec);
+    return;
+  }
+
+  rl = ntfs_mapping_pairs_decompress(vol, rec, NULL);
+  free(mrec);
+  if (!rl)
+  {
+    log_info("ntfs_fill_clusters: ntfs_mapping_pairs_decompress returned NULL\n");
+    return;
+  }
+
+  log_info("ntfs_fill_clusters: got runlist, counting clusters\n");
+
+  total_clusters = 0;
+  for (i = 0; rl[i].length > 0; i++)
+  {
+    if (rl[i].lcn != LCN_RL_NOT_MAPPED && rl[i].lcn != LCN_HOLE)
+      total_clusters += (unsigned int)rl[i].length;
+  }
+
+  if (total_clusters == 0)
+  {
+    free(rl);
+    return;
+  }
+
+  clusters = (uint64_t *)MALLOC(total_clusters * sizeof(uint64_t));
+  total_clusters = 0;
+  for (i = 0; rl[i].length > 0; i++)
+  {
+    unsigned int j;
+    if (rl[i].lcn == LCN_RL_NOT_MAPPED || rl[i].lcn == LCN_HOLE)
+      continue;
+    for (j = 0; j < (unsigned int)rl[i].length; j++)
+      clusters[total_clusters++] = (rl[i].lcn + j) * cluster_size;
+  }
+
+  node->cluster_list = clusters;
+  node->cluster_count = total_clusters;
+  node->cluster_size = cluster_size;
+  log_info("ntfs_fill_clusters: ok, %u clusters, cluster_size=%u\n",
+      total_clusters, cluster_size);
+  free(rl);
+}
+
+static unsigned int scan_cluster_indx(unsigned char *buffer,
+    unsigned int buf_size, scan_tree_t *tree, ntfs_volume *vol,
+    unsigned int sector_size, uint64_t nr_clusters)
+{
+	unsigned int found;
+	unsigned int off;
+	unsigned int csize;
+
+	found = 0;
+	csize = vol->cluster_size;
+	if (csize > buf_size)
+		csize = buf_size;
+
+	for (off = 0; off + 40 <= csize; off++)
+	{
+		uint32_t magic_val;
+		const INDEX_BLOCK *ib;
+		const INDEX_ENTRY *ie;
+		const char *base;
+		uint32_t idx_off;
+		uint32_t idx_len;
+		uint32_t idx_alloc;
+
+		magic_val = le32(*(const uint32_t *)(buffer + off));
+		if (magic_val == 0)
+		{
+			off += 7;
+			continue;
+		}
+
+		base = (const char *)(buffer + off);
+		ib = (const INDEX_BLOCK *)base;
+		idx_off = le32_to_cpu(ib->index.entries_offset);
+		idx_len = le32_to_cpu(ib->index.index_length);
+		idx_alloc = le32_to_cpu(ib->index.allocated_size);
+
+		if (idx_off < 24 || idx_len < idx_off ||
+		    idx_len > idx_alloc || idx_len > csize)
+			continue;
+
+		ie = (const INDEX_ENTRY *)(base + idx_off);
+		while ((const char *)ie + sizeof(INDEX_ENTRY_HEADER)
+		    <= base + idx_len)
+		{
+			uint16_t ie_flags;
+			uint16_t ie_len;
+			uint64_t mref;
+			uint64_t inode_num;
+			struct ufile *file;
+
+			ie_len = le16_to_cpu(ie->length);
+			ie_flags = le16_to_cpu(ie->ie_flags);
+			if (ie_len < sizeof(INDEX_ENTRY_HEADER))
+				break;
+			if (ie_flags & INDEX_ENTRY_END)
+				break;
+
+			mref = le64_to_cpu(ie->indexed_file);
+			inode_num = MREF(mref);
+
+			if (inode_num > 0 &&
+			    inode_num < nr_clusters)
+			{
+				file = read_record(vol, inode_num);
+				if (file)
+				{
+					found++;
+					if (file->pref_name)
+					{
+						char full_path[4096];
+						const char *pname;
+						pname = file->pref_pname;
+						if (pname == NULL)
+							pname = "";
+						snprintf(full_path,
+						    sizeof(full_path),
+						    "/Deep Scan Results%s%s%s",
+						    (*pname ? "/" : ""),
+						    pname,
+						    file->pref_name);
+						tree_add_path(
+						    tree, full_path,
+						    file->directory,
+						    file->max_size,
+						    file->inode,
+						    (file->max_size +
+						     sector_size - 1) /
+						     sector_size,
+						    file->date,
+						    sector_size,
+						    1);
+					}
+					free_file(file);
+				}
+			}
+
+			ie = (const INDEX_ENTRY *)((const char *)ie + ie_len);
+		}
+	}
+	return found;
+}
+/**
+ * scanner_deep_ntfs - Scan free clusters for orphaned INDX (B+tree) blocks
+ * @tree:       Scan tree to add found files to
+ * @disk:       Disk access structure
+ * @partition:  Partition being scanned
+ * @vol:        Mounted NTFS volume
+ *
+ * When an NTFS directory's B+tree is rebalanced (page splits, deletions),
+ * old INDX blocks are freed but their data persists in the clusters.
+ * This function scans free clusters for INDX block remnants using bulk
+ * reads of contiguous free ranges for performance.  Zero-filled clusters
+ * are skipped immediately.
+ */
+void scanner_deep_ntfs(scan_tree_t *tree, disk_t *disk,
+		const partition_t *partition, ntfs_volume *vol,
+		scan_progress_cb progress_cb)
+{
+	ntfs_attr *bmp_attr;
+	unsigned char *bmp_buf;
+	unsigned char *cluster_buf;
+	uint64_t nr_clusters;
+	uint64_t bmpsize;
+	uint64_t bmp_pos;
+	uint64_t cluster;
+	uint64_t found;
+	uint64_t free_start;
+	unsigned int free_count;
+	unsigned int cluster_size;
+	unsigned int sector_size;
+	unsigned int max_batch;
+	uint64_t last_cb;
+
+	if (!vol || !tree || !disk)
+		return;
+
+	cluster_size = vol->cluster_size;
+	nr_clusters = vol->nr_clusters;
+	sector_size = disk->sector_size;
+	found = 0;
+	max_batch = 64;
+
+	if (nr_clusters == 0 || cluster_size == 0)
+		return;
+
+	log_info("NTFS INDX deep scan: %llu clusters, cluster_size=%u\n",
+		(long long unsigned)nr_clusters, cluster_size);
+
+	bmp_attr = ntfs_attr_open(vol->lcnbmp_ni, AT_DATA, AT_UNNAMED, 0);
+	if (!bmp_attr)
+	{
+		log_error("scanner_deep_ntfs: Couldn't open $Bitmap\n");
+		return;
+	}
+	bmpsize = bmp_attr->initialized_size;
+
+	bmp_buf = (unsigned char *)MALLOC(65536);
+	cluster_buf = (unsigned char *)MALLOC((size_t)max_batch * cluster_size);
+	if (!bmp_buf || !cluster_buf)
+	{
+		log_error("scanner_deep_ntfs: memory allocation failed\n");
+		free(bmp_buf);
+		free(cluster_buf);
+		ntfs_attr_close(bmp_attr);
+		return;
+	}
+
+	free_start = 0;
+	free_count = 0;
+	cluster = 0;
+	last_cb = 0;
+
+	for (bmp_pos = 0; bmp_pos < bmpsize && cluster < nr_clusters;
+	     bmp_pos += 65536)
+	{
+		int64_t read_len;
+		uint64_t chunk;
+		unsigned int j;
+
+		chunk = bmpsize - bmp_pos;
+		if (chunk > 65536)
+			chunk = 65536;
+		read_len = ntfs_attr_pread(bmp_attr, bmp_pos, chunk, bmp_buf);
+		if (read_len < 0)
+			break;
+
+		for (j = 0; j < (unsigned int)read_len && cluster < nr_clusters; j++)
+		{
+			unsigned int k;
+			unsigned int b;
+			b = bmp_buf[j];
+			for (k = 0; k < 8 && cluster < nr_clusters; k++, b >>= 1, cluster++)
+			{
+				if (b & 1)
+				{
+					if (free_count > 0)
+					{
+						uint64_t off;
+						unsigned int len;
+						unsigned int c;
+						off = partition->part_offset
+							+ free_start * cluster_size;
+						len = free_count * cluster_size;
+						if (disk->pread(disk,
+						    cluster_buf, len, off)
+						    == (int)len)
+						{
+							for (c = 0; c < free_count; c++)
+							{
+								found += scan_cluster_indx(
+								    cluster_buf + c * cluster_size,
+								    cluster_size, tree,
+								    vol, sector_size,
+								    nr_clusters);
+							}
+						}
+						free_count = 0;
+					}
+					continue;
+				}
+
+				if (free_count == 0)
+					free_start = cluster;
+				free_count++;
+
+				if (free_count >= max_batch)
+				{
+					uint64_t off;
+					unsigned int len;
+					unsigned int c;
+					off = partition->part_offset
+						+ free_start * cluster_size;
+					len = free_count * cluster_size;
+					if (disk->pread(disk, cluster_buf,
+					    len, off) == (int)len)
+					{
+						for (c = 0; c < free_count; c++)
+						{
+							found += scan_cluster_indx(
+							    cluster_buf + c * cluster_size,
+							    cluster_size, tree,
+							    vol, sector_size,
+							    nr_clusters);
+						}
+					}
+					free_count = 0;
+				}
+			}
+		}
+
+		if (cluster - last_cb >= 1000 && progress_cb)
+		{
+			char msg[128];
+			last_cb = cluster;
+			snprintf(msg, sizeof(msg),
+				"INDX deep scan");
+			progress_cb(msg, cluster, nr_clusters, found);
+		}
+		if (g_scanner_cancel && g_scanner_cancel())
+			break;
+	}
+
+	if (free_count > 0)
+	{
+		uint64_t off;
+		unsigned int len;
+		unsigned int c;
+		off = partition->part_offset + free_start * cluster_size;
+		len = free_count * cluster_size;
+		if (disk->pread(disk, cluster_buf, len, off) == (int)len)
+		{
+			for (c = 0; c < free_count; c++)
+			{
+				found += scan_cluster_indx(
+				    cluster_buf + c * cluster_size,
+				    cluster_size, tree,
+				    vol, sector_size,
+				    nr_clusters);
+			}
+		}
+	}
+
+	log_info("NTFS INDX deep scan complete: %llu entries found\n",
+		(long long unsigned)found);
+
+	free(cluster_buf);
+	free(bmp_buf);
+	ntfs_attr_close(bmp_attr);
+}
 #ifdef HAVE_NCURSES
 #define INTER_DIR (LINES-25+16)
 
@@ -1261,13 +1865,13 @@ static void ntfs_undelete_menu_ncurses(const disk_t *disk_car, const partition_t
 	wclrtoeol(window);	/* before addstr for BSD compatibility */
 	if(file_walker==current_file)
 	{
-	  wattrset(window, A_REVERSE);
+	  if (has_colors()) wattrset(window, COLOR_PAIR(CP_SELECTED));
 	  waddstr(window, ">");
 	}
 	else
 	  waddstr(window, " ");
 	if((file_info->status&FILE_STATUS_MARKED)!=0 && has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(2));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_MARKED));
 	set_datestr((char *)&datestr, sizeof(datestr), file_info->td_mtime);
 	if(COLS <= 1+17+1+9+1)
 	  wprintw(window, "%s", file_info->name);
@@ -1282,9 +1886,9 @@ static void ntfs_undelete_menu_ncurses(const disk_t *disk_car, const partition_t
 	wprintw(window, " %s ", datestr);
 	wprintw(window, "%11llu", (long long unsigned int)file_info->st_size);
 	if((file_info->status&FILE_STATUS_MARKED)!=0 && has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	if(file_walker==current_file)
-	  wattroff(window, A_REVERSE);
+	  if (has_colors()) wattroff(window, COLOR_PAIR(CP_SELECTED));
 	if(offset+INTER_DIR<=i)
 	  break;
       }
@@ -1309,35 +1913,35 @@ static void ntfs_undelete_menu_ncurses(const disk_t *disk_car, const partition_t
       if(!td_list_empty(&dir_list->list))
       {
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	waddstr(window,":");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	waddstr(window," to select the current file, ");
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	waddstr(window,"a");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	waddstr(window," to select/deselect all files, ");
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	mvwaddstr(window,LINES-1,4,"C");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	waddstr(window," to copy the selected files, ");
 	if(has_colors())
-	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
 	waddstr(window,"c");
 	if(has_colors())
-	  wbkgdset(window,' ' | COLOR_PAIR(0));
+	  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	waddstr(window," to copy the current file, ");
       }
       if(has_colors())
-	wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(0));
+	wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_NORMAL));
       waddstr(window,"q");
       if(has_colors())
-	wbkgdset(window,' ' | COLOR_PAIR(0));
+	wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
       waddstr(window," to quit");
       wrefresh(window);
       /* Using gnome terminal under FC3, TERM=xterm, the screen is not always correct */
@@ -1485,10 +2089,10 @@ static void ntfs_undelete_menu_ncurses(const disk_t *disk_car, const partition_t
 		dst_directory[0]='\0';
 		if(LINUX_S_ISDIR(file_info->st_mode)!=0)
 		  ask_location(dst_directory, sizeof(dst_directory), "Please select a destination where %s and any files below will be copied.",
-		      file_info->name);
+		      file_info->name, 0);
 		else
 		  ask_location(dst_directory, sizeof(dst_directory), "Please select a destination where %s will be copied.",
-		      file_info->name);
+		      file_info->name, 0);
 		if(dst_directory[0]!='\0')
 		  dir_data->local_dir=strdup(dst_directory);
 		opts.dest=dir_data->local_dir;
@@ -1499,10 +2103,10 @@ static void ntfs_undelete_menu_ncurses(const disk_t *disk_car, const partition_t
 		wmove(window,5,0);
 		wclrtoeol(window);
 		if(has_colors())
-		  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(1));
+		  wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_DELETED));
 		wprintw(window,"Copying, please wait...");
 		if(has_colors())
-		  wbkgdset(window,' ' | COLOR_PAIR(0));
+		  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 		wrefresh(window);
 		res=undelete_file(ls->vol, file_info->st_ino);
 		wmove(window,5,0);
@@ -1510,20 +2114,20 @@ static void ntfs_undelete_menu_ncurses(const disk_t *disk_car, const partition_t
 		if(res < -1)
 		{
 		  if(has_colors())
-		    wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(1));
+		    wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_DELETED));
 		  wprintw(window,"Copy failed!");
 		}
 		else
 		{
 		  if(has_colors())
-		    wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(2));
+		    wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_MARKED));
 		  if(res < 0)
 		    wprintw(window,"Copy done! (Failed to copy some files)");
 		  else
 		    wprintw(window,"Copy done!");
 		}
 		if(has_colors())
-		  wbkgdset(window,' ' | COLOR_PAIR(0));
+		  wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	      }
 	    }
 	  }
@@ -1533,7 +2137,7 @@ static void ntfs_undelete_menu_ncurses(const disk_t *disk_car, const partition_t
 	  {
 	    char dst_directory[4096];
 	    dst_directory[0]='\0';
-	    ask_location(dst_directory, sizeof(dst_directory), "Please select a destination where the marked files will be copied.", NULL);
+	    ask_location(dst_directory, sizeof(dst_directory), "Please select a destination where the marked files will be copied.", NULL, 0);
 	    if(dst_directory[0]!='\0')
 	      dir_data->local_dir=strdup(dst_directory);
 	    opts.dest=dir_data->local_dir;
@@ -1543,7 +2147,7 @@ static void ntfs_undelete_menu_ncurses(const disk_t *disk_car, const partition_t
 	    unsigned int file_ok=0;
 	    unsigned int file_bad=0;
 	    if(has_colors())
-	      wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(1));
+	      wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_DELETED));
 	    wmove(window,5,0);
 	    wclrtoeol(window);
 	    wprintw(window,"Copying, please wait...");
@@ -1568,23 +2172,23 @@ static void ntfs_undelete_menu_ncurses(const disk_t *disk_car, const partition_t
 	      }
 	    }
 	    if(has_colors())
-	      wbkgdset(window,' ' | COLOR_PAIR(0));
+	      wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	    wmove(window,5,0);
 	    wclrtoeol(window);
 	    if(file_ok==0)
 	    {
 	      if(has_colors())
-		wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(1));
+		wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_DELETED));
 	      wprintw(window,"Copy failed!");
 	    }
 	    else
 	    {
 	      if(has_colors())
-		wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(2));
+		wbkgdset(window,' ' | A_BOLD | COLOR_PAIR(CP_MARKED));
 	      wprintw(window,"Copy done! (%u/%u)", file_ok, (file_ok+file_bad));
 	    }
 	    if(has_colors())
-	      wbkgdset(window,' ' | COLOR_PAIR(0));
+	      wbkgdset(window,' ' | COLOR_PAIR(CP_NORMAL));
 	  }
 	  break;
       }

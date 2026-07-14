@@ -19,6 +19,7 @@
     Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
  */
+
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_hdf5)
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -33,7 +34,7 @@
 #include "types.h"
 #include "filegen.h"
 #include "common.h"
-#ifdef DEBUG_HDF5
+#ifdef DEBUG_HDF
 #include "log.h"
 #endif
 
@@ -41,9 +42,9 @@
 static void register_header_check_hdf5(file_stat_t *file_stat);
 
 const file_hint_t file_hint_hdf5= {
-  .extension="h5",
+  .extension="hdf",
   .description="Hierarchical Data Format 5",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
+  .max_filesize=PHOTOREC_MAX_SIZE_32,
   .recover=1,
   .enable_by_default=1,
   .register_header_check=&register_header_check_hdf5
@@ -53,13 +54,7 @@ struct hdf5_superblock
 {
   uint8_t signature[8];
   uint8_t version;
-  uint8_t version_global_free_space_storage;
-  uint8_t version_root_group_symbol_table_entry;
-  uint8_t reserved;
-  uint8_t version_shared_header_message_format;
-  uint8_t offsets_size;
-  uint8_t lengths_size;
-} __attribute__ ((gcc_struct, __packed__));
+};
 
 /*@
   @ requires buffer_size >= sizeof(struct hdf5_superblock);
@@ -74,28 +69,6 @@ static int header_check_hdf5(const unsigned char *buffer, const unsigned int buf
   /*@ assert \valid_read(sb); */
   if(sb->version > 2)
     return 0;
-  if(sb->offsets_size < 1)
-    return 0;
-  if(sb->offsets_size == 8)
-  {
-    uint64_t calculated_file_size;
-    /* Currently only handle 64-bits offsets */
-    if(sb->version == 0)
-      calculated_file_size = le64(*(const uint64_t *)(&buffer[0x18 + 2*8]));
-    else
-      calculated_file_size = le64(*(const uint64_t *)(&buffer[0x1C + 2*8]));
-    if(calculated_file_size < 0x1C + 3*8)
-      return 0;
-    reset_file_recovery(file_recovery_new);
-    file_recovery_new->extension=file_hint_hdf5.extension;
-    file_recovery_new->calculated_file_size = calculated_file_size;
-#ifdef DEBUG_HDF5
-    log_info("calculated_file_size %llu\n", (long long unsigned)calculated_file_size);
-#endif
-    file_recovery_new->data_check=&data_check_size;
-    file_recovery_new->file_check=&file_check_size;
-    return 1;
-  }
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension=file_hint_hdf5.extension;
   return 1;
