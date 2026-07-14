@@ -1,7 +1,9 @@
 # recovery-qt
 
 A Qt6-based data recovery tool derived from **TestDisk & PhotoRec 7.3-WIP** by
-[Christophe GRENIER](https://www.cgsecurity.org). Linux only.
+[Christophe GRENIER](https://www.cgsecurity.org). 
+
+**Linux only.**
 
 recovery-qt provides a graphical interface for browsing deleted files, selective
 file restoration, raw file carving, filesystem backup/restore, and LUKS-encrypted
