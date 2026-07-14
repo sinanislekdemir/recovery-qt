@@ -240,6 +240,7 @@ set(CPP_SOURCES
     src/ui/formatselectordialog.cpp
     src/ui/lukspassworddialog.cpp
     src/ui/aboutdialog.cpp
+    src/ui/imagepreviewdialog.cpp
     src/ui/progressdialog.cpp
 )
 

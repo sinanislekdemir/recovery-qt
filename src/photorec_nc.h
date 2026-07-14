@@ -87,7 +87,13 @@ int carver_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
     const char *ext_filter, int deep_scan);
 
 int restore_files(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
-    const char *dest_dir, file_node_t *only_node);
+    const char *dest_dir);
+
+int restore_file_node(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
+    const char *dest_dir, file_node_t *node);
+
+unsigned char *read_file_bytes(scan_tree_t *tree, disk_t *disk,
+    const partition_t *partition, file_node_t *node, size_t *out_size);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

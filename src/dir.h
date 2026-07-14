@@ -88,6 +88,15 @@ int set_mode(const char *pathname, unsigned int mode);
   @ requires valid_read_string(filename);
   @ requires \separated(localfilename, localroot, filename);
   @*/
+/* Memory capture mode: when set, fopen_local uses open_memstream
+ * instead of fopen, writing file data to a dynamically-growable
+ * memory buffer.  Caller reads the buffer via capture_buffer/capture_size
+ * after the operation and calls clear_memory_capture(). */
+void set_memory_capture(void);
+void clear_memory_capture(void);
+char *get_capture_buffer(void);
+size_t get_capture_size(void);
+
 FILE *fopen_local(char **localfilename, const char *localroot, const char *filename);
 
 /*@

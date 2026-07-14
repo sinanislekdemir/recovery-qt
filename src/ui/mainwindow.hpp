@@ -56,6 +56,7 @@ private slots:
     void onRestoreRequested();
     void onBackToDisks();
     void onRestoreFromBrowser();
+    void onPreviewRequested(const QModelIndex &idx);
     void onBrowserQuit();
     void onAbout();
 

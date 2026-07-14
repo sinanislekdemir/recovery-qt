@@ -93,6 +93,12 @@ void PartitionSelectionWidget::setupUi()
     m_restoreBtn = new QPushButton(tr("Restore"), this);
     m_backBtn = new QPushButton(tr("Back"), this);
 
+    m_scanBtn->setEnabled(false);
+    m_carveBtn->setEnabled(false);
+    m_deepScanBtn->setEnabled(false);
+    m_backupBtn->setEnabled(false);
+    m_restoreBtn->setEnabled(false);
+
     btnLayout2->addWidget(m_backupBtn);
     btnLayout2->addWidget(m_restoreBtn);
     btnLayout2->addWidget(m_backBtn);
@@ -107,6 +113,16 @@ void PartitionSelectionWidget::setupUi()
     connect(m_backupBtn, &QPushButton::clicked, this, &PartitionSelectionWidget::backupRequested);
     connect(m_restoreBtn, &QPushButton::clicked, this, &PartitionSelectionWidget::restoreRequested);
     connect(m_backBtn, &QPushButton::clicked, this, &PartitionSelectionWidget::backRequested);
+    connect(m_tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
+            this, [this]() {
+        int idx = selectedPartitionIndex();
+        bool valid = idx >= 0;
+        m_scanBtn->setEnabled(valid);
+        m_carveBtn->setEnabled(valid);
+        m_deepScanBtn->setEnabled(valid);
+        m_backupBtn->setEnabled(valid);
+        m_restoreBtn->setEnabled(valid);
+    });
 }
 
 void PartitionSelectionWidget::applyTheme()

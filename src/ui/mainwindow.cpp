@@ -27,6 +27,7 @@
 #include "formatselectordialog.hpp"
 #include "lukspassworddialog.hpp"
 #include "aboutdialog.hpp"
+#include "imagepreviewdialog.hpp"
 #include "wrappers/scanner.hpp"
 #include "wrappers/carver.hpp"
 #include "wrappers/restorer.hpp"
@@ -34,6 +35,7 @@
 #include "wrappers/signatureregistry.hpp"
 #include "common/format_utils.hpp"
 #include "common/theme.hpp"
+#include "photorec_nc.h"
 #include <QDebug>
 #include <QStandardItemModel>
 #include <QMenuBar>
@@ -49,6 +51,7 @@ extern "C" {
 #include <QApplication>
 #include <QStatusBar>
 #include <QTimer>
+#include <QImage>
 #include <cstring>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -130,6 +133,8 @@ void MainWindow::setupUi()
             this, &MainWindow::onRestoreFromBrowser);
     connect(m_browserPage, &BrowserWidget::quitRequested,
             this, &MainWindow::onBrowserQuit);
+    connect(m_browserPage, &BrowserWidget::previewRequested,
+            this, &MainWindow::onPreviewRequested);
 
     connect(m_scanner, &Scanner::errorOccurred, this, [this](const QString &msg) {
         QMessageBox::warning(this, tr("Scan Warning"), msg);
@@ -635,6 +640,52 @@ void MainWindow::onBrowserQuit()
 {
     m_stack->setCurrentIndex(0);
     m_diskPage->refreshDisks();
+}
+
+void MainWindow::onPreviewRequested(const QModelIndex &idx)
+{
+    QVariant v = idx.data(FileNodeRole);
+    if (!v.isValid())
+        return;
+    file_node_t *node = reinterpret_cast<file_node_t*>(v.value<quintptr>());
+    if (!node || node->type != NODE_FILE)
+        return;
+
+    const char *ext = strrchr(node->name, '.');
+    if (!ext)
+        return;
+    ext++;
+    if (!SignatureRegistry::isPreviewableImage(QString::fromLatin1(ext))) {
+        m_browserPage->setStatusMessage(tr("Not an image file: %1").arg(node->name));
+        return;
+    }
+
+    disk_t *diskPtr = m_currentDisk.raw();
+    partition_t *part = nullptr;
+    if (m_selectedPartIdx >= 0 && m_selectedPartIdx < m_partitions.size())
+        part = m_partList.rawAt(m_selectedPartIdx);
+    if (!diskPtr || !part) {
+        m_browserPage->setStatusMessage(tr("Cannot read disk"));
+        return;
+    }
+
+    size_t dataSize = 0;
+    unsigned char *rawData = read_file_bytes(m_scanTree, diskPtr, part, node, &dataSize);
+    if (!rawData || dataSize == 0) {
+        m_browserPage->setStatusMessage(tr("Failed to read file data"));
+        return;
+    }
+
+    QByteArray buffer((const char*)rawData, (int)dataSize);
+    free(rawData);
+
+    ImagePreviewDialog dlg(this);
+    if (dlg.loadFromData(buffer)) {
+        dlg.setWindowTitle(tr("Image Preview - %1").arg(node->name));
+        dlg.exec();
+    } else {
+        m_browserPage->setStatusMessage(tr("Corrupted image, can't be previewed"));
+    }
 }
 
 void MainWindow::onAbout()

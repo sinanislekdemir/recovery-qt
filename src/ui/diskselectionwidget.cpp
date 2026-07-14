@@ -25,6 +25,7 @@
 #include <QFont>
 #include <QFileDialog>
 #include <QApplication>
+#include <QStyle>
 
 DiskSelectionWidget::DiskSelectionWidget(QWidget *parent)
     : QWidget(parent),
@@ -75,17 +76,28 @@ void DiskSelectionWidget::setupUi()
 
     QHBoxLayout *btnLayout = new QHBoxLayout();
     btnLayout->setSpacing(12);
-    btnLayout->addStretch();
+
+    m_openImageBtn = new QPushButton(tr("Open Image"), this);
+    m_openImageBtn->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogOpenButton));
+    m_openImageBtn->setStyleSheet(
+        "QPushButton {"
+        "  background-color: #4C566A;"
+        "  color: #ECEFF4;"
+        "  border: 2px solid #81A1C1;"
+        "  padding: 6px 16px;"
+        "}"
+        "QPushButton:hover { background-color: #5E81AC; }"
+    );
+    btnLayout->addWidget(m_openImageBtn);
 
     m_refreshBtn = new QPushButton(tr("Refresh"), this);
-    m_openImageBtn = new QPushButton(tr("Open Image"), this);
-    m_proceedBtn = new QPushButton(tr("Proceed"), this);
+    m_proceedBtn = new QPushButton(tr("Next"), this);
     m_quitBtn = new QPushButton(tr("Quit"), this);
 
+    btnLayout->addStretch();
     m_proceedBtn->setEnabled(false);
 
     btnLayout->addWidget(m_refreshBtn);
-    btnLayout->addWidget(m_openImageBtn);
     btnLayout->addWidget(m_proceedBtn);
     btnLayout->addWidget(m_quitBtn);
     mainLayout->addLayout(btnLayout);

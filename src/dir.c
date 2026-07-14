@@ -829,6 +829,32 @@ void mkdir_local_for_file(const char *filename)
   free(dir);
 }
 
+static int g_memory_capture = 0;
+static char *g_capture_ptr = NULL;
+static size_t g_capture_len = 0;
+
+void set_memory_capture(void)
+{
+  g_memory_capture = 1;
+  g_capture_ptr = NULL;
+  g_capture_len = 0;
+}
+
+void clear_memory_capture(void)
+{
+  g_memory_capture = 0;
+}
+
+char *get_capture_buffer(void)
+{
+  return g_capture_ptr;
+}
+
+size_t get_capture_size(void)
+{
+  return g_capture_len;
+}
+
 FILE *fopen_local(char **localfilename, const char *localroot, const char *filename)
 {
 #ifdef DISABLED_FOR_FRAMAC
@@ -844,6 +870,12 @@ FILE *fopen_local(char **localfilename, const char *localroot, const char *filen
   memcpy(dst, localroot, l1);
   memcpy(dst+l1, filename, l2+1);
   *localfilename=dst;
+  if (g_memory_capture)
+  {
+    free(dst);
+    *localfilename = strdup(filename);
+    return open_memstream(&g_capture_ptr, &g_capture_len);
+  }
   strip_fn(dst);
   f_out=fopen(dst,"wb");
   if(f_out)

@@ -654,23 +654,25 @@ static int scanner_deep_ext(scan_tree_t *tree, disk_t *disk,
               partition->part_offset + (uint64_t)pblk * fs->blocksize) == (int)read_size)
           {
             hint = carver_check_header(buf, read_size, 0, NULL, 0);
-            if (hint && hint->extension)
             {
               file_node_t *fn;
               fn = tree_find_path(tree, full_path);
               if (fn)
               {
-                char new_name[4096];
-                char *dot;
-                dot = strrchr(fn->name, '.');
-                if (dot)
-                  snprintf(new_name, sizeof(new_name), "%.*s.%s",
-                      (int)(dot - fn->name), fn->name, hint->extension);
-                else
-                  snprintf(new_name, sizeof(new_name), "%s.%s",
-                      fn->name, hint->extension);
-                free(fn->name);
-                fn->name = strdup(new_name);
+                if (hint && hint->extension)
+                {
+                  char new_name[4096];
+                  char *dot;
+                  dot = strrchr(fn->name, '.');
+                  if (dot)
+                    snprintf(new_name, sizeof(new_name), "%.*s.%s",
+                        (int)(dot - fn->name), fn->name, hint->extension);
+                  else
+                    snprintf(new_name, sizeof(new_name), "%s.%s",
+                        fn->name, hint->extension);
+                  free(fn->name);
+                  fn->name = strdup(new_name);
+                }
               }
             }
           }

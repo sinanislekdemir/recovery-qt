@@ -76,6 +76,10 @@ public:
 signals:
     void restoreRequested();
     void quitRequested();
+    void previewRequested(const QModelIndex &index);
+
+public slots:
+    void setStatusMessage(const QString &msg);
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
@@ -86,9 +90,9 @@ private slots:
     void onUnmarkAll();
     void onExpandAll();
     void onCollapseAll();
-    void onInvert();
     void onSearch();
     void onToggleFilter();
+    void onPreview();
     void onMarkedChanged(int count, uint64_t totalSize);
     void onToggleMark(const QModelIndex &idx);
     void refreshFromFileModel();
@@ -109,9 +113,9 @@ private:
     QPushButton *m_unmarkAllBtn;
     QPushButton *m_expandBtn;
     QPushButton *m_collapseBtn;
-    QPushButton *m_invertBtn;
     QPushButton *m_searchBtn;
     QPushButton *m_restoreBtn;
+    QPushButton *m_previewBtn;
     QPushButton *m_quitBtn;
     QPushButton *m_filterBtn;
 };

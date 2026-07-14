@@ -20,6 +20,7 @@
 
  */
 #include "browserwidget.hpp"
+#include "wrappers/signatureregistry.hpp"
 #include <QHeaderView>
 #include <QKeyEvent>
 #include <QInputDialog>
@@ -124,9 +125,9 @@ BrowserWidget::BrowserWidget(QWidget *parent)
       m_unmarkAllBtn(nullptr),
       m_expandBtn(nullptr),
       m_collapseBtn(nullptr),
-      m_invertBtn(nullptr),
       m_searchBtn(nullptr),
       m_restoreBtn(nullptr),
+      m_previewBtn(nullptr),
       m_quitBtn(nullptr),
       m_filterBtn(nullptr)
 {
@@ -167,8 +168,9 @@ void BrowserWidget::setupUi()
     m_unmarkAllBtn = new QPushButton(tr("Unmark All"), this);
     m_expandBtn = new QPushButton(tr("Expand All"), this);
     m_collapseBtn = new QPushButton(tr("Collapse All"), this);
-    m_invertBtn = new QPushButton(tr("Invert"), this);
     m_filterBtn = new QPushButton(tr("All/Deleted"), this);
+    m_previewBtn = new QPushButton(tr("Preview (Enter)"), this);
+    m_previewBtn->setVisible(false);
     m_restoreBtn = new QPushButton(tr("Restore (F5)"), this);
     m_quitBtn = new QPushButton(tr("Quit (F10)"), this);
 
@@ -177,8 +179,8 @@ void BrowserWidget::setupUi()
     toolbarLayout->addWidget(m_unmarkAllBtn);
     toolbarLayout->addWidget(m_expandBtn);
     toolbarLayout->addWidget(m_collapseBtn);
-    toolbarLayout->addWidget(m_invertBtn);
     toolbarLayout->addWidget(m_filterBtn);
+    toolbarLayout->addWidget(m_previewBtn);
     toolbarLayout->addStretch();
     toolbarLayout->addWidget(m_restoreBtn);
     toolbarLayout->addWidget(m_quitBtn);
@@ -200,8 +202,8 @@ void BrowserWidget::setupUi()
     connect(m_unmarkAllBtn, &QPushButton::clicked, this, &BrowserWidget::onUnmarkAll);
     connect(m_expandBtn, &QPushButton::clicked, this, &BrowserWidget::onExpandAll);
     connect(m_collapseBtn, &QPushButton::clicked, this, &BrowserWidget::onCollapseAll);
-    connect(m_invertBtn, &QPushButton::clicked, this, &BrowserWidget::onInvert);
     connect(m_filterBtn, &QPushButton::clicked, this, &BrowserWidget::onToggleFilter);
+    connect(m_previewBtn, &QPushButton::clicked, this, &BrowserWidget::onPreview);
     connect(m_restoreBtn, &QPushButton::clicked, this, &BrowserWidget::restoreRequested);
     connect(m_quitBtn, &QPushButton::clicked, this, &BrowserWidget::quitRequested);
 
@@ -212,8 +214,10 @@ void BrowserWidget::setupUi()
 
     connect(m_treeView->selectionModel(), &QItemSelectionModel::currentChanged,
             this, [this](const QModelIndex &current, const QModelIndex &) {
-        if (!m_fileModel || !current.isValid())
+        if (!m_fileModel || !current.isValid()) {
+            m_previewBtn->setVisible(false);
             return;
+        }
         QModelIndex srcIdx = m_proxyModel->mapToSource(current);
         QVariant v = m_proxyModel->sourceModel()->data(srcIdx, FileNodeRole);
         if (v.isValid()) {
@@ -227,10 +231,16 @@ void BrowserWidget::setupUi()
                     cur = cur->parent;
                 }
                 m_pathDisplay->setText("/" + parts.join("/"));
+
+                const char *ext = strrchr(node->name, '.');
+                bool show = ext && SignatureRegistry::isPreviewableImage(
+                    QString::fromLatin1(ext + 1));
+                m_previewBtn->setVisible(show);
                 return;
             }
         }
         m_pathDisplay->clear();
+        m_previewBtn->setVisible(false);
     });
 
     setFocusProxy(m_treeView);
@@ -246,6 +256,13 @@ void BrowserWidget::setSourceModelAndExpand(QAbstractItemModel *sourceModel)
 {
     m_proxyModel->setSourceModel(sourceModel);
     m_treeView->expandAll();
+    if (m_treeView->header() && m_treeView->header()->count() >= 4) {
+        m_treeView->header()->setStretchLastSection(false);
+        m_treeView->header()->setSectionResizeMode(0, QHeaderView::Stretch);
+        m_treeView->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+        m_treeView->header()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+        m_treeView->header()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    }
 }
 
 void BrowserWidget::setModel(QAbstractItemModel *model)
@@ -374,14 +391,6 @@ void BrowserWidget::onCollapseAll()
     m_treeView->collapseAll();
 }
 
-void BrowserWidget::onInvert()
-{
-    if (m_fileModel) {
-        m_fileModel->invertMarks();
-        refreshFromFileModel();
-    }
-}
-
 void BrowserWidget::onSearch()
 {
     m_searchEdit->setFocus();
@@ -427,6 +436,16 @@ void BrowserWidget::keyPressEvent(QKeyEvent *event)
         event->accept();
         return;
     }
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+        QModelIndexList sel = m_treeView->selectionModel()->selectedRows();
+        if (!sel.isEmpty()) {
+            QModelIndex proxyIdx = sel.first();
+            QModelIndex srcIdx = m_proxyModel->mapToSource(proxyIdx);
+            emit previewRequested(srcIdx);
+        }
+        event->accept();
+        return;
+    }
     if (event->key() == Qt::Key_F10) {
         emit quitRequested();
         event->accept();
@@ -437,15 +456,25 @@ void BrowserWidget::keyPressEvent(QKeyEvent *event)
         event->accept();
         return;
     }
-    if (event->key() == Qt::Key_Asterisk) {
-        onInvert();
-        event->accept();
-        return;
-    }
     if (event->key() == Qt::Key_Tab) {
         onToggleFilter();
         event->accept();
         return;
     }
     QWidget::keyPressEvent(event);
+}
+
+void BrowserWidget::onPreview()
+{
+    QModelIndexList sel = m_treeView->selectionModel()->selectedRows();
+    if (sel.isEmpty())
+        return;
+    QModelIndex proxyIdx = sel.first();
+    QModelIndex srcIdx = m_proxyModel->mapToSource(proxyIdx);
+    emit previewRequested(srcIdx);
+}
+
+void BrowserWidget::setStatusMessage(const QString &msg)
+{
+    m_statusBar->setText(msg);
 }

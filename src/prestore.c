@@ -403,8 +403,168 @@ static void restore_node_recursive(scan_tree_t *tree, disk_t *disk,
   }
 }
 
+unsigned char *read_file_bytes(scan_tree_t *tree, disk_t *disk,
+    const partition_t *partition, file_node_t *node, size_t *out_size)
+{
+  unsigned char *result;
+  char *cap_buf;
+  size_t cap_size;
+
+  *out_size = 0;
+  if (node == NULL || node->size == 0)
+    return NULL;
+
+  if (node->cluster_list != NULL && node->cluster_count > 0 &&
+      node->cluster_size > 0)
+  {
+    size_t allocated;
+    size_t used;
+    uint32_t ci;
+    uint64_t remaining;
+    allocated = (size_t)(node->size < (64 * 1024 * 1024) ?
+        node->size : (64 * 1024 * 1024));
+    result = (unsigned char *)MALLOC(allocated);
+    if (result == NULL)
+      return NULL;
+    used = 0;
+    remaining = node->size;
+    for (ci = 0; ci < node->cluster_count && remaining > 0; ci++)
+    {
+      uint64_t cluster_offset;
+      uint64_t cluster_bytes;
+      uint64_t chunk;
+      cluster_offset = partition->part_offset + node->cluster_list[ci];
+      cluster_bytes = node->cluster_size;
+      if (cluster_bytes > remaining)
+        cluster_bytes = remaining;
+      while (cluster_bytes > 0)
+      {
+        chunk = cluster_bytes > 65536 ? 65536 : cluster_bytes;
+        if (used + chunk > allocated)
+        {
+          size_t new_alloc = allocated * 2;
+          unsigned char *new_buf;
+          if (new_alloc < used + chunk)
+            new_alloc = used + chunk;
+          new_buf = (unsigned char *)realloc(result, new_alloc);
+          if (new_buf == NULL)
+            break;
+          result = new_buf;
+          allocated = new_alloc;
+        }
+        if ((unsigned int)disk->pread(disk, result + used,
+            (unsigned int)chunk, cluster_offset) != (unsigned int)chunk)
+        {
+          free(result);
+          return NULL;
+        }
+        used += (size_t)chunk;
+        remaining -= chunk;
+        cluster_offset += chunk;
+        cluster_bytes -= chunk;
+      }
+    }
+    *out_size = used;
+    return result;
+  }
+
+  if (node->orphan && node->first_sector != 0 && node->num_sectors > 0)
+  {
+    uint64_t offset;
+    uint64_t remaining;
+    uint64_t maxRead = 64 * 1024 * 1024;
+    size_t allocated;
+    size_t used;
+    offset = partition->part_offset + node->first_sector;
+    remaining = (uint64_t)node->num_sectors * disk->sector_size;
+    if (remaining > maxRead)
+      remaining = maxRead;
+    if (remaining == 0)
+      remaining = 4096;
+    allocated = (size_t)remaining;
+    result = (unsigned char *)MALLOC(allocated);
+    if (result != NULL)
+    {
+      used = 0;
+      while (remaining > 0)
+      {
+        unsigned int chunk;
+        chunk = (unsigned int)(remaining > 65536 ? 65536 : remaining);
+        if ((unsigned int)disk->pread(disk, result + used, chunk, offset) != chunk)
+        {
+          free(result);
+          return NULL;
+        }
+        used += chunk;
+        offset += chunk;
+        remaining -= chunk;
+      }
+      *out_size = used;
+      return result;
+    }
+  }
+
+  set_memory_capture();
+  restore_file_node(tree, disk, partition, "/", node);
+  clear_memory_capture();
+
+  cap_buf = get_capture_buffer();
+  cap_size = get_capture_size();
+  if (cap_buf == NULL || cap_size == 0)
+    return NULL;
+
+  result = (unsigned char *)MALLOC(cap_size);
+  if (result == NULL)
+  {
+    free(cap_buf);
+    return NULL;
+  }
+  memcpy(result, cap_buf, cap_size);
+  free(cap_buf);
+  *out_size = cap_size;
+  return result;
+}
+
+int restore_file_node(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
+    const char *dest_dir, file_node_t *node)
+{
+  dir_data_t dir_data;
+  struct stat dest_st;
+  uid_t uid = 0;
+  gid_t gid = 0;
+  copy_file_t res;
+
+  memset(&dir_data, 0, sizeof(dir_data));
+
+  if (init_fs_for_restore(disk, partition, &dir_data, dest_dir) != 0)
+    return -1;
+
+  mkdir_recursive(dest_dir);
+
+  if (stat(dest_dir, &dest_st) == 0)
+  {
+    uid = dest_st.st_uid;
+    gid = dest_st.st_gid;
+  }
+
+  dir_data.display = NULL;
+
+  {
+    int _res_int;
+    _res_int = restore_file(disk, partition, &dir_data, node,
+        dest_dir, uid, gid);
+    res = (copy_file_t)_res_int;
+  }
+
+  if (dir_data.close)
+    dir_data.close(&dir_data);
+  free(dir_data.local_dir);
+
+  return (res == CP_OK) ? 0 : -1;
+}
+
 int restore_files(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
-    const char *dest_dir, file_node_t *only_node)
+    const char *dest_dir)
 {
   dir_data_t dir_data;
   uint64_t ok_count = 0;
@@ -434,33 +594,9 @@ int restore_files(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
   if (g_restorer_progress)
     g_restorer_progress(0, "", (int)total_count, 0);
 
-  if (only_node)
-  {
-    if (only_node->marked)
-    {
-      copy_file_t res;
-      {
-        int _res_int2;
-        _res_int2 = restore_file(disk, partition, &dir_data, only_node,
-            dest_dir, uid, gid);
-        res = (copy_file_t)_res_int2;
-      }
-      if (res == CP_OK)
-        ok_count++;
-      else
-        fail_count++;
-      if (g_restorer_progress)
-        g_restorer_progress(100, only_node->name, 1, 1);
-      if (g_restorer_file)
-        g_restorer_file(only_node->name, (res == CP_OK));
-    }
-  }
-  else
-  {
-    restore_node_recursive(tree, disk, partition, &dir_data,
-        tree->root, dest_dir, &ok_count, &fail_count, &total_count,
-        uid, gid);
-  }
+  restore_node_recursive(tree, disk, partition, &dir_data,
+      tree->root, dest_dir, &ok_count, &fail_count, &total_count,
+      uid, gid);
 
   if (g_restorer_progress)
     g_restorer_progress(100, "", (int)total_count, (int)total_count);

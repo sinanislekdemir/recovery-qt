@@ -58,9 +58,14 @@ void Restorer::start(scan_tree_t *tree, disk_t *disk, const partition_t *partiti
             }, Qt::DirectConnection));
 
     startThread([this, pc, tree, disk, partition, dirBytes, onlyNode]() {
+        int result;
         pc->installRestoreCallbacks();
-        int result = restore_files(tree, disk, partition,
-            dirBytes.constData(), onlyNode);
+        if (onlyNode)
+            result = restore_file_node(tree, disk, partition,
+                dirBytes.constData(), onlyNode);
+        else
+            result = restore_files(tree, disk, partition,
+                dirBytes.constData());
 
         if (result < 0) {
             emit errorOccurred(tr("File restore failed"));

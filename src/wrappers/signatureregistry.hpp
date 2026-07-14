@@ -59,6 +59,8 @@ public:
 
     file_enable_t* rawArray() const { return (file_enable_t*)m_rawArray; }
 
+    static bool isPreviewableImage(const QString &ext);
+
 private:
     const file_enable_t* m_rawArray;
     static int extensionPriority(const QString& ext);

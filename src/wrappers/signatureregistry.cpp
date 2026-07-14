@@ -21,9 +21,32 @@
  */
 #include "signatureregistry.hpp"
 #include <algorithm>
+#include <QSet>
 
 extern "C" {
 extern file_enable_t array_file_enable[];
+}
+
+static QSet<QString> previewableImageExtensions()
+{
+    static QSet<QString> set = []() {
+        QSet<QString> s;
+        const char *exts[] = {
+            "jpg","jpeg","png","gif","bmp","webp",
+            "tiff","tif","ico","svg","xpm","xbm",
+            "heic","heif","psd","cr2","nef","orf",
+            "dng","raw","arw",nullptr
+        };
+        for (const char **p = exts; *p; p++)
+            s.insert(QString::fromLatin1(*p));
+        return s;
+    }();
+    return set;
+}
+
+bool SignatureRegistry::isPreviewableImage(const QString &ext)
+{
+    return previewableImageExtensions().contains(ext.toLower());
 }
 
 static const char* wellKnownFormats[] = {
