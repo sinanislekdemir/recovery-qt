@@ -562,6 +562,18 @@ static int scanner_deep_ext(scan_tree_t *tree, disk_t *disk,
   scanned = 0;
   found = 0;
 
+  {
+    extern file_check_list_t file_check_list;
+    if (file_check_list.list.next == &file_check_list.list)
+    {
+      extern file_enable_t array_file_enable[];
+      file_enable_t *fe;
+      for (fe = array_file_enable; fe->file_hint != NULL; fe++)
+        fe->enable = fe->file_hint->enable_by_default;
+      init_file_stats(array_file_enable);
+    }
+  }
+
   while (ext2fs_get_next_inode(scan, &ino, &inode) == 0)
   {
     int is_reg;
@@ -622,6 +634,50 @@ static int scanner_deep_ext(scan_tree_t *tree, disk_t *disk,
 
     tree_add_path(tree, full_path, is_dir, file_size,
         (uint64_t)ino, num_sectors, inode.i_mtime, sector_size, 1);
+
+    if (!is_dir && file_size > 0)
+    {
+      blk64_t pblk;
+      errcode_t retval;
+      retval = ext2fs_bmap2(fs, ino, &inode, NULL, 0, 0, NULL, &pblk);
+      if (retval == 0 && pblk != 0)
+      {
+        unsigned char *buf;
+        unsigned int read_size;
+        read_size = (unsigned int)(fs->blocksize < 4096 ?
+            fs->blocksize : 4096);
+        buf = (unsigned char *)MALLOC(read_size);
+        if (buf)
+        {
+          const file_hint_t *hint;
+          if (disk->pread(disk, buf, read_size,
+              partition->part_offset + (uint64_t)pblk * fs->blocksize) == (int)read_size)
+          {
+            hint = carver_check_header(buf, read_size, 0, NULL, 0);
+            if (hint && hint->extension)
+            {
+              file_node_t *fn;
+              fn = tree_find_path(tree, full_path);
+              if (fn)
+              {
+                char new_name[4096];
+                char *dot;
+                dot = strrchr(fn->name, '.');
+                if (dot)
+                  snprintf(new_name, sizeof(new_name), "%.*s.%s",
+                      (int)(dot - fn->name), fn->name, hint->extension);
+                else
+                  snprintf(new_name, sizeof(new_name), "%s.%s",
+                      fn->name, hint->extension);
+                free(fn->name);
+                fn->name = strdup(new_name);
+              }
+            }
+          }
+          free(buf);
+        }
+      }
+    }
 
     g_total_count++;
     g_deleted_count++;

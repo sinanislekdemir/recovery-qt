@@ -69,6 +69,10 @@ void AboutDialog::setupUi()
     line2->setAlignment(Qt::AlignCenter);
     mainLayout->addWidget(line2);
 
+    QLabel *buildLabel = new QLabel(tr("Build: ") + QString::fromLatin1(BUILD_UTC), this);
+    buildLabel->setAlignment(Qt::AlignCenter);
+    mainLayout->addWidget(buildLabel);
+
     mainLayout->addSpacing(16);
 
     QLabel *featuresHeader = new QLabel(tr("Feature Additions"), this);

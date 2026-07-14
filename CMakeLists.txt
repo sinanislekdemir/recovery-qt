@@ -280,9 +280,11 @@ target_link_libraries(recovery_qt PRIVATE
 # ---------------------------
 # Compile definitions
 # ---------------------------
+string(TIMESTAMP BUILD_UTC "%Y-%m-%d %H:%M:%S UTC" UTC)
 target_compile_definitions(recovery_qt PRIVATE
     HAVE_CONFIG_H
     TESTDISK_LSB
+    BUILD_UTC="${BUILD_UTC}"
     _GNU_SOURCE
     _LARGEFILE_SOURCE
     _LARGEFILE64_SOURCE
