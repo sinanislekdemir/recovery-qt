@@ -8,6 +8,35 @@ backup/restore, and LUKS decryption support.
 
 **Binary**: `build/recovery-qt` (Linux-only, Qt6 Widgets interface)
 
+### recovery-qt vs. Original PhotoRec
+
+PhotoRec is a raw block-level file carver with ncurses TUI. recovery-qt takes
+a fundamentally different approach: **filesystem-aware directory scanning**
+combined with raw carving, wrapped in a Qt6 GUI for selective recovery.
+
+| Feature | PhotoRec | recovery-qt |
+|---------|----------|-------------|
+| FS-aware directory tree browsing | No | Yes — FAT/NTFS/EXT2/exFAT with original names, dirs, mtimes |
+| Deleted file detection via FS | No | Yes — directory flags, MFT records, INDX scans |
+| NTFS MFT orphan scan | No | Yes — reads MFT, infers extensions, creates /ORPHAN/ |
+| Deep FS scan (free clusters) | No | Yes — byte-by-byte residual entry scan |
+| Selective file restore | No (bulk only) | Yes — tick individual files, Space to mark |
+| Image preview before restore | No | Yes — Enter, 20 formats, reads raw bytes from disk |
+| LUKS encrypted volumes | No | Yes — cryptsetup+losetup, password dialog, async decrypt |
+| Filesystem backup/restore (.dsk) | No | Yes — index backup, backup_modified flag |
+| Qt6 dark-theme GUI | No (ncurses/old Qt4) | Yes — Nord theme, QTreeView, filter-as-you-type |
+| Multi-pass carving | Yes (5-8 passes) | Single pass |
+| Brute-force fragment reassembly | Yes | No |
+| File validation callbacks | Yes (data_check/file_check) | Simple header check only |
+| Session save/resume | Yes (photorec.ses) | No |
+| DFXML forensic output | Yes | No |
+| FAT unformat mode | Yes (expert) | No |
+| fidentify companion tool | Yes | No |
+
+**Key insight**: recovery-qt is a **deleted-file recovery tool** for live
+filesystems. PhotoRec is a **forensic file carver** for destroyed filesystems.
+They complement each other rather than competing.
+
 ## Build
 
 ```bash

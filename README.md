@@ -46,25 +46,64 @@ Open disk images directly: `.img`, `.dd`, `.raw`, `.dsk`, `.vhd`, `.vmdk`, `.vdi
 FAT12/16/32, exFAT, NTFS, ext2/3/4, HFS+, APFS, ReFS, Btrfs, XFS, ZFS,
 ReiserFS, and others
 
-## What's New vs. Original PhotoRec
+## recovery-qt vs. PhotoRec
 
-This fork adds significant functionality beyond the original PhotoRec:
+PhotoRec is a **raw block-level file carver** — it scans disk sectors sequentially, matches
+byte-level signatures, and reconstructs files. recovery-qt takes a fundamentally different
+approach: it combines **filesystem-aware directory scanning** with raw carving, wrapped in
+a modern Qt6 GUI for selective, preview-before-restore recovery.
 
-| Addition | Detail |
-|----------|--------|
-| **Qt6 GUI** | Complete modernization from ncurses to Qt6 Widgets |
-| **Modular architecture** | Separated scanner, carver, tree, and restore into independent C modules (`pscanner.c`, `pcarver.c`, `ptree.c`, `prestore.c`) |
-| **Deep FS Scan** | NTFS INDX scan, FAT free cluster scan, EXT inode table — finds files missed by fast scan |
-| **NTFS $ATTRIBUTE_LIST** | `process_attribute_list()` in `ntfs_udl.c` — handles highly fragmented files spanning multiple MFT records |
-| **LUKS decryption** | Full LUKS1/LUKS2 support via `cryptsetup`+`losetup` (`luksnc.c`) |
-| **Backup/Restore** | Create and restore `.dsk` filesystem index backups (`pbackup.c`) |
-| **Selective restore** | Mark individual files for recovery; restore only what you need |
-| **Thread-safe engine** | All heavy operations run in QThread workers with progress bridging |
-| **Improved carver** | Sector-aligned header matching (fewer false positives), same-format proximity filter, footer detection priority system |
-| **Fixed MOV carver** | Handles `calculated_file_size == 0` edge case that caused premature header rejection |
-| **Fixed JPEG carver** | Removed overly restrictive thumbnail check that rejected valid JPEGs |
-| **Format selector** | Checkable format list with quick-select by category |
-| **Cancel support** | All long-running operations can be cancelled mid-flight |
+### What recovery-qt Adds
+
+| Capability | PhotoRec | recovery-qt |
+|---|---|---|
+| **FS-aware directory scan** | No — carving only | Walks FAT/NTFS/EXT2/exFAT trees, detects deleted entries by flag |
+| **Deleted file names & paths** | Not recovered | Original filenames, directory structure, and mtimes from FS metadata |
+| **NTFS MFT orphan scan** | No | Reads MFT for deleted records, infers extensions, creates /ORPHAN/ |
+| **Deep FS scan** | No | Free cluster byte-by-byte scan for residual deleted directory entries |
+| **Selective file restore** | All-or-nothing per format | Tick individual files/directories (Space), restore only what you need |
+| **Image preview** | None | Zoomable preview (Enter) — 20 formats, reads raw bytes from disk pre-restore |
+| **LUKS encrypted volumes** | No | Full LUKS1/LUKS2 decrypt via cryptsetup+losetup, password dialog, async thread |
+| **Filesystem backup/restore** | No | .dsk index files, detects files changed since backup (backup_modified flag) |
+| **Qt6 GUI** | Ncurses TUI / old Qt4 | Modern dark theme, QTreeView browser, filter-as-you-type format selector |
+| **Disk image files** | E01 via libewf | .img, .dd, .raw, .dsk, .vhd, .vmdk, .vdi, .qcow2, .bin, .iso + E01 |
+| **Thread-safe engine** | Single-threaded | WorkerBase + QThread per operation, atomic state, cancel support |
+| **Cancel support** | Partial | All operations cancellable mid-flight |
+
+### Where recovery-qt Shines
+
+1. **Deleted file recovery on live filesystems** — reads the filesystem directory to show
+   what was deleted, with original names and paths. PhotoRec only carves raw bytes by sector
+   offset into `recup_dir.N/f<number>.<ext>` files.
+
+2. **Preview before restore** — verify a file is intact before committing to restore it.
+   PhotoRec has no preview capability at all.
+
+3. **Selective recovery** — browse a tree of thousands of deleted files, mark only the
+   ones you want, and restore just those. PhotoRec dumps everything matching a file type.
+
+4. **LUKS support** — decrypt-before-scan or carve-without-decrypt workflow. PhotoRec has
+   no encryption handling.
+
+5. **Unified workflow** — disk selection → partition detection → scan/carve → browse →
+   preview → restore, all in one tool. PhotoRec requires separate tools (testdisk for
+   partition analysis, photorec for carving).
+
+### Where PhotoRec Excels
+
+PhotoRec remains superior for **forensic-grade deep carving** with features recovery-qt
+does not replicate:
+
+- **Multi-pass recovery** (5-8 passes): block alignment detection, main carve, brute-force
+  fragment reassembly, and "save everything" pass
+- **File validation**: per-format `data_check()`/`file_check()` callbacks that validate
+  content as it's read — catches false positives recovery-qt's simpler header check misses
+- **Session save/resume**: `photorec.ses` files allow pausing and resuming multi-day scans
+- **DFXML forensic output**: Digital Forensics XML for tool chain integration
+- **FAT unformat mode**: reconstructs deleted FAT directory structures (expert mode)
+- **Remaining data image dump**: saves all untagged data blocks to `image_remaining.dd`
+- **fidentify companion tool**: CLI tool using the same signature DB for file identification
+- **Brute-force fragmented file recovery**: matches file fragments across non-contiguous blocks
 
 ## Build
 
