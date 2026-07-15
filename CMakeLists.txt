@@ -75,7 +75,7 @@ set(FS_C
 # ---------------------------
 set(DIR_C
     src/fs/fat_dir.c       src/fs/ntfs_dir.c      src/fs/ext2_dir.c
-    src/fs/exfat_dir.c     src/fs/rfs_dir.c
+    src/fs/exfat_dir.c     src/fs/rfs_dir.c       src/fs/iso_dir.c
 )
 
 # ---------------------------

@@ -39,6 +39,7 @@
 #include "ntfs_dir.h"
 #include "exfat_dir.h"
 #include "rfs_dir.h"
+#include "iso_dir.h"
 #include "fat.h"
 #include "ntfs.h"
 #include "log.h"
@@ -145,11 +146,13 @@ static int init_fs_for_restore(disk_t *disk, const partition_t *partition,
     { UP_EXT4,  dir_partition_ext2_init },
     { UP_EXT3,  dir_partition_ext2_init },
     { UP_EXT2,  dir_partition_ext2_init },
+    { UP_ISO,   dir_partition_iso_init },
   };
 
   fs_init_4_fn fallback_phase[] = {
     dir_partition_ext2_init,
     dir_partition_fat_init,
+    dir_partition_iso_init,
   };
 
   size_t i;
@@ -349,8 +352,7 @@ static int restore_file(disk_t *disk, const partition_t *partition,
     char path_buf[4096];
     char *dup_path;
 
-    tree_get_path(node->parent ? node->parent : node, NULL,
-        path_buf, sizeof(path_buf));
+    tree_get_path(node, NULL, path_buf, sizeof(path_buf));
     if (path_buf[0] == '\0')
       snprintf(relative_path, sizeof(relative_path), "/");
     else

@@ -30,6 +30,7 @@ extern const arch_fnct_t arch_none;
 #include "ntfs.h"
 #include "ext2.h"
 #include "exfat.h"
+#include "iso.h"
 }
 
 static void detect_fs_type(disk_t *disk, partition_t *part)
@@ -37,6 +38,7 @@ static void detect_fs_type(disk_t *disk, partition_t *part)
     if (check_EXT2(disk, part, 0) == 0) return;
     if (check_NTFS(disk, part, 0, 0) == 0) return;
     if (check_FAT(disk, part, 0) == 0) return;
+    if (check_ISO(disk, part) == 0) return;
     check_exFAT(disk, part);
 }
 

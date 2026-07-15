@@ -39,6 +39,7 @@
 #include "ext2_dir.h"
 #include "ntfs_dir.h"
 #include "rfs_dir.h"
+#include "iso_dir.h"
 #include "fat.h"
 #include "ntfs.h"
 #include "log.h"
@@ -168,6 +169,8 @@ static dir_partition_t scanner_init_fs(disk_t *disk, const partition_t *partitio
       return dir_partition_ntfs_init(disk, partition, dir_data, 0, 0);
     case UP_EXFAT:
       return dir_partition_exfat_init(disk, partition, dir_data, 0);
+    case UP_ISO:
+      return dir_partition_iso_init(disk, partition, dir_data, 0);
     default:
       break;
   }
@@ -178,6 +181,8 @@ static dir_partition_t scanner_init_fs(disk_t *disk, const partition_t *partitio
   if (dir_partition_ntfs_init(disk, partition, dir_data, 0, 0) == DIR_PART_OK)
     return DIR_PART_OK;
   if (dir_partition_exfat_init(disk, partition, dir_data, 0) == DIR_PART_OK)
+    return DIR_PART_OK;
+  if (dir_partition_iso_init(disk, partition, dir_data, 0) == DIR_PART_OK)
     return DIR_PART_OK;
   return DIR_PART_ENOIMP;
 }
