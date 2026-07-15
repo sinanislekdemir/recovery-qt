@@ -33,7 +33,6 @@
 #include "intrf.h"
 #include "dir_common.h"
 #include "dir.h"
-#include "dirn.h"
 #include "fat_dir.h"
 #include "ext2_dir.h"
 #include "ntfs_dir.h"

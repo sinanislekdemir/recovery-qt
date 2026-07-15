@@ -34,7 +34,6 @@
 #endif
 #include "dir_common.h"
 #include "dir.h"
-#include "dirn.h"
 #include "fat_dir.h"
 #include "fat_common.h"
 #include "exfat_dir.h"

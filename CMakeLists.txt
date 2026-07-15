@@ -200,7 +200,7 @@ set(PHOTOREC_C
     src/ptree.c     src/pscanner.c   src/prestore.c
     src/luksdec.c   src/pcarver.c    src/pbackup.c
     src/psession.c
-    src/dir.c       src/dirn.c       src/fat_dir.c
+    src/dir.c       src/fat_dir.c
     src/ntfs_dir.c  src/ext2_dir.c   src/exfat_dir.c
     src/rfs_dir.c   src/geometry.c   src/filegen.c
     src/file_list.c src/utfsize.c
