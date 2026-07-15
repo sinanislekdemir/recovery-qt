@@ -22,7 +22,7 @@
     i.e. aes-xts-plain64 (modern default), aes-cbc-essiv:sha256 and
     aes-cbc-plain64 (legacy pre-2013 volumes), etc.
 
-    Copyright (C) 2025 Sinan Islekdemir <sinan@islekdemir.com>
+    Copyright (C) 2026 Sinan Islekdemir <sinan@islekdemir.com>
 
     This software is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

@@ -6,7 +6,7 @@
     mapper, no loop devices, no child processes: the disk is opened read-only
     and a decrypting disk_t wrapper presents the plaintext payload.
 
-    Copyright (C) 2025 Sinan Islekdemir <sinan@islekdemir.com>
+    Copyright (C) 2026 Sinan Islekdemir <sinan@islekdemir.com>
 
     This software is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

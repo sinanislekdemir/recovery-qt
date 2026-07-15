@@ -9,4 +9,4 @@ backup/restore, and LUKS decryption support.
 **Binary**: `build/recovery-qt` (Linux-only, Qt6 Widgets interface)
 
 - DO NOT CHANGE any file license headers. Those headers show the clear ownership and hard work by the creators.
-
+- New features and new files must be marked for Sinan Islekdemir <sinan@islekdemir.com>

@@ -2,7 +2,7 @@
 
     File: tree.c
 
-    Copyright (C) 2024 Christophe GRENIER <grenier@cgsecurity.org>
+    Copyright (C) 2026 Sinan Islekdemir <sinan@islekdemir.com>
 
     This software is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-#include <stdbool.h>
 #endif
 #include <stdbool.h>
 #include <stdio.h>
