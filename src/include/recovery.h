@@ -1,34 +1,19 @@
-/*
-
-    File: recovery.h
-
-    Copyright (C) 2024 Christophe GRENIER <grenier@cgsecurity.org>
-
-    This software is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write the Free Software Foundation, Inc., 51
-    Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
- */
+// File: recovery.h
+// Copyright (C) 2024 Christophe GRENIER <grenier@cgsecurity.org>
+// SPDX-License-Identifier: GPL-2.0-or-later
 #ifndef RECOVERY_H
 #define RECOVERY_H
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <assert.h>
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
-#include "list.h"
-#include <time.h>
 #include <stdio.h>
+#include <time.h>
 #include <sys/types.h>
+#include "list.h"
 
 typedef struct param_disk_struct disk_t;
 typedef struct partition_struct partition_t;
@@ -57,6 +42,9 @@ typedef struct file_node {
     uint32_t  cluster_size;
 } file_node_t;
 
+static_assert(sizeof(file_node_t) >= 64, "file_node_t too small");
+static_assert(NODE_FILE == 0 && NODE_DIR == 1, "node_type_t values");
+
 typedef struct {
     file_node_t *root;
     uint64_t total_files;
@@ -65,9 +53,9 @@ typedef struct {
 } scan_tree_t;
 
 scan_tree_t *tree_new(void);
-file_node_t *tree_add_path(scan_tree_t *tree, const char *path, int is_dir,
+file_node_t *tree_add_path(scan_tree_t *tree, const char *path, bool is_dir,
     uint64_t size, uint64_t first_sector, uint64_t num_sectors,
-    time_t mtime, unsigned int sector_size, int deleted);
+    time_t mtime, unsigned int sector_size, bool deleted);
 file_node_t *tree_find_path(scan_tree_t *tree, const char *path);
 char *tree_get_path(const file_node_t *node, const file_node_t *root,
     char *buf, size_t bufsize);
@@ -76,12 +64,12 @@ uint64_t tree_count_marked(const file_node_t *dir, uint64_t *size_out);
 void tree_count_changes(const file_node_t *dir, uint64_t *del_out,
     uint64_t *mod_out, uint64_t *size_out);
 
-int scanner_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition, int deep);
+int scanner_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition, bool deep);
 
 const char *tree_format_size(uint64_t bytes, char *buf, size_t bufsize);
 
 int carver_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
-    const char *ext_filter, int deep_scan);
+    const char *ext_filter, bool deep_scan);
 
 int restore_files(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
     const char *dest_dir);
@@ -93,6 +81,6 @@ unsigned char *read_file_bytes(scan_tree_t *tree, disk_t *disk,
     const partition_t *partition, file_node_t *node, size_t *out_size);
 
 #ifdef __cplusplus
-} /* closing brace for extern "C" */
+}
 #endif
 #endif

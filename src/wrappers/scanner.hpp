@@ -43,7 +43,7 @@ class Scanner : public WorkerBase {
 public:
     explicit Scanner(QObject *parent = nullptr);
 
-    void start(scan_tree_t *tree, disk_t *disk, const partition_t *partition, int deep = 1);
+    void start(scan_tree_t *tree, disk_t *disk, const partition_t *partition, bool deep = true);
 
 signals:
     void progressUpdated(uint64_t deletedCount, uint64_t totalCount, const QString &path);

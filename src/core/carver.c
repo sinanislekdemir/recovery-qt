@@ -1,25 +1,7 @@
-/*
-    File: carver.c
-
-    Copyright (C) 2024 Christophe GRENIER <grenier@cgsecurity.org>
-
-    This software is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write the Free Software Foundation, Inc., 51
-    Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
- */
+// SPDX-License-Identifier: GPL-2.0-or-later
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#include <stdbool.h>
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -573,7 +555,7 @@ static void carver_add_entry(scan_tree_t *tree, uint64_t part_offset,
 }
 
 static int carver_scan(scan_tree_t *tree, disk_t *disk,
-    const partition_t *partition, int deep_scan)
+    const partition_t *partition, bool deep_scan)
 {
   const unsigned int sector_size = disk->sector_size;
   uint64_t part_offset;
@@ -945,7 +927,7 @@ static int carver_scan(scan_tree_t *tree, disk_t *disk,
 }
 
 int carver_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
-    const char *ext_filter, int deep_scan)
+    const char *ext_filter, bool deep_scan)
 {
   int result;
   carver_init(ext_filter);

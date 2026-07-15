@@ -1,27 +1,11 @@
-/*
-
-    File: tree.c
-
-    Copyright (C) 2024 Christophe GRENIER <grenier@cgsecurity.org>
-
-    This software is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write the Free Software Foundation, Inc., 51
-    Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
- */
+// File: tree.c
+// Copyright (C) 2024 Christophe GRENIER <grenier@cgsecurity.org>
+// SPDX-License-Identifier: GPL-2.0-or-later
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#include <stdbool.h>
 #endif
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,9 +13,9 @@
 #include "common.h"
 #include "recovery.h"
 
-static file_node_t *node_alloc(const char *name, int is_dir,
+static file_node_t *node_alloc(const char *name, bool is_dir,
     uint64_t size, uint64_t first_sector, uint64_t num_sectors,
-    time_t mtime, unsigned int sector_size, int deleted)
+    time_t mtime, unsigned int sector_size, bool deleted)
 {
   file_node_t *node = (file_node_t *)MALLOC(sizeof(file_node_t));
   TD_INIT_LIST_HEAD(&node->siblings);
@@ -68,7 +52,7 @@ static void node_free(file_node_t *node)
 scan_tree_t *tree_new(void)
 {
   scan_tree_t *tree = (scan_tree_t *)MALLOC(sizeof(scan_tree_t));
-  tree->root = node_alloc("/", 1, 0, 0, 0, 0, 0, 0);
+  tree->root = node_alloc("/", true, 0, 0, 0, 0, 0, 0);
   tree->total_files = 0;
   tree->total_dirs = 0;
   tree->total_size = 0;
@@ -89,31 +73,24 @@ static file_node_t *tree_find_child(file_node_t *parent, const char *name)
 
 static file_node_t *node_ensure_dir(file_node_t *parent, const char *name)
 {
-  file_node_t *existing;
-  file_node_t *dir;
-  existing = tree_find_child(parent, name);
+  file_node_t *existing = tree_find_child(parent, name);
   if (existing)
     return existing;
-  dir = node_alloc(name, 1, 0, 0, 0, 0, 0, 0);
+  file_node_t *dir = node_alloc(name, true, 0, 0, 0, 0, 0, 0);
   dir->parent = parent;
   td_list_add_tail(&dir->siblings, &parent->children);
   return dir;
 }
 
-file_node_t *tree_add_path(scan_tree_t *tree, const char *path, int is_dir,
+file_node_t *tree_add_path(scan_tree_t *tree, const char *path, bool is_dir,
     uint64_t size, uint64_t first_sector, uint64_t num_sectors,
-    time_t mtime, unsigned int sector_size, int deleted)
+    time_t mtime, unsigned int sector_size, bool deleted)
 {
-  char *path_copy;
-  file_node_t *current;
   char *saveptr;
-  char *token;
-  char *last_name;
-
-  path_copy = strdup(path);
-  current = tree->root;
-  token = strtok_r(path_copy, "/", &saveptr);
-  last_name = NULL;
+  char *last_name = NULL;
+  char *path_copy = strdup(path);
+  file_node_t *current = tree->root;
+  char *token = strtok_r(path_copy, "/", &saveptr);
 
   while (token != NULL)
   {
@@ -134,10 +111,7 @@ file_node_t *tree_add_path(scan_tree_t *tree, const char *path, int is_dir,
   }
 
   {
-    file_node_t *existing;
-    file_node_t *node;
-
-    existing = tree_find_child(current, last_name);
+    file_node_t *existing = tree_find_child(current, last_name);
 
     if (existing)
     {
@@ -157,8 +131,8 @@ file_node_t *tree_add_path(scan_tree_t *tree, const char *path, int is_dir,
       return existing;
     }
 
-    node = node_alloc(last_name, is_dir, size, first_sector, num_sectors,
-        mtime, sector_size, deleted);
+    file_node_t *node = node_alloc(last_name, is_dir, size, first_sector,
+        num_sectors, mtime, sector_size, deleted);
     node->parent = current;
     td_list_add_tail(&node->siblings, &current->children);
 
@@ -179,16 +153,12 @@ file_node_t *tree_add_path(scan_tree_t *tree, const char *path, int is_dir,
 
 file_node_t *tree_find_path(scan_tree_t *tree, const char *path)
 {
-  char *path_copy;
-  file_node_t *current;
-  char *saveptr;
-  char *token;
-
   if (strcmp(path, "/") == 0)
     return tree->root;
-  path_copy = strdup(path);
-  current = tree->root;
-  token = strtok_r(path_copy, "/", &saveptr);
+  char *saveptr;
+  char *path_copy = strdup(path);
+  file_node_t *current = tree->root;
+  char *token = strtok_r(path_copy, "/", &saveptr);
   while (token != NULL)
   {
     current = tree_find_child(current, token);
@@ -200,27 +170,17 @@ file_node_t *tree_find_path(scan_tree_t *tree, const char *path)
   return current;
 }
 
-/*
- * Walk the parent chain from node up to (but not including) root,
- * build a path like /dir1/dir2/filename. Writes into buf.
- * Returns buf for chaining convenience.
- */
 char *tree_get_path(const file_node_t *node, const file_node_t *root,
     char *buf, size_t bufsize)
 {
-  const file_node_t *chain[128];
-  int count;
-  int i;
-  size_t pos;
-  const file_node_t *p;
-
   if (node == NULL || buf == NULL || bufsize == 0)
     return buf;
 
   buf[0] = '\0';
 
-  count = 0;
-  p = node;
+  const file_node_t *chain[128];
+  int count = 0;
+  const file_node_t *p = node;
   while (p && p != root)
   {
     if (count >= 128)
@@ -229,15 +189,13 @@ char *tree_get_path(const file_node_t *node, const file_node_t *root,
     p = p->parent;
   }
 
-  pos = 0;
-  for (i = count - 1; i >= 0; i--)
+  size_t pos = 0;
+  for (int i = count - 1; i >= 0; i--)
   {
-    size_t rem;
-    int written;
-    rem = bufsize - pos;
+    size_t rem = bufsize - pos;
     if (rem <= 1)
       break;
-    written = snprintf(buf + pos, rem, "/%s", chain[i]->name);
+    int written = snprintf(buf + pos, rem, "/%s", chain[i]->name);
     if (written < 0 || (size_t)written >= rem)
       break;
     pos += (size_t)written;
@@ -256,35 +214,28 @@ void tree_free(scan_tree_t *tree)
 void tree_count_changes(const file_node_t *dir, uint64_t *del_out,
     uint64_t *mod_out, uint64_t *size_out)
 {
-  uint64_t del = 0;
-  uint64_t mod = 0;
-  uint64_t sz = 0;
+  uint64_t del = 0, mod = 0, sz = 0;
   struct td_list_head *pos;
   td_list_for_each(pos, &dir->children)
   {
     const file_node_t *child = td_list_entry(pos, file_node_t, siblings);
     if (child->type == NODE_DIR)
     {
-      uint64_t sub_del = 0;
-      uint64_t sub_mod = 0;
-      uint64_t sub_sz = 0;
+      uint64_t sub_del = 0, sub_mod = 0, sub_sz = 0;
       tree_count_changes(child, &sub_del, &sub_mod, &sub_sz);
       del += sub_del;
       mod += sub_mod;
       sz += sub_sz;
     }
-    else
+    else if (child->deleted)
     {
-      if (child->deleted)
-      {
-        del++;
-        sz += child->size;
-      }
-      else if (child->backup_modified)
-      {
-        mod++;
-        sz += child->size;
-      }
+      del++;
+      sz += child->size;
+    }
+    else if (child->backup_modified)
+    {
+      mod++;
+      sz += child->size;
     }
   }
   *del_out = del;
@@ -294,8 +245,7 @@ void tree_count_changes(const file_node_t *dir, uint64_t *del_out,
 
 uint64_t tree_count_marked(const file_node_t *dir, uint64_t *size_out)
 {
-  uint64_t count = 0;
-  uint64_t total_size = 0;
+  uint64_t count = 0, total_size = 0;
   struct td_list_head *pos;
   td_list_for_each(pos, &dir->children)
   {

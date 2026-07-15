@@ -30,7 +30,7 @@ Scanner::Scanner(QObject *parent)
 {
 }
 
-void Scanner::start(scan_tree_t *tree, disk_t *disk, const partition_t *partition, int deep)
+void Scanner::start(scan_tree_t *tree, disk_t *disk, const partition_t *partition, bool deep)
 {
     ProgressCallback *pc = beginOperation();
     if (!pc) return;
