@@ -4,151 +4,6 @@ project(recovery_qt VERSION 7.3.0 LANGUAGES C CXX)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_AUTOMOC ON)
-
-# ---------------------------------------------------------------------------
-# Generated config.h (provides HAVE_CONFIG_H, TARGET_LINUX, library defines)
-# ---------------------------------------------------------------------------
-file(WRITE ${CMAKE_BINARY_DIR}/config.h
-[=[
-#ifndef RECOVERY_QT_CONFIG_H
-#define RECOVERY_QT_CONFIG_H
-
-#define PACKAGE "recovery-qt"
-#define PACKAGE_BUGREPORT "grenier@cgsecurity.org"
-#define PACKAGE_NAME "recovery-qt"
-#define PACKAGE_STRING "recovery-qt 7.3-WIP"
-#define PACKAGE_TARNAME "recovery-qt"
-#define PACKAGE_URL ""
-#define PACKAGE_VERSION "7.3-WIP"
-#define VERSION "7.3-WIP"
-
-#define TARGET_LINUX 1
-
-#define HAVE_ATEXIT 1
-#define HAVE_ATOLL 1
-#define HAVE_BYTESWAP_H 1
-#define HAVE_CHDIR 1
-#define HAVE_CHMOD 1
-#define HAVE_DIRENT_H 1
-#define HAVE_INTTYPES_H 1
-#define HAVE_STDINT_H 1
-#define HAVE_DIRNAME 1
-#define HAVE_DUP2 1
-#define HAVE_ENDIAN_H 1
-#define HAVE_ERRNO_H 1
-#define HAVE_EXECV 1
-#define HAVE_FCNTL_H 1
-#define HAVE_FDATASYNC 1
-#define HAVE_FEATURES_H 1
-#define HAVE_FSEEKO 1
-#define HAVE_FSYNC 1
-#define HAVE_FTELLO 1
-#define HAVE_FTRUNCATE 1
-#define HAVE_GETCWD 1
-#define HAVE_GETEUID 1
-#define HAVE_GETPWUID 1
-#define HAVE_GETOPT_LONG 1
-#define HAVE_ICONV 1
-#define HAVE_GICONV_H 1
-#define HAVE_ICONV_H 1
-#define HAVE_GLOB_H 1
-#define HAVE_LANGINFO_H 1
-#define HAVE_LIBGEN_H 1
-#define HAVE_LIMITS_H 1
-#define HAVE_LOCALE_H 1
-#define HAVE_LOCALTIME_R 1
-#define HAVE_LSTAT 1
-#define HAVE_MEMALIGN 1
-#define HAVE_MEMCHR 1
-#define HAVE_MEMSET 1
-#define HAVE_MALLOC_H 1
-#define HAVE_MKDIR 1
-#define HAVE_MMAP 1
-#define HAVE_NANOSLEEP 1
-#define HAVE_OFF64_T 1
-#define HAVE_PADDR_T 0
-#define HAVE_POSIX_FADVISE 1
-#define HAVE_POSIX_MEMALIGN 1
-#define HAVE_PREAD 1
-#define HAVE_PTHREAD 1
-#define HAVE_PWD_H 1
-#define HAVE_PWRITE 1
-#define HAVE_READLINK 1
-#define HAVE_REALPATH 1
-#define HAVE_RMDIR 1
-#define HAVE_SELECT 1
-#define HAVE_SETENV 1
-#define HAVE_SETJMP_H 1
-#define HAVE_SETLOCALE 1
-#define HAVE_SIGNAL_H 1
-#define HAVE_SIGACTION 1
-#define HAVE_SIGNAL 1
-#define HAVE_SLEEP 1
-#define HAVE_SNPRINTF 1
-#define HAVE_STAT 1
-#define HAVE_STDARG_H 1
-#define HAVE_STDLIB_H 1
-#define HAVE_STRCASECMP 1
-#define HAVE_STRCASESTR 1
-#define HAVE_STRCHR 1
-#define HAVE_STRDUP 1
-#define HAVE_STRERROR 1
-#define HAVE_STRING_H 1
-#define HAVE_STRNCASECMP 1
-#define HAVE_STRNLEN 1
-#define HAVE_STRPTIME 1
-#define HAVE_STRRCHR 1
-#define HAVE_STRSTR 1
-#define HAVE_STRTOL 1
-#define HAVE_STRTOUL 1
-#define HAVE_STRTOULL 1
-#define HAVE_STRUCT_STAT_ST_BLOCKS 1
-#define HAVE_STRUCT_STAT_ST_RDEV 1
-#define HAVE_SYS_IOCTL_H 1
-#define HAVE_SYS_MOUNT_H 1
-#define HAVE_SYS_PARAM_H 1
-#define HAVE_SYS_SELECT_H 1
-#define HAVE_SYS_STAT_H 1
-#define HAVE_SYS_SYSMACROS_H 1
-#define HAVE_SYS_TIME_H 1
-#define HAVE_SYS_TYPES_H 1
-#define HAVE_SYS_UTSNAME_H 1
-#define HAVE_TIME_H 1
-#define HAVE_UNAME 1
-#define HAVE_UNISTD_H 1
-#define HAVE_UTIME 1
-#define HAVE_UTIME_H 1
-#define HAVE_VSNPRINTF 1
-#define HAVE_WCTOMB 1
-#define HAVE_ZLIB_H 1
-
-#define ICONV_CONST
-
-#define HAVE_LIBEXT2FS 1
-#define HAVE_LIBCOMM_ERR 1
-#define HAVE_LIBNTFS3G 1
-#define HAVE_LIBUUID 1
-#define HAVE_LIBZ 1
-#define HAVE_LIBDL 1
-
-#define HAVE_EXT2FS_EXT2FS_H 1
-#define HAVE_EXT2FS_EXT2_FS_H 1
-#define HAVE_EXT2FS_GET_GENERIC_BITMAP_START 1
-#define HAVE_NTFS_LIBNTFS_VERSION 1
-#define HAVE_NTFS_VERSION_H 1
-#define NTFS_MBSTOUCS_HAVE_TWO_ARGUMENTS 1
-#define NTFS_DEVICE_OPERATIONS_IOCTL_INT 1
-
-#define HAVE_LINUX_FS_H 1
-#define HAVE_LINUX_HDREG_H 1
-#define HAVE_LINUX_TYPES_H 1
-
-#define STDC_HEADERS 1
-#define TESTDISKDATE "July 2025"
-
-#endif
-]=])
 
 # ---------------------------
 # Dependencies
@@ -156,13 +11,22 @@ file(WRITE ${CMAKE_BINARY_DIR}/config.h
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 find_package(PkgConfig REQUIRED)
 find_package(Threads REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 pkg_check_modules(NTFS3G REQUIRED libntfs-3g)
 pkg_check_modules(EXT2FS REQUIRED ext2fs)
 pkg_check_modules(COM_ERR REQUIRED com_err)
 pkg_check_modules(UUID REQUIRED uuid)
-pkg_check_modules(ZLIB REQUIRED zlib)
-find_package(OpenSSL REQUIRED)
+
+# ---------------------------
+# Config header generation
+# ---------------------------
+string(TIMESTAMP BUILD_DATE "%B %Y")
+configure_file(
+    ${CMAKE_SOURCE_DIR}/config.h.cmake.in
+    ${CMAKE_BINARY_DIR}/config.h
+)
 
 # ---------------------------
 # C sources - Core utilities
@@ -236,7 +100,7 @@ list(FILTER FILE_FORMATS_C EXCLUDE REGEX "file_found\\.c$")
 list(FILTER FILE_FORMATS_C EXCLUDE REGEX "file_awk\\.c$")
 
 # ---------------------------
-# Vendored Argon2 (CC0 / Apache-2.0) for LUKS2 KDF
+# Vendored Argon2 (CC0 / Apache-2.0)
 # ---------------------------
 set(ARGON2_C
     src/vendor/argon2/argon2.c
@@ -293,11 +157,13 @@ set(CPP_SOURCES
 # Executable
 # ---------------------------
 add_executable(recovery_qt ${ALL_C_SOURCES} ${CPP_SOURCES})
-set_target_properties(recovery_qt PROPERTIES OUTPUT_NAME "recovery-qt")
+set_target_properties(recovery_qt PROPERTIES
+    OUTPUT_NAME "recovery-qt"
+    AUTOMOC ON
+)
 
 set_source_files_properties(${ALL_C_SOURCES} PROPERTIES LANGUAGE C)
 
-# Include all subdirectories so includes like #include "fat.h" still resolve
 target_include_directories(recovery_qt PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/include
@@ -322,11 +188,11 @@ target_link_libraries(recovery_qt PRIVATE
     Qt6::Core
     Qt6::Widgets
     Threads::Threads
+    ZLIB::ZLIB
     ${NTFS3G_LIBRARIES}
     ${EXT2FS_LIBRARIES}
     ${COM_ERR_LIBRARIES}
     ${UUID_LIBRARIES}
-    ${ZLIB_LIBRARIES}
     OpenSSL::Crypto
     ${CMAKE_DL_LIBS}
 )
@@ -351,7 +217,6 @@ target_compile_definitions(recovery_qt PRIVATE
 target_compile_options(recovery_qt PRIVATE
     -include ${CMAKE_BINARY_DIR}/config.h
     -O2 -g -Wall -Wextra
-    $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>
 )
 
 # ---------------------------
@@ -365,13 +230,16 @@ install(FILES ${CMAKE_SOURCE_DIR}/src/resources/recovery-qt.desktop
 install(FILES ${CMAKE_SOURCE_DIR}/logo.png
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/256x256/apps
         RENAME recovery-qt.png)
+install(FILES README.md COPYING
+        DESTINATION ${CMAKE_INSTALL_DOCDIR}
+        OPTIONAL)
 
 # ---------------------------
 # CPack / DEB packaging
 # ---------------------------
 set(CPACK_GENERATOR "DEB")
 set(CPACK_DEBIAN_PACKAGE_NAME "recovery-qt")
-set(CPACK_PACKAGE_VERSION "7.3")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 set(CPACK_PACKAGE_VENDOR "Sinan Islekdemir")
 set(CPACK_PACKAGE_CONTACT "sinan@islekdemir.com")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Data recovery and file carving tool")
