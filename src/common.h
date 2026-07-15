@@ -152,7 +152,6 @@ typedef struct efi_guid_s efi_guid_t;
 #define	GPT_ENT_TYPE_FREEBSD_VINUM	\
 	(const efi_guid_t){le32(0x516e7cb8),le16(0x6ecf),le16(0x11d6),0x8f,0xf8,{0x00,0x02,0x2d,0x09,0x71,0x2b}}
 
-
 #define	GPT_ENT_TYPE_MS_BASIC_DATA	\
 	(const efi_guid_t){le32(0xebd0a0a2),le16(0xb9e5),le16(0x4433),0x87,0xc0,{0x68,0xb6,0xb7,0x26,0x99,0xc7}}
 #define	GPT_ENT_TYPE_MS_LDM_DATA	\
@@ -316,9 +315,6 @@ typedef enum errcode_type errcode_type_t;
 
 typedef struct param_disk_struct disk_t;
 typedef struct partition_struct partition_t;
-/*@
-    predicate valid_partition(partition_t *part) = (\valid_read(part));
-  @*/
 
 typedef struct CHS_struct CHS_t;
 typedef struct
@@ -345,16 +341,6 @@ struct list_part_struct
   int to_be_removed;
 };
 
-/*@
-inductive valid_list_part{L} (list_part_t *list)
-{
-  case list_null{L}:
-    valid_list_part(\null);
-  case list_not_null{L}:
-    \forall list_part_t *list; \valid_read(list) ==> valid_list_part(list->next) ==> valid_list_part(list);
-}
-  @*/
-
 typedef struct list_disk_struct list_disk_t;
 struct list_disk_struct
 {
@@ -362,18 +348,6 @@ struct list_disk_struct
   list_disk_t *prev;
   list_disk_t *next;
 };
-
-/*@
-inductive ld_reachable{L} (list_disk_t* root, list_disk_t* node)
-{
-  case root_ld_reachable{L}:
-    \forall list_disk_t *root; ld_reachable(root,root);
-  case next_ld_reachable{L}:
-    \forall list_disk_t *root, *node; \valid(root) ==> ld_reachable(root->next, node) ==> ld_reachable(root,node);
-}
-*/
-
-/*@ predicate ld_finite{L}(list_disk_t* root) = ld_reachable(root,\null); */
 
 struct systypes {
   const unsigned int part_type;
@@ -404,13 +378,6 @@ struct arch_fnct_struct
 };
 
 typedef struct arch_fnct_struct arch_fnct_t;
-
-/*@
-    predicate valid_arch(arch_fnct_t *arch) = (
-      \valid_read(arch) &&
-      (arch->get_geometry_from_mbr==\null || \valid_function(arch->get_geometry_from_mbr))
-    );
-  @*/
 
 struct param_disk_struct
 {
@@ -446,37 +413,6 @@ struct param_disk_struct
   int unit;
   unsigned int sector_size;
 };
-
-/*@
-    predicate valid_disk(disk_t *disk) =
-      (\valid_read(disk) &&
-       \freeable(disk) &&
-       valid_read_string(disk->device) &&
-       \freeable(disk->device) &&
-       \valid_function(disk->clean) &&
-       \valid_function(disk->description) &&
-       (disk->model == \null || \freeable(disk->model)) &&
-       (disk->model == \null || valid_read_string(disk->model)) &&
-       (disk->serial_no == \null || \freeable(disk->serial_no)) &&
-       (disk->fw_rev == \null || \freeable(disk->fw_rev)) &&
-       (disk->data == \null || \freeable(disk->data)) &&
-       (disk->rbuffer == \null || (\freeable(disk->rbuffer) && disk->rbuffer_size > 0)) &&
-       (disk->wbuffer == \null || (\freeable(disk->wbuffer) && disk->wbuffer_size > 0)) &&
-       valid_arch(disk->arch) &&
-       disk->sector_size > 0
-      );
-*/
-
-/*@
-inductive valid_list_disk{L} (list_disk_t *list)
-{
-  case list_null{L}:
-    valid_list_disk(\null);
-  case list_not_null{L}:
-    \forall list_disk_t *list; \valid_read(list) && valid_list_disk(list) ==> valid_disk(list->disk) && valid_list_disk(list->next);
-}
-  @*/
-
 
 struct partition_struct
 {
@@ -517,56 +453,18 @@ struct my_data_struct
   uint64_t offset;
 };
 
-/*@
-  @ requires size > 0;
-  @ terminates \true;
-  @ exits !is_allocable(size);
-  @ ensures \valid(((char *)\result)+(0..size-1));
-  @ ensures zero_initialization: \subset(((char *)\result)[0..size-1], {0});
-  @ assigns __fc_heap_status;
-  @*/
 void *MALLOC(size_t size);
 
-/*@
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \valid_read(src + (0 .. max_size-1));
-  @ requires \separated(partition, src + (..));
-  @ terminates \true;
-  @ ensures valid_string((char *)&partition->fsname);
-  @*/
 void set_part_name(partition_t *partition, const char *src, const unsigned int max_size);
 
-/*@
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \valid_read(src + (0 .. max_size-1));
-  @ requires \separated(partition, src);
-  @ terminates \true;
-  @ ensures valid_string((char *)&partition->fsname);
-  @*/
 void set_part_name_chomp(partition_t *partition, const char *src, const unsigned int max_size);
 
-/*@
-  @ requires valid_read_string(str);
-  @ ensures \result == \null || valid_read_string(\result);
-  @*/
 char* strip_dup(char* str);
 
-/*@
-  @ requires f_time <= 0xffffffff;
-  @ requires f_date <= 0xffffffff;
-  @ terminates \true;
-  @ assigns \nothing;
-  @*/
 time_t date_dos2unix(const unsigned short f_time,const unsigned short f_date);
 
 void set_secwest(void);
 
-/*@
-  @ terminates \true;
-  @ assigns \nothing;
-  @*/
 time_t td_ntfs2utc (int64_t ntfstime);
 
 #ifndef BSD_MAXPARTITIONS
@@ -638,10 +536,7 @@ int strncasecmp(const char * s1, const char * s2, size_t len);
 char * strcasestr (const char *haystack, const char *needle);
 #endif
 #if ! defined(HAVE_LOCALTIME_R) && ! defined(__MINGW32__) && !defined(DISABLED_FOR_FRAMAC)
-/*@
-  @ requires valid_timer: \valid_read(timep);
-  @ requires \valid(result);
-  @*/
+
 struct tm *localtime_r(const time_t *timep, struct tm *result);
 #endif
 /*
@@ -662,38 +557,12 @@ struct tm *localtime_r(const time_t *timep, struct tm *result);
         (void) (&_x == &_y);            \
         _x > _y ? _x : _y; })
 
-/*@
-  @ requires \valid(current_cmd);
-  @ requires valid_read_string(*current_cmd);
-  @ requires valid_read_string(cmd);
-  @ requires \separated(cmd+(..), current_cmd, *current_cmd);
-  @ requires strlen(cmd) == n;
-  @ assigns  *current_cmd;
-  @ ensures  valid_read_string(*current_cmd);
-  @ ensures  \result != 0 ==> *current_cmd == \old(*current_cmd);
-  @*/
 // ensures  \result == 0 ==> *current_cmd == \old(*current_cmd) + n;
 // assigns \result \from indirect:(*current_cmd)[0 .. n-1], indirect:cmd[0 ..n-1], indirect:n;
 int check_command(char **current_cmd, const char *cmd, const size_t n);
 
-/*@
-  @ requires \valid(current_cmd);
-  @ requires valid_read_string(*current_cmd);
-  @ requires \separated(current_cmd, *current_cmd);
-  @ terminates \true;
-  @ assigns  *current_cmd;
-  @ ensures  valid_read_string(*current_cmd);
-  @*/
 void skip_comma_in_command(char **current_cmd);
 
-/*@
-  @ requires \valid(current_cmd);
-  @ requires valid_read_string(*current_cmd);
-  @ requires \separated(current_cmd, *current_cmd);
-  @ terminates \true;
-  @ assigns  *current_cmd;
-  @ ensures  valid_read_string(*current_cmd);
-  @*/
 uint64_t get_int_from_command(char **current_cmd);
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

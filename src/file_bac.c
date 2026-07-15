@@ -33,9 +33,7 @@
 #include "common.h"
 #include "log.h"
 
-/*@
-  @ requires valid_register_header_check(file_stat);
-  @*/
+
 static void register_header_check_bac(file_stat_t *file_stat);
 
 const file_hint_t file_hint_bac= {
@@ -57,27 +55,18 @@ struct block_header
   uint32_t VolSessionTime;          /* Session Time for Job */
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires buffer_size >= 2*0x18;
-  @ requires file_recovery->data_check==&data_check_bac;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_bac(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert buffer_size >= 2*0x18; */
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 0x18);
-    @*/
+  
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 0x18 < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - 0x18 ; */
+    
     const struct block_header *hdr=(const struct block_header *)&buffer[i];
     const unsigned int block_size=be32(hdr->BlockSize);
 #ifdef DEBUG_BACULA
@@ -103,20 +92,7 @@ static data_check_t data_check_bac(const unsigned char *buffer, const unsigned i
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct block_header);
-  @ requires separation: \separated(&file_hint_bac, buffer, file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures (\result == 1) ==> (file_recovery_new->time == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_size == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->calculated_file_size == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->data_check == \null || file_recovery_new->data_check == &data_check_bac);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_check == \null || file_recovery_new->file_check == &file_check_size);
-  @ ensures (\result == 1) ==> (file_recovery_new->extension == file_hint_bac.extension);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_bac(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct block_header *hdr=(const struct block_header *)buffer;

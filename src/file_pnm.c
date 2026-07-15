@@ -32,7 +32,7 @@
 #include "types.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_pnm(file_stat_t *file_stat);
 
 const file_hint_t file_hint_pnm = {
@@ -44,13 +44,7 @@ const file_hint_t file_hint_pnm = {
   .register_header_check = &register_header_check_pnm
 };
 
-/*@
-  @ requires buffer_size >= 8;
-  @ requires separation: \separated(&file_hint_pnm, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_pbm(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(!isprint(buffer[5]) || !isprint(buffer[6]) || !isprint(buffer[7]))
@@ -60,13 +54,7 @@ static int header_check_pbm(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= 8;
-  @ requires separation: \separated(&file_hint_pnm, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_pgm(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(!isprint(buffer[5]) || !isprint(buffer[6]) || !isprint(buffer[7]))
@@ -76,13 +64,7 @@ static int header_check_pgm(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= 8;
-  @ requires separation: \separated(&file_hint_pnm, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_ppm(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(!isprint(buffer[5]) || !isprint(buffer[6]) || !isprint(buffer[7]))

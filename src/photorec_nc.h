@@ -80,11 +80,6 @@ int scanner_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition, i
 
 const char *tree_format_size(uint64_t bytes, char *buf, size_t bufsize);
 
-#ifdef HAVE_NCURSES
-int browser_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition);
-extern char g_browser_info[256];
-#endif
-
 int carver_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
     const char *ext_filter, int deep_scan);
 

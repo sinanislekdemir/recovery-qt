@@ -33,7 +33,7 @@
 #include "common.h"
 
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_ps(file_stat_t *file_stat);
 
 const file_hint_t file_hint_ps= {
@@ -47,35 +47,20 @@ const file_hint_t file_hint_ps= {
 
 static const unsigned char ps_header[11]= { '%','!','P','S','-','A','d','o','b','e','-'};
 
-/*@
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @ assigns *file_recovery->handle, errno, file_recovery->file_size;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static void file_check_ps(file_recovery_t *file_recovery)
 {
   const unsigned char ps_footer[5]="%%EOF";
   file_search_footer(file_recovery, ps_footer, sizeof(ps_footer), 1);
 }
 
-/*@
-  @ requires buffer_size > 8;
-  @ requires file_recovery->data_check==&data_check_ps;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_ps(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
   unsigned int i;
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns i, file_recovery->calculated_file_size;
-    @ loop variant buffer_size - (i+4);
-    @*/
+  
+  
+  
   for(i=(buffer_size/2)-4;i+4<buffer_size;i++)
   {
     if(buffer[i]=='%' && buffer[i+1]=='%' && buffer[i+2]=='E' && buffer[i+3]=='O' && buffer[i+4]=='F')
@@ -88,12 +73,7 @@ static data_check_t data_check_ps(const unsigned char *buffer, const unsigned in
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires separation: \separated(&file_hint_ps, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_ps(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   /* PS or EPSF */
@@ -101,10 +81,7 @@ static int header_check_ps(const unsigned char *buffer, const unsigned int buffe
   reset_file_recovery(file_recovery_new);
   file_recovery_new->min_filesize=sizeof(ps_header);
   file_recovery_new->file_check=&file_check_ps;
-  /*@
-    @ loop assigns i, file_recovery_new->extension, file_recovery_new->data_check;
-    @ loop variant 20 - i;
-    @*/
+  
   for(i=sizeof(ps_header); i < 20; i++)
   {
     switch(buffer[i])

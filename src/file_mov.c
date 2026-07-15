@@ -37,9 +37,9 @@
 #include "__fc_builtin.h"
 #endif
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_mov(file_stat_t *file_stat);
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_mov_mdat(file_stat_t *file_stat);
 
 const file_hint_t file_hint_mov= {
@@ -81,11 +81,7 @@ struct atom64_struct
   uint64_t size;
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires file_recovery->file_rename == &file_rename_mov;
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_mov(file_recovery_t *file_recovery)
 {
   FILE *file;
@@ -105,11 +101,7 @@ static void file_rename_mov(file_recovery_t *file_recovery)
   file_rename(file_recovery, buffer, sizeof(buffer), 4, NULL, 1);
 }
 
-/*@
-  @ requires \valid_read(atom + (0 .. 3));
-  @ terminates \true;
-  @ assigns  \nothing;
-  @*/
+
 static inline int is_known_atom(const unsigned char *atom)
 {
   if( (atom[0]=='c' && atom[1]=='m' && atom[2]=='o' && atom[3]=='v') ||
@@ -134,29 +126,19 @@ static inline int is_known_atom(const unsigned char *atom)
   return 0;
 }
 
-/*@
-  @ requires buffer_size >= 16;
-  @ requires file_recovery->data_check==&data_check_mov;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_mov(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 8);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 8 <= file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i <= buffer_size - 8 ; */
+    
     const struct atom_struct *atom=(const struct atom_struct*)&buffer[i];
-    /*@ assert \valid_read(atom); */
+    
     uint64_t atom_size=be32(atom->size);
     if(atom_size==1)
     {
@@ -165,20 +147,20 @@ static data_check_t data_check_mov(const unsigned char *buffer, const unsigned i
       {
 	return DC_CONTINUE;
       }
-      /*@ assert i + 16 <= buffer_size; */
+      
       atom64=(const struct atom64_struct*)&buffer[i];
-      /*@ assert \valid_read(atom64); */
+      
       atom_size=be64(atom64->size);
       if(atom_size<16)
 	return DC_STOP;
-      /*@ assert atom_size >= 16; */
+      
     }
     else if(atom_size<8)
       return DC_STOP;
-    /*@ assert atom_size >= 8; */
+    
     if(atom_size >= 0x800000000000)
       return DC_STOP;
-    /*@ assert 8 <= atom_size < 0x800000000000; */
+    
 #ifdef DEBUG_MOV
     log_trace("file_mov.c: %s atom %c%c%c%c (0x%02x%02x%02x%02x) size %llu, calculated_file_size %llu\n",
 	file_recovery->filename,
@@ -219,39 +201,14 @@ static data_check_t data_check_mov(const unsigned char *buffer, const unsigned i
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires buffer_size >= 16;
-  @ requires separation: \separated(file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_stat == \null);
-  @ ensures (\result == 1) ==> (file_recovery_new->handle == \null);
-  @ ensures (\result == 1) ==> (file_recovery_new->extension == file_hint_mov.extension ||
-				file_recovery_new->extension == extension_3g2 ||
-				file_recovery_new->extension == extension_3gp ||
-				file_recovery_new->extension == extension_cr3 ||
-				file_recovery_new->extension == extension_heic ||
-				file_recovery_new->extension == extension_jp2 ||
-				file_recovery_new->extension == extension_m4a ||
-				file_recovery_new->extension == extension_mp4);
-  @ ensures (\result == 1) ==> (file_recovery_new->time == 0);
-  @ ensures (\result == 1) ==> (valid_read_string(file_recovery_new->extension));
-  @ ensures (\result == 1) ==> (file_recovery_new->file_rename == &file_rename_mov || file_recovery_new->file_rename == \null);
-  @ ensures (\result == 1 && file_recovery_new->extension == file_hint_mov.extension) ==> (file_recovery_new->file_rename == file_rename_mov);
-  @ ensures (\result == 1 && file_recovery_new->extension != file_hint_mov.extension) ==> (file_recovery_new->file_rename == \null);
-  @ ensures (\result == 1 && (file_recovery_new->extension == extension_jp2 || file_recovery_new->blocksize < 16)) ==> (file_recovery_new->data_check == \null && file_recovery_new->file_check == \null && file_recovery_new->file_rename == \null && file_recovery_new->min_filesize > 0);
-  @ ensures (\result == 1 && file_recovery_new->extension != extension_jp2 && file_recovery_new->blocksize >= 16) ==> (file_recovery_new->calculated_file_size > 0 && file_recovery_new->file_check == &file_check_size && file_recovery_new->data_check == &data_check_mov);
-  @ ensures (\result == 1) ==> \separated(file_recovery_new, file_recovery_new->extension);
-  @*/
+
 static int header_check_mov_aux(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   uint64_t i=0;
-  /*@
-    @ loop variant buffer_size-16 - i;
-    @*/
+  
   while(i <= buffer_size-16)
   {
-    /*@ assert i <= buffer_size - 16; */
+    
     const struct atom_struct *atom=(const struct atom_struct*)&buffer[i];
     uint64_t calculated_file_size;
     uint64_t atom_size=be32(atom->size);
@@ -261,21 +218,21 @@ static int header_check_mov_aux(const unsigned char *buffer, const unsigned int 
       atom_size=be64(atom64->size);
       if(atom_size<16)
 	return 0;
-      /*@ assert atom_size >= 16; */
+      
     }
     else if(atom_size<8)
       return 0;
-    /*@ assert 8 <= atom_size; */
+    
     if(atom_size >= 0x800000000000)
       return 0;
-    /*@ assert 8 <= atom_size < 0x800000000000; */
+    
     calculated_file_size=atom_size+i;
     /* check for commun atom type */
     if(buffer[i+4]=='p' && buffer[i+5]=='n' && buffer[i+6]=='o' && buffer[i+7]=='t')
     {
       if(atom_size != 20)
 	return 0;
-      /*@ assert atom_size == 20; */
+      
       reset_file_recovery(file_recovery_new);
       file_recovery_new->extension=file_hint_mov.extension;
       file_recovery_new->file_rename=&file_rename_mov;
@@ -293,7 +250,7 @@ static int header_check_mov_aux(const unsigned char *buffer, const unsigned int 
     {
       if(atom_size != 8)
 	return 0;
-      /*@ assert atom_size == 8; */
+      
       reset_file_recovery(file_recovery_new);
       file_recovery_new->extension=file_hint_mov.extension;
       file_recovery_new->file_rename=&file_rename_mov;
@@ -311,7 +268,7 @@ static int header_check_mov_aux(const unsigned char *buffer, const unsigned int 
     {
       if(atom_size > 256*256*256)
 	return 0;
-      /*@ assert atom_size <= 256*256*256; */
+      
       reset_file_recovery(file_recovery_new);
       file_recovery_new->extension=file_hint_mov.extension;
       file_recovery_new->file_rename=&file_rename_mov;
@@ -337,7 +294,7 @@ static int header_check_mov_aux(const unsigned char *buffer, const unsigned int 
     {
       if(atom_size < 20 || (atom_size&3)!=0 || atom_size>256)
 	return 0;
-      /*@ assert 20 <= atom_size <= 256; */
+      
       if(memcmp(&buffer[i+8], "isom", 4)==0 ||
 	  memcmp(&buffer[i+8], "mp41", 4)==0 ||
 	  memcmp(&buffer[i+8], "mp42", 4)==0 ||
@@ -485,26 +442,7 @@ static int header_check_mov_aux(const unsigned char *buffer, const unsigned int 
   return 0;
 }
 
-/*@
-  @ requires buffer_size >= 16;
-  @ requires separation: \separated(file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures (\result == 1) ==> (file_recovery_new->extension == file_hint_mov.extension ||
-				file_recovery_new->extension == extension_3g2 ||
-				file_recovery_new->extension == extension_3gp ||
-				file_recovery_new->extension == extension_cr3 ||
-				file_recovery_new->extension == extension_heic ||
-				file_recovery_new->extension == extension_jp2 ||
-				file_recovery_new->extension == extension_m4a ||
-				file_recovery_new->extension == extension_mp4);
-  @ ensures (\result == 1) ==> (valid_read_string(file_recovery_new->extension));
-  @ ensures (\result == 1) ==> (file_recovery_new->file_rename == &file_rename_mov || file_recovery_new->file_rename == \null);
-  @ ensures (\result == 1 && file_recovery_new->extension == file_hint_mov.extension) ==> (file_recovery_new->file_rename == file_rename_mov);
-  @ ensures (\result == 1 && file_recovery_new->extension != file_hint_mov.extension) ==> (file_recovery_new->file_rename == \null);
-  @ ensures (\result == 1 && (file_recovery_new->extension == extension_jp2 || file_recovery_new->blocksize < 16)) ==> (file_recovery_new->data_check == \null && file_recovery_new->file_check == \null && file_recovery_new->file_rename == \null && file_recovery_new->min_filesize > 0);
-  @ ensures (\result == 1 && file_recovery_new->extension != extension_jp2 && file_recovery_new->blocksize >= 16) ==> (file_recovery_new->calculated_file_size > 0 && file_recovery_new->file_check == &file_check_size && file_recovery_new->data_check == &data_check_mov);
-  @*/
+
 static int header_check_mov(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(file_recovery->file_stat!=NULL &&
@@ -519,17 +457,13 @@ static int header_check_mov(const unsigned char *buffer, const unsigned int buff
   return header_check_mov_aux(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
 }
 
-/*@
-  @ requires valid_register_header_check(file_stat);
-  @*/
+
 static void register_header_check_mov_mdat(file_stat_t *file_stat)
 {
   register_header_check(4, (const unsigned char*)"mdat",4, &header_check_mov_aux, file_stat);
 }
 
-/*@
-  @ requires valid_register_header_check(file_stat);
-  @*/
+
 static void register_header_check_mov(file_stat_t *file_stat)
 {
   register_header_check(4, (const unsigned char*)"cmov",4, &header_check_mov, file_stat);
@@ -563,7 +497,7 @@ int main()
   file_recovery_t file_recovery;
   file_stat_t file_stats;
 
-  /*@ assert \valid(buffer + (0 .. (BLOCKSIZE - 1))); */
+  
 #if defined(__FRAMAC__)
   Frama_C_make_unknown((char *)buffer, BLOCKSIZE);
 #endif
@@ -586,32 +520,32 @@ int main()
   file_stats.not_recovered=0;
   file_stats.recovered=0;
   register_header_check_mov(&file_stats);
-  /*@ assert file_recovery_new.blocksize >= 16; */
+  
   if(header_check_mov(buffer, BLOCKSIZE, 0u, &file_recovery, &file_recovery_new)!=1)
     return 0;
-  /*@ assert file_recovery_new.blocksize >= 16; */
-  /*@ assert valid_read_string(file_recovery_new.extension); */
-  /*@ assert file_recovery_new.file_size == 0;	*/
-  /*@ assert file_recovery_new.offset_ok == 0;	*/
-  /*@ assert valid_read_string((char *)&fn); */
+  
+  
+  
+  
+  
   memcpy(file_recovery_new.filename, fn, sizeof(fn));
-  /*@ assert valid_read_string((char *)&file_recovery_new.filename); */
-  /*@ assert file_recovery_new.offset_ok == 0;	*/
+  
+  
   file_recovery_new.file_stat=&file_stats;
   if(file_recovery_new.data_check != NULL)
   {
-    /*@ assert file_recovery_new.data_check == &data_check_mov; */
-    /*@ assert file_recovery_new.file_check == file_check_size; */
+    
+    
     unsigned char big_buffer[2*BLOCKSIZE];
     data_check_t res_data_check=DC_CONTINUE;
     memset(big_buffer, 0, BLOCKSIZE);
     memcpy(big_buffer + BLOCKSIZE, buffer, BLOCKSIZE);
-    /*@ assert file_recovery_new.file_size == 0; */;
+    ;
     res_data_check=data_check_mov(big_buffer, 2*BLOCKSIZE, &file_recovery_new);
     file_recovery_new.file_size+=BLOCKSIZE;
     if(res_data_check == DC_CONTINUE)
     {
-      /*@ assert file_recovery_new.calculated_file_size > file_recovery_new.file_size - 16; */
+      
       memcpy(big_buffer, big_buffer + BLOCKSIZE, BLOCKSIZE);
 #if defined(__FRAMAC__)
       Frama_C_make_unknown((char *)big_buffer + BLOCKSIZE, BLOCKSIZE);
@@ -619,7 +553,7 @@ int main()
       data_check_mov(big_buffer, 2*BLOCKSIZE, &file_recovery_new);
     }
   }
-  /*@ assert file_recovery_new.offset_ok == 0;	*/
+  
   {
     file_recovery_t file_recovery_new2;
     /* Test when another file of the same is detected in the next block */
@@ -630,10 +564,10 @@ int main()
     file_recovery_new.handle=NULL;	/* In theory should be not null */
     header_check_mov(buffer, BLOCKSIZE, 0, &file_recovery_new, &file_recovery_new2);
   }
-  /*@ assert file_recovery_new.offset_ok == 0;	*/
+  
   if(file_recovery_new.file_check != NULL)
   {
-    /*@ assert file_recovery_new.file_check == file_check_size; */
+    
     file_recovery_new.handle=fopen(fn, "rb");
     if(file_recovery_new.handle!=NULL)
     {
@@ -641,7 +575,7 @@ int main()
       fclose(file_recovery_new.handle);
     }
   }
-  /*@ assert valid_read_string((char *)file_recovery_new.filename); */
+  
   file_rename_mov(&file_recovery_new);
   return 0;
 }

@@ -34,7 +34,7 @@
 #include "__fc_builtin.h"
 #endif
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_dv(file_stat_t *file_stat);
 
 const file_hint_t file_hint_dv= {
@@ -46,26 +46,17 @@ const file_hint_t file_hint_dv= {
   .register_header_check=&register_header_check_dv
 };
 
-/*@
-  @ requires file_recovery->data_check==&data_check_NTSC;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_NTSC(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 8);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 8 < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - 8; */
+    
     if(buffer[i]==0x1f && buffer[i+1]==0x07 && buffer[i+2]==0x00 &&
 	buffer[i+5]==0x78 && buffer[i+6]==0x78 && buffer[i+7]==0x78)
       file_recovery->calculated_file_size+=120000;
@@ -75,12 +66,7 @@ static data_check_t data_check_NTSC(const unsigned char *buffer, const unsigned 
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires fr->file_check == &file_check_dv_NTSC;
-  @ requires valid_file_check_param(fr);
-  @ ensures  valid_file_check_result(fr);
-  @ assigns *fr->handle, errno, Frama_C_entropy_source, fr->file_size;
-  @*/
+
 static void file_check_dv_NTSC(file_recovery_t *fr)
 {
   char buffer_header[512];
@@ -95,10 +81,7 @@ static void file_check_dv_NTSC(file_recovery_t *fr)
     fs-=120000;
   if(fs > 0)
     fs-=120000;
-  /*@
-    @ loop assigns fs, *fr->handle, errno, Frama_C_entropy_source, fr->file_size;
-    @ loop variant fr->file_size - fs;
-    @*/
+  
   while(fs < fr->file_size &&
       my_fseek(fr->handle, fs, SEEK_SET) >= 0)
   {
@@ -112,10 +95,7 @@ static void file_check_dv_NTSC(file_recovery_t *fr)
 #if defined(__FRAMAC__)
     Frama_C_make_unknown(&buffer, sizeof(buffer));
 #endif
-    /*@
-      @ loop assigns i;
-      @ loop variant sizeof(buffer) - i;
-      @*/
+    
     for(i=1; i<sizeof(buffer); i+=0x50)
       if((buffer[i]&0x0f)!=(buffer_header[1]&0x0f))
       {
@@ -127,26 +107,17 @@ static void file_check_dv_NTSC(file_recovery_t *fr)
   fr->file_size=fs;
 }
 
-/*@
-  @ requires file_recovery->data_check==&data_check_PAL;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_PAL(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert buffer_size <= 2 * PHOTOREC_MAX_BLOCKSIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 8);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 8 < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - 8; */
+    
     if(buffer[i]==0x1f && buffer[i+1]==0x07 && buffer[i+2]==0x00 &&
 	buffer[i+5]==0x78 && buffer[i+6]==0x78 && buffer[i+7]==0x78)
       file_recovery->calculated_file_size+=144000;
@@ -156,12 +127,7 @@ static data_check_t data_check_PAL(const unsigned char *buffer, const unsigned i
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires fr->file_check == &file_check_dv_PAL;
-  @ requires valid_file_check_param(fr);
-  @ ensures  valid_file_check_result(fr);
-  @ assigns *fr->handle, errno, Frama_C_entropy_source, fr->file_size;
-  @*/
+
 static void file_check_dv_PAL(file_recovery_t *fr)
 {
   char buffer_header[512];
@@ -176,10 +142,7 @@ static void file_check_dv_PAL(file_recovery_t *fr)
     fs-=144000;
   if(fs > 0)
     fs-=144000;
-  /*@
-    @ loop assigns fs, *fr->handle, errno, Frama_C_entropy_source, fr->file_size;
-    @ loop variant fr->file_size - fs;
-    @*/
+  
   while(fs < fr->file_size &&
       my_fseek(fr->handle, fs, SEEK_SET) >= 0)
   {
@@ -193,10 +156,7 @@ static void file_check_dv_PAL(file_recovery_t *fr)
 #if defined(__FRAMAC__)
     Frama_C_make_unknown(&buffer, sizeof(buffer));
 #endif
-    /*@
-      @ loop assigns i;
-      @ loop variant sizeof(buffer) - i;
-      @*/
+    
     for(i=1; i<sizeof(buffer); i+=0x50)
       if((buffer[i]&0x0f)!=(buffer_header[1]&0x0f))
       {
@@ -209,13 +169,7 @@ static void file_check_dv_PAL(file_recovery_t *fr)
 }
 
 
-/*@
-  @ requires buffer_size >= 8;
-  @ requires separation: \separated(&file_hint_dv, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @*/
+
 static int header_check_dv(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(buffer[0]!=0x1f || buffer[1]!=0x07 || buffer[2]!=0x00 || buffer[5]!=0x78 || buffer[6]!=0x78 || buffer[7]!=0x78)
@@ -224,7 +178,7 @@ static int header_check_dv(const unsigned char *buffer, const unsigned int buffe
       file_recovery->file_check!=NULL &&
       file_recovery->file_stat->file_hint==&file_hint_dv)
   {
-    /*@ assert \valid_function(file_recovery->file_check); */
+    
     header_ignored(file_recovery_new);
     return 0;
   }

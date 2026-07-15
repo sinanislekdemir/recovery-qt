@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_e01(file_stat_t *file_stat);
 
 static char ext[10];
@@ -69,13 +69,7 @@ struct ewf_file_header
         uint16_t fields_end;
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires file_recovery->file_check == &file_check_e01;
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @ assigns *file_recovery->handle, errno, file_recovery->file_size;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static void file_check_e01(file_recovery_t *file_recovery)
 {
   const uint64_t tmp=file_recovery->file_size;
@@ -94,13 +88,7 @@ static void file_check_e01(file_recovery_t *file_recovery)
   file_search_footer(file_recovery, sig_done, sizeof(sig_done), 60);
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct ewf_file_header);
-  @ requires separation: \separated(&file_hint_e01, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new, *(ext + (0 .. sizeof(ext)-1));
-  @*/
+
 static int header_check_e01(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct ewf_file_header *ewf=(const struct ewf_file_header *)buffer;

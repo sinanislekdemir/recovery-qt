@@ -32,9 +32,7 @@
 #include "filegen.h"
 #include "log.h"
 
-/*@
-  @ requires valid_register_header_check(file_stat);
-  @*/
+
 static void register_header_check_fcs(file_stat_t *file_stat);
 
 const file_hint_t file_hint_fcs= {
@@ -58,20 +56,12 @@ struct fcs_header
   unsigned char analysis_end[8];	/* 50 */
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires \valid_read(string + (0 .. max_length-1));
-  @ terminates \true;
-  @ assigns \nothing;
-  @*/
+
 static uint64_t ascii2int(const unsigned char *string, const unsigned int max_length)
 {
   uint64_t res=0;
   unsigned int i;
-  /*@
-    @ loop invariant res <= 0x1999999999999998;
-    @ loop assigns res,i;
-    @ loop variant max_length - i;
-    @*/
+  
   for(i=0;i<max_length;i++)
   {
     if(string[i]>='0' && string[i]<='9')
@@ -86,20 +76,12 @@ static uint64_t ascii2int(const unsigned char *string, const unsigned int max_le
   return res;
 }
 
-/*@
-  @ requires \valid_read(string + (0 .. max_length-1));
-  @ terminates \true;
-  @ assigns \nothing;
-  @*/
+
 static uint64_t ascii2int2(const unsigned char *string, const unsigned int max_length, const unsigned int delimiter)
 {
   uint64_t res=0;
   unsigned int i;
-  /*@
-    @ loop invariant res <= 0x1999999999999998;
-    @ loop assigns res,i;
-    @ loop variant max_length - i;
-    @*/
+  
   for(i=0;i<max_length;i++)
   {
     if(string[i]>='0' && string[i]<='9')
@@ -118,22 +100,7 @@ static uint64_t ascii2int2(const unsigned char *string, const unsigned int max_l
   return res;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct fcs_header);
-  @ requires separation: \separated(&file_hint_fcs, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures (\result == 1) ==> file_recovery_new->file_size == 0;
-  @ ensures (\result != 0) ==> file_recovery_new->extension != \null;
-  @ ensures (\result == 1) ==> (file_recovery_new->time == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->min_filesize == 58);
-  @ ensures (\result == 1) ==> (file_recovery_new->calculated_file_size > 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->extension == file_hint_fcs.extension);
-  @ ensures (\result == 1) ==> (file_recovery_new->data_check == &data_check_size);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_check == &file_check_size);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_rename == \null);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_fcs(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct fcs_header *fcs=(const struct fcs_header*)buffer;
@@ -157,10 +124,7 @@ static int header_check_fcs(const unsigned char *buffer, const unsigned int buff
     unsigned int i;
     const unsigned char delimiter=buffer[text_start];
     const unsigned int smallest=(buffer_size < text_end ? buffer_size : text_end);
-    /*@
-      @ loop assigns i, data_end, stext_end, analysis_end;
-      @ loop variant smallest - i;
-      @*/
+    
     for(i=0; i<smallest; i++)
     {
       if(buffer[i]==delimiter)

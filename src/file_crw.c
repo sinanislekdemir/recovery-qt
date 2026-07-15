@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "log.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_crw(file_stat_t *file_stat);
 
 const file_hint_t file_hint_crw= {
@@ -44,25 +44,14 @@ const file_hint_t file_hint_crw= {
   .register_header_check=&register_header_check_crw
 };
 
-/*@
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @ assigns  *file_recovery->handle, errno, file_recovery->file_size;
-  @ assigns  Frama_C_entropy_source;
-  @*/
+
 static void file_check_crw(file_recovery_t *file_recovery)
 {
   const unsigned char crw_footer[2]= { 0x0A, 0x30};
   file_search_footer(file_recovery, crw_footer, sizeof(crw_footer), 12);
 }
 
-/*@
-  @ requires buffer_size >= 6+8;
-  @ requires separation: \separated(&file_hint_crw, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_crw(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(((buffer[0]==0x49 && buffer[1]==0x49)||(buffer[0]==0x4D && buffer[1]==0x4D))

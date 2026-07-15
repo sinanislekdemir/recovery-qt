@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_mb(file_stat_t *file_stat);
 
 const file_hint_t file_hint_mb= {
@@ -51,13 +51,7 @@ struct maya_header
   char magic2[8];
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires buffer_size >= sizeof(struct maya_header);
-  @ requires separation: \separated(&file_hint_mb, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_mb(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct maya_header *hdr=(const struct maya_header *)buffer;
@@ -73,13 +67,7 @@ static int header_check_mb(const unsigned char *buffer, const unsigned int buffe
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= 4;
-  @ requires separation: \separated(&file_hint_mb, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_mp(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(memcmp(buffer,"FOR4",4)!=0)

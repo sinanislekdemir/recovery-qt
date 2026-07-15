@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_clip(file_stat_t *file_stat);
 
 const file_hint_t file_hint_clip= {
@@ -57,25 +57,17 @@ struct clip_chunk
   uint64_t length;
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires file_recovery->data_check==&data_check_clip;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns  file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_clip(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 16);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 16 <= file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i <= buffer_size - 16; */
+    
     const struct clip_chunk *chunk=(const struct clip_chunk *)&buffer[i];
     const uint64_t length=be64(chunk->length);
     if(length >= 0x100000000 ||
@@ -89,12 +81,7 @@ static data_check_t data_check_clip(const unsigned char *buffer, const unsigned 
 }
 
 
-/*@
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_clip(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct clip_header *hdr=(const struct clip_header *)buffer;

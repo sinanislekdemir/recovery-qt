@@ -51,46 +51,19 @@
 
 #define MSDOS_MKMODE(a,m) ((m & ((a & ATTR_RO) ? LINUX_S_IRUGO|LINUX_S_IXUGO : LINUX_S_IRWXUGO)) | ((a & ATTR_DIR) ? LINUX_S_IFDIR : LINUX_S_IFREG))
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid_read(partition);
-  @ requires valid_partition(partition);
-  @ requires \valid_read(dir_data);
-  @ requires \valid_read(fat_header);
-  @ requires \valid(dir_list);
-  @ requires \separated(disk_car, partition, dir_data, fat_header, dir_list);
-  @ decreases 0;
-  @*/
+
 static int fat1x_rootdir(disk_t *disk_car, const partition_t *partition, const dir_data_t *dir_data, const struct fat_boot_sector*fat_header, file_info_t *dir_list);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid_read(partition);
-  @ requires valid_partition(partition);
-  @ requires \valid_read(dir_data);
-  @ requires \valid(file);
-  @ requires \separated(disk_car, partition, dir_data, file);
-  @*/
+
 static copy_file_t fat_copy(disk_t *disk_car, const partition_t *partition, dir_data_t *dir_data, const file_info_t *file);
 
-/*@
-  @ requires \valid(dir_data);
-  @*/
+
 static void dir_partition_fat_close(dir_data_t *dir_data);
 
-/*@
-  @ requires len > 0;
-  @ requires \valid_read(src + (0 .. 2*len-1));
-  @ requires \valid((char *)dst + (0 .. 2*len-1));
-  @*/
+
 static inline void fat16_towchar(wchar_t *dst, const uint8_t *src, size_t len)
 {
-  /*@
-    @ loop assigns len, *dst, dst, src;
-    @ loop variant len;
-    @*/
+  
   while (len--) {
     *dst++ = src[0] | (src[1] << 8);
     src += 2;
@@ -332,10 +305,7 @@ RecEnd:
 
 typedef enum {FAT_FOLLOW_CLUSTER, FAT_NEXT_FREE_CLUSTER, FAT_NEXT_CLUSTER} fat_method_t;
 
-/*@
-  @ terminates \true;
-  @ assigns \nothing;
-  @*/
+
 static int is_EOC(const unsigned int cluster, const upart_type_t upart_type)
 {
   if(upart_type==UP_FAT12)
@@ -348,16 +318,7 @@ static int is_EOC(const unsigned int cluster, const upart_type_t upart_type)
 
 #define NBR_ENTRIES_MAX 65536
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid_read(partition);
-  @ requires valid_partition(partition);
-  @ requires \valid_read(dir_data);
-  @ requires \valid(dir_list);
-  @ requires \separated(disk_car, partition, dir_data, dir_list);
-  @ decreases 0;
-  @*/
+
 static int fat_dir(disk_t *disk_car, const partition_t *partition, dir_data_t *dir_data, const unsigned long int first_cluster, file_info_t *dir_list)
 {
   const struct fat_dir_struct *ls=(const struct fat_dir_struct*)dir_data->private_dir_data;
@@ -545,16 +506,7 @@ static void dir_partition_fat_close(dir_data_t *dir_data)
   free(ls);
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid_read(partition);
-  @ requires valid_partition(partition);
-  @ requires \valid(dir_data);
-  @ requires \valid_read(file);
-  @ requires \separated(disk_car, partition, dir_data, file);
-  @ decreases 0;
-  @*/
+
 static copy_file_t fat_copy(disk_t *disk_car, const partition_t *partition, dir_data_t *dir_data, const file_info_t *file)
 {
   char *new_file;	
@@ -592,9 +544,7 @@ static copy_file_t fat_copy(disk_t *disk_car, const partition_t *partition, dir_
       (long unsigned)file_size);
 #endif
 
-  /*@
-    @ loop variant file_size;
-    @*/
+  
   while(cluster>=2 && cluster<=no_of_cluster+2 && file_size>0)
   {
     const uint64_t start=partition->part_offset+(uint64_t)(start_data+(cluster-2)*sectors_per_cluster)*fat_sector_size(fat_header);

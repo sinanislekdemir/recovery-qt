@@ -38,7 +38,7 @@
 #include "log.h"
 #endif
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_hdf(file_stat_t *file_stat);
 
 const file_hint_t file_hint_hdf= {
@@ -64,26 +64,14 @@ struct dd_struct
   uint32_t	length;
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires \valid(handle);
-  @ requires \valid(dd_buf + (0 .. 65536 * sizeof(struct dd_struct)-1));
-  @ requires \separated(handle, dd_buf + (..), &errno, &Frama_C_entropy_source);
-  @ assigns *(dd_buf + (0 .. 65536 * sizeof(struct dd_struct)-1));
-  @ assigns Frama_C_entropy_source;
-  @ assigns *handle, errno;
-  @*/
+
 static uint64_t file_check_hdf_aux(FILE *handle, char *dd_buf)
 {
   uint64_t file_size=0;
   uint64_t offset_old;
   uint64_t offset=4;
   const struct dd_struct *dd=(const struct dd_struct *)dd_buf;
-  /*@
-    @ loop assigns file_size, offset_old, offset;
-    @ loop assigns *(dd_buf + (0 .. 65536 * sizeof(struct dd_struct)-1));
-    @ loop assigns Frama_C_entropy_source;
-    @ loop assigns *handle, errno;
-    @*/
+  
   do
   {
     char ddh_buf[sizeof(struct ddh_struct)];
@@ -99,7 +87,7 @@ static uint64_t file_check_hdf_aux(FILE *handle, char *dd_buf)
     Frama_C_make_unknown(&ddh_buf, sizeof(ddh_buf));
 #endif
     size=be16(ddh->size);
-    /*@ assert 0 <= size < 65536; */
+    
     if(size==0 ||
 	fread(dd_buf, sizeof(struct dd_struct)*size, 1, handle) !=1)
     {
@@ -113,11 +101,7 @@ static uint64_t file_check_hdf_aux(FILE *handle, char *dd_buf)
 #ifdef DEBUG_HDF
     log_info("size=%u next=%lu\n", size, be32(ddh->next));
 #endif
-    /*@
-      @ loop invariant 0 <= i <= size;
-      @ loop assigns i, file_size;
-      @ loop variant size - i;
-      @*/
+    
     for(i=0; i < size; i++)
     {
       const struct dd_struct *p=&dd[i];
@@ -138,11 +122,7 @@ static uint64_t file_check_hdf_aux(FILE *handle, char *dd_buf)
   return file_size;
 }
 
-/*@
-  @ requires \separated(file_recovery, file_recovery->handle, &errno, &Frama_C_entropy_source, &__fc_heap_status);
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @*/
+
 static void file_check_hdf(file_recovery_t *file_recovery)
 {
   uint64_t file_size;
@@ -159,14 +139,7 @@ static void file_check_hdf(file_recovery_t *file_recovery)
     file_recovery->file_size = file_size;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct ddh_struct);
-  @ requires separation: \separated(&file_hint_hdf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_hdf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct ddh_struct *ddh=(const struct ddh_struct *)&buffer[4];

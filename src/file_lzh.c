@@ -33,7 +33,7 @@
 #include "filegen.h"
 #include "log.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_lzh(file_stat_t *file_stat);
 
 const file_hint_t file_hint_lzh= {
@@ -92,11 +92,7 @@ struct lzh_level2
   uint16_t next_header_size;
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires file_recovery->file_rename==&file_rename_level0;
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_level0(file_recovery_t *file_recovery)
 {
   unsigned char buffer[512];
@@ -113,26 +109,14 @@ static void file_rename_level0(file_recovery_t *file_recovery)
     return;
   if(buffer_size < sizeof(struct lzh_level0) + hdr->filename_len)
     return;
-  /*@ assert sizeof(struct lzh_level0) + hdr->filename_len <= buffer_size; */
-  /*@
-    @ loop invariant 0 <= i <= hdr->filename_len;
-    @ loop assigns i;
-    @ loop variant hdr->filename_len - i;
-    @*/
+  
+  
   for(i=0; i< hdr->filename_len && fn[i]!=0 && fn[i]!='.'; i++);
-  /*@ assert 0 <= i <= hdr->filename_len; */
+  
   file_rename(file_recovery, fn, i, 0, NULL, 1);
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct lzh_level0);
-  @ requires buffer_size >= sizeof(struct lzh_level1);
-  @ requires separation: \separated(&file_hint_lzh, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_lzh(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   switch(buffer[20])

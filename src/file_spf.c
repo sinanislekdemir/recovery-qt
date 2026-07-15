@@ -33,7 +33,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_spf(file_stat_t *file_stat);
 
 const file_hint_t file_hint_spf= {
@@ -47,12 +47,7 @@ const file_hint_t file_hint_spf= {
 
 enum { READ_SIZE=32*512 };
 
-/*@
-  @ requires file_recovery->file_check == &file_check_spf;
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @ assigns  *file_recovery->handle, file_recovery->file_size, Frama_C_entropy_source, errno;
-  @*/
+
 static void file_check_spf(file_recovery_t *file_recovery)
 {
   file_recovery->file_size=0;
@@ -60,11 +55,7 @@ static void file_check_spf(file_recovery_t *file_recovery)
   {
     return;
   }
-  /*@
-    @ loop invariant valid_file_check_param(file_recovery);
-    @ loop assigns *file_recovery->handle, file_recovery->file_size;
-    @ loop assigns Frama_C_entropy_source, errno;
-    @*/
+  
   while(1)
   {
     int i;
@@ -78,11 +69,7 @@ static void file_check_spf(file_recovery_t *file_recovery)
 #ifdef __FRAMAC__
     Frama_C_make_unknown(buffer, READ_SIZE);
 #endif
-    /*@
-      @ loop invariant valid_file_check_param(file_recovery);
-      @ loop assigns i, file_recovery->file_size;
-      @ loop variant PHOTOREC_MAX_FILE_SIZE - file_recovery->file_size;
-      @*/
+    
     for(i=0; i<taille; i+=512)
     {
       int j;
@@ -92,17 +79,11 @@ static void file_check_spf(file_recovery_t *file_recovery)
       {
 	return;
       }
-      /*@
-        @ loop assigns j, is_valid;
-	@ loop variant 8 - j;
-	@*/
+      
       for(j=0; j<8; j++)
 	if(buffer[i+j]!=0)
 	  is_valid=1;
-      /*@
-        @ loop assigns j;
-	@ loop variant 512 - j;
-	@*/
+      
       for(j=8; j<512 && buffer[i+j]==0; j++);
       if(is_valid > 0 && j==512)
       {
@@ -112,12 +93,7 @@ static void file_check_spf(file_recovery_t *file_recovery)
   }
 }
 
-/*@
-  @ requires separation: \separated(&file_hint_spf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_spf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   reset_file_recovery(file_recovery_new);

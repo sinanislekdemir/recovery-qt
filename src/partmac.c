@@ -50,74 +50,37 @@
 #include "hfsp.h"
 #include "log.h"
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires \valid(partition);
-  @*/
+
 static int check_part_mac(disk_t *disk_car, const int verbose,partition_t *partition,const int saveheader);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ ensures  valid_list_part(\result);
-  @*/
+
 static list_part_t *read_part_mac(disk_t *disk_car, const int verbose, const int saveheader);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires list_part == \null || \valid(list_part);
-  @*/
+
 static int write_part_mac(disk_t *disk_car, const list_part_t *list_part, const int ro , const int verbose);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires list_part == \null || \valid(list_part);
-  @ requires separation: \separated(disk_car, list_part);
-  @ assigns \nothing;
-  @*/
+
 static list_part_t *init_part_order_mac(const disk_t *disk_car, list_part_t *list_part);
 
-/*@
-  @ requires \valid_read(disk_car);
-  @ requires \valid(partition);
-  @ requires separation: \separated(disk_car, partition);
-  @ assigns partition->status;
-  @*/
+
 static void set_next_status_mac(const disk_t *disk_car, partition_t *partition);
 
-/*@
-  @ requires \valid(partition);
-  @ assigns partition->part_type_mac;
-  @*/
+
 static int set_part_type_mac(partition_t *partition, unsigned int part_type_mac);
 
-/*@
-  @ requires \valid(partition);
-  @ assigns \nothing;
-  @*/
+
 static int is_part_known_mac(const partition_t *partition);
 
-/*@
-  @ requires \valid_read(disk_car);
-  @ requires list_part == \null || \valid(list_part);
-  @*/
+
 static void init_structure_mac(const disk_t *disk_car,list_part_t *list_part, const int verbose);
 
-/*@
-  @ requires \valid_read(partition);
-  @ assigns \nothing;
-  @*/
+
 static const char *get_partition_typename_mac(const partition_t *partition);
 
-/*@
-  @ assigns \nothing;
-  @*/
+
 static const char *get_partition_typename_mac_aux(const unsigned int part_type_mac);
 
-/*@
-  @ requires \valid_read(partition);
-  @ assigns \nothing;
-  @*/
+
 static unsigned int get_part_type_mac(const partition_t *partition);
 
 static const struct systypes mac_sys_types[] = {
@@ -279,10 +242,7 @@ list_part_t *add_partition_mac_cli(disk_t *disk_car,list_part_t *list_part, char
   assert(current_cmd!=NULL);
   new_partition->part_offset=disk_car->sector_size;
   new_partition->part_size=disk_car->disk_size-disk_car->sector_size;
-  /*@
-    @ loop invariant valid_list_part(list_part);
-    @ loop invariant valid_read_string(*current_cmd);
-    @ */
+  
   while(1)
   {
     skip_comma_in_command(current_cmd);
@@ -318,23 +278,23 @@ list_part_t *add_partition_mac_cli(disk_t *disk_car,list_part_t *list_part, char
     {
       int insert_error=0;
       list_part_t *new_list_part=insert_new_partition(list_part, new_partition, 0, &insert_error);
-      /*@ assert valid_list_part(new_list_part); */
+      
       if(insert_error>0)
       {
 	free(new_partition);
-	/*@ assert valid_list_part(new_list_part); */
+	
 	return new_list_part;
       }
       new_partition->status=STATUS_PRIM;
       if(test_structure_mac(list_part)!=0)
 	new_partition->status=STATUS_DELETED;
-      /*@ assert valid_list_part(new_list_part); */
+      
       return new_list_part;
     }
     else
     {
       free(new_partition);
-      /*@ assert valid_list_part(list_part); */
+      
       return list_part;
     }
   }
@@ -464,7 +424,7 @@ static int check_part_mac(disk_t *disk_car,const int verbose,partition_t *partit
 static const char *get_partition_typename_mac_aux(const unsigned int part_type_mac)
 {
   int i;
-  /*@ loop assigns i; */
+  
   for (i=0; mac_sys_types[i].name!=NULL; i++)
     if (mac_sys_types[i].part_type == part_type_mac)
       return mac_sys_types[i].name;

@@ -31,7 +31,7 @@
 #include "types.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_z2d(file_stat_t *file_stat);
 
 const file_hint_t file_hint_z2d = {
@@ -43,13 +43,7 @@ const file_hint_t file_hint_z2d = {
   .register_header_check = &register_header_check_z2d
 };
 
-/*@
-  @ requires buffer_size >= 0x4a;
-  @ requires separation: \separated(&file_hint_z2d, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_z2d(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(buffer[0x28] == 0xc3 && buffer[0x29] == 0x40 && buffer[0x30] == 0xc3 && buffer[0x31] == 0x40 && buffer[0x38] == 0xbf && buffer[0x39] == 0x40 && buffer[0x40] == 0xbf && buffer[0x41] == 0x40 && buffer[0x48] == 0xb7 && buffer[0x49] == 0x40)

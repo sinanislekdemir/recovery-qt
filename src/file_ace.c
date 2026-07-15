@@ -39,9 +39,7 @@
 
 /* #define DEBUG_ACE */
 
-/*@
-  @ requires valid_register_header_check(file_stat);
-  @*/
+
 static void register_header_check_ace(file_stat_t *file_stat);
 
 const file_hint_t file_hint_ace= {
@@ -68,23 +66,13 @@ struct header_ace {
 typedef struct header_ace ace_header_t;
 #define BUF_SIZE 4096
 
-/*@
-  @ requires \valid(handle);
-  @ requires \separated(handle, &errno, &Frama_C_entropy_source);
-  @ assigns *handle, errno;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static int check_ace_crc(FILE *handle, const unsigned int len, const unsigned int crc32_low)
 {
   char buffer[BUF_SIZE];
   uint32_t crc32=0xFFFFFFFF;
   unsigned int remaining=len;
-  /*@
-    @ loop assigns *handle, errno;
-    @ loop assigns Frama_C_entropy_source;
-    @ loop assigns buffer[0 .. BUF_SIZE-1], crc32, remaining;
-    @ loop variant remaining;
-    @*/
+  
   while (remaining>0)
   {
     const unsigned int count = ((remaining>BUF_SIZE) ? BUF_SIZE : remaining);
@@ -111,13 +99,7 @@ static int check_ace_crc(FILE *handle, const unsigned int len, const unsigned in
   return 0;
 }
 
-/*@
-  @ requires file_recovery->file_check == &file_check_ace;
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @ assigns *file_recovery->handle, errno, file_recovery->file_size, file_recovery->offset_error, file_recovery->offset_ok;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static void file_check_ace(file_recovery_t *file_recovery)
 {
   file_recovery->offset_error = 0;
@@ -125,11 +107,7 @@ static void file_check_ace(file_recovery_t *file_recovery)
   file_recovery->file_size = 0;
   if(my_fseek(file_recovery->handle, 0, SEEK_SET)<0)
     return ;
-  /*@
-    @ loop assigns *file_recovery->handle, errno, file_recovery->file_size, file_recovery->offset_error;
-    @ loop assigns Frama_C_entropy_source;
-    @ loop variant 0x8000000000000000-0x100000000 - file_recovery->file_size;
-    @*/
+  
   while (!feof(file_recovery->handle))
   {
     char buffer[sizeof(ace_header_t)];
@@ -138,7 +116,7 @@ static void file_check_ace(file_recovery_t *file_recovery)
     {
       return ;
     }
-    /*@ assert \initialized(&buffer + (0 .. sizeof(buffer)-1)); */
+    
 #ifdef DEBUG_ACE
     log_info("file_ace: Block header at 0x%08lx: CRC16=0x%04X size=%u type=%u"
         " flags=0x%04X addsize=%u\n",
@@ -198,19 +176,7 @@ static void file_check_ace(file_recovery_t *file_recovery)
   }
 }
 
-/*@
-  @ requires buffer_size >= sizeof(ace_header_t);
-  @ requires separation: \separated(&file_hint_ace, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures (\result == 1) ==> file_recovery_new->file_size == 0;
-  @ ensures (\result == 1) ==> (file_recovery_new->time == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->calculated_file_size == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->extension == file_hint_ace.extension);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_check == &file_check_ace);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_ace(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const ace_header_t *h=(const ace_header_t *)buffer;

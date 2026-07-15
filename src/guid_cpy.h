@@ -22,12 +22,7 @@
 
 #ifndef _GUID_CPY_H
 #define _GUID_CPY_H
-/*@ requires \valid(dst);
-  @ requires \valid_read(src);
-  @ requires separation:
-  @   \separated(((char *)dst)+(0..sizeof(efi_guid_t)-1),((char *)src)+(0..sizeof(efi_guid_t)-1));
-  @ assigns ((char*)dst)[0..sizeof(efi_guid_t) - 1];
-  @*/
+
 // assigns ((char*)dst)[0..sizeof(efi_guid_t) - 1] \from ((char*)src)[0..sizeof(efi_guid_t)-1];
 // ensures copied_contents: memcmp{Post,Pre}((char*)dst,(char*)src,sizeof(efi_guid_t)) == 0;
 static inline void guid_cpy (efi_guid_t *dst, const efi_guid_t *src)

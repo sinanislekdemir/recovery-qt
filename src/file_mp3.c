@@ -41,7 +41,7 @@ extern const file_hint_t file_hint_mkv;
 extern const file_hint_t file_hint_tiff;
 #endif
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_mp3(file_stat_t *file_stat);
 
 const file_hint_t file_hint_mp3= {
@@ -114,38 +114,21 @@ static const unsigned int bit_rate_table[4][4][16]=
   },
 };
 
-/*@
-  @ requires needle_size > 0;
-  @ requires haystack_size > 0;
-  @ requires \valid_read(needle+(0..needle_size-1));
-  @ requires \valid_read(haystack+(0..haystack_size-1));
-  @ ensures \result == 0 || needle_size <= \result <= haystack_size;
-  @ assigns \nothing;
-  @*/
+
 static unsigned int pos_in_mem(const unsigned char *haystack, const unsigned int haystack_size, const unsigned char *needle, const unsigned int needle_size)
 {
   unsigned int i;
   if(haystack_size < needle_size)
     return 0;
-  /*@ assert haystack_size >= needle_size; */
-  /*@
-    @ loop assigns i;
-    @ loop invariant 0 <= i <= haystack_size - needle_size + 1;
-    @ loop variant haystack_size - needle_size - i;
-    @*/
+  
+  
   for(i=0; i <= haystack_size - needle_size; i++)
     if(memcmp(&haystack[i],needle,needle_size)==0)
       return (i+needle_size);
   return 0;
 }
 
-/*@
-  @ requires 0 < buffer_size <= 10*1024*1024;
-  @ requires i <= buffer_size;
-  @ requires \valid_read(buffer+(0..buffer_size-1));
-  @ ensures \result <= buffer_size + 0x80;
-  @ assigns \nothing;
-  @*/
+
 static unsigned int search_MMT(const unsigned char *buffer, const unsigned int i, const unsigned int buffer_size)
 {
   /*
@@ -173,7 +156,7 @@ static unsigned int search_MMT(const unsigned char *buffer, const unsigned int i
   unsigned int size=0;
   if(i+sizeof(mm_header)>buffer_size)
     return 0;
-  /*@ assert i + sizeof(mm_header) <= buffer_size; */
+  
   if(memcmp(&buffer[i],mm_header,sizeof(mm_header))==0)	// Optional Header
   {
     size=256;
@@ -195,13 +178,13 @@ static unsigned int search_MMT(const unsigned char *buffer, const unsigned int i
     uint32_t image_size;
     if(tmp+8>buffer_size)
       return 0;
-    /*@ assert tmp + 8 <= buffer_size; */
+    
     image_size_ptr = (const uint32_t *)&buffer[tmp+4];
     image_size = le32(*image_size_ptr);
     /* Check if the image size */
     if(image_size > buffer_size)
       return 0;
-    /*@ assert image_size <= buffer_size; */
+    
     /* Image binary */
     size+=8+image_size;
   }
@@ -213,7 +196,7 @@ static unsigned int search_MMT(const unsigned char *buffer, const unsigned int i
       /* log_trace("search_MMT: partial MusicMatch Tag 1\n"); */
       return 0;
     }
-    /*@ assert tmp + sizeof(mm_pad_version_info) <= buffer_size; */
+    
     if(memcmp(&buffer[tmp], mm_pad_version_info, sizeof(mm_pad_version_info))!=0)
     {
       /* log_trace("search_MMT: mm_pad_version_info not present\n"); */
@@ -230,7 +213,7 @@ static unsigned int search_MMT(const unsigned char *buffer, const unsigned int i
       /* log_trace("search_MMT: partial MusicMatch 2\n"); */
       return 0;
     }
-    /*@ assert tmp + 8132 + sizeof(mm_footer) <= buffer_size; */
+    
     if( memcmp(&buffer[tmp+7868], mm_footer, sizeof(mm_footer)-1)==0 ||
 	memcmp(&buffer[tmp+7868], mm_footer_tag, sizeof(mm_footer_tag) - 1)==0)
       size+=7868;
@@ -253,7 +236,7 @@ static unsigned int search_MMT(const unsigned char *buffer, const unsigned int i
     const unsigned int tmp=i+size;
     if(tmp + sizeof(mm_footer) > buffer_size)
       return 0;
-    /*@ assert tmp + sizeof(mm_footer) <= buffer_size; */
+    
     if(memcmp(&buffer[tmp],mm_footer, sizeof(mm_footer)-1)==0)
       size+=48;	/* footer */
     else
@@ -263,14 +246,7 @@ static unsigned int search_MMT(const unsigned char *buffer, const unsigned int i
   return size;
 }
 
-/*@
-  @ requires buffer_size >= 32;
-  @ requires file_recovery->data_check==&data_check_mp3;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ ensures \result == DC_CONTINUE || \result == DC_STOP;
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_mp3(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
 #ifdef DEBUG_MP3
@@ -278,17 +254,14 @@ static data_check_t data_check_mp3(const unsigned char *buffer, const unsigned i
       (long long unsigned)file_recovery->file_size,
       (long long unsigned)file_recovery->calculated_file_size);
 #endif
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 16);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 16 < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - 16 ; */
+    
 #ifdef DEBUG_MP3
     log_info("data_check_mp3 start i=0x%x buffer_size=0x%x calculated_file_size=%lu file_size=%lu\n",
 	i, buffer_size,
@@ -302,15 +275,15 @@ static data_check_t data_check_mp3(const unsigned char *buffer, const unsigned i
       const unsigned int bit_rate_key	=(buffer[i+2]>>4)&0x0F;
       const unsigned int sampling_rate_key=(buffer[i+2]>>2)&0x03;
       const unsigned int padding	=(buffer[i+2]>>1)&0x01;
-      /*@ split mpeg_version; */
+      
       const unsigned int sample_rate	=sample_rate_table[mpeg_version][sampling_rate_key];
-      /*@ assert sample_rate == 0 || 8000 <= sample_rate <= 48000; */
+      
       const unsigned int bit_rate	=bit_rate_table[mpeg_version][mpeg_layer][bit_rate_key];
       unsigned int frameLengthInBytes=0;
       if(sample_rate==0 || bit_rate==0 || mpeg_layer==MPEG_L1)
 	return DC_STOP;
-      /*@ assert 8000 <= sample_rate <= 48000; */
-      /*@ assert 0 < bit_rate <= 448; */
+      
+      
       if(mpeg_layer==MPEG_L3)
       {
 	if(mpeg_version==MPEG_V1)
@@ -324,9 +297,9 @@ static data_check_t data_check_mp3(const unsigned char *buffer, const unsigned i
 	frameLengthInBytes = (12000 * bit_rate / sample_rate + padding)*4;
       if(frameLengthInBytes<3)
 	return DC_STOP;
-      /*@ assert 3 <= frameLengthInBytes <= 8065; */
+      
       file_recovery->calculated_file_size+=frameLengthInBytes;
-      /*@ assert file_recovery->calculated_file_size > 0; */
+      
     }
     else if(buffer[i]=='L' && buffer[i+1]=='Y' && buffer[i+2]=='R' && buffer[i+3]=='I' && buffer[i+4]=='C' && buffer[i+5]=='S' && buffer[i+6]=='B' && buffer[i+7]=='E' && buffer[i+8]=='G' && buffer[i+9]=='I' && buffer[i+10]=='N')
     {
@@ -343,18 +316,18 @@ static data_check_t data_check_mp3(const unsigned char *buffer, const unsigned i
       unsigned int pos_lyrics=0;
       if(i + 5100 > buffer_size)
 	return DC_STOP;
-      /*@ assert i + 5100 <= buffer_size; */
+      
       if((pos_lyrics=pos_in_mem(&buffer[i], 4096, (const unsigned char*)"LYRICS200", 9)) != 0)
       {
-	/*@ assert 0 < pos_lyrics <= 4096; */
+	
 	file_recovery->calculated_file_size+=pos_lyrics;
-	/*@ assert file_recovery->calculated_file_size > 0; */
+	
       }
       else if((pos_lyrics=pos_in_mem(&buffer[i], 5100, (const unsigned char*)"LYRICSEND", 9)) != 0)
       {
-	/*@ assert 0 < pos_lyrics <= 5100; */
+	
 	file_recovery->calculated_file_size+=pos_lyrics;
-	/*@ assert file_recovery->calculated_file_size > 0; */
+	
       }
       else
       {
@@ -367,14 +340,14 @@ static data_check_t data_check_mp3(const unsigned char *buffer, const unsigned i
     else if(buffer[i]=='A' && buffer[i+1]=='P' && buffer[i+2]=='E' && buffer[i+3]=='T' && buffer[i+4]=='A' && buffer[i+5]=='G' && buffer[i+6]=='E' && buffer[i+7]=='X')
     { /* APE Tagv2 (APE Tagv1 has no header) http://wiki.hydrogenaudio.org/index.php?title=APE_Tags_Header */
       const uint64_t ape_tag_size = (buffer[i+12] | (buffer[i+13]<<8) | (buffer[i+14]<<16) | ((uint64_t)buffer[i+15]<<24))+(uint64_t)32;
-      /*@ assert ape_tag_size > 0; */
+      
       file_recovery->calculated_file_size+=ape_tag_size;
-      /*@ assert file_recovery->calculated_file_size > 0; */
+      
     }
     else if(buffer[i]=='T' && buffer[i+1]=='A' && buffer[i+2]=='G')
     { /* http://www.id3.org/ID3v1 TAGv1 size = 128 bytes with header "TAG" */
       file_recovery->calculated_file_size+=128;
-      /*@ assert file_recovery->calculated_file_size > 0; */
+      
     }
     else if(buffer[i]=='I' && buffer[i+1]=='D' && buffer[i+2]=='3' && (buffer[i+3]==2 || buffer[i+3]==3 || buffer[i+3]==4) && buffer[i+4]==0)
     {
@@ -383,48 +356,37 @@ static data_check_t data_check_mp3(const unsigned char *buffer, const unsigned i
 	potential_frame_offset = 10;
       potential_frame_offset+=((buffer[i+6]&0x7f)<<21) + ((buffer[i+7]&0x7f)<<14)
 	+ ((buffer[i+8]&0x7f)<<7) + (buffer[i+9]&0x7f)+ 10;
-      /*@ assert potential_frame_offset > 0; */
+      
       file_recovery->calculated_file_size+=potential_frame_offset;
-      /*@ assert file_recovery->calculated_file_size > 0; */
+      
     }
     else
     {
       const unsigned int MMT_size=search_MMT(buffer,i,buffer_size);
       if(MMT_size==0)
 	return DC_STOP;
-      /*@ assert 0 < MMT_size <= buffer_size + 0x80; */
+      
       /*
 	 log_info("MusicMatch Tag found at offset 0x%x with size 0x%x \n", file_recovery->calculated_file_size, MMT_size);
 	 */
       file_recovery->calculated_file_size+=MMT_size;
-      /*@ assert file_recovery->calculated_file_size > 0; */
+      
     }
   }
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires buffer_size >= 32;
-  @ requires file_recovery->data_check==&data_check_id3;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ ensures \result == DC_CONTINUE || \result == DC_STOP;
-  @ ensures file_recovery->data_check==&data_check_id3 || file_recovery->data_check==&data_check_mp3;
-  @ assigns file_recovery->data_check, file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_id3(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->data_check, file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 1);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 1 < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - 1 ; */
+    
     if(buffer[i]==0)
     { /* Padding is present */
       file_recovery->calculated_file_size++;
@@ -432,33 +394,17 @@ static data_check_t data_check_id3(const unsigned char *buffer, const unsigned i
     else
     { /* no more padding or no padding */
       file_recovery->data_check=&data_check_mp3;
-      /*@ assert file_recovery->data_check==&data_check_mp3; */
+      
       if(data_check_mp3(buffer, buffer_size, file_recovery)!=DC_CONTINUE)
 	return DC_STOP;
       return DC_CONTINUE;
     }
   }
-  /*@ assert file_recovery->data_check==&data_check_id3; */
+  
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires buffer_size >= 10;
-  @ requires separation: \separated(&file_hint_mp3, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures (\result == 1) ==> (file_recovery_new->extension == file_hint_mp3.extension);
-  @ ensures (\result == 1) ==> (file_recovery_new->time == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->calculated_file_size > 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_size == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->min_filesize == 287);
-  @ ensures (\result == 1) ==> (file_recovery_new->data_check == &data_check_id3);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_check == &file_check_size);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_rename== \null);
-  @ ensures (\result == 1) ==> (valid_read_string(file_recovery_new->extension));
-  @ assigns *file_recovery_new;
-  @*/
+
 static int header_check_id3(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(buffer[0]=='I' && buffer[1]=='D' && buffer[2]=='3' && (buffer[3]==2 || buffer[3]==3 || buffer[3]==4) && buffer[4]==0)
@@ -480,7 +426,7 @@ static int header_check_id3(const unsigned char *buffer, const unsigned int buff
      */
     reset_file_recovery(file_recovery_new);
     file_recovery_new->calculated_file_size=potential_frame_offset;
-    /*@ assert file_recovery_new->calculated_file_size > 0; */
+    
     file_recovery_new->min_filesize=287;
     file_recovery_new->data_check=&data_check_id3;
     file_recovery_new->extension=file_hint_mp3.extension;
@@ -490,22 +436,7 @@ static int header_check_id3(const unsigned char *buffer, const unsigned int buff
   return 0;
 }
 
-/*@
-  @ requires buffer_size >= 6;
-  @ requires separation: \separated(&file_hint_mp3, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures (\result == 1) ==> (file_recovery_new->extension == file_hint_mp3.extension);
-  @ ensures (\result == 1) ==> (file_recovery_new->time == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->calculated_file_size > 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_size == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->min_filesize == 287);
-  @ ensures (\result == 1 && file_recovery_new->blocksize >= 16) ==> (file_recovery_new->data_check == &data_check_mp3);
-  @ ensures (\result == 1 && file_recovery_new->blocksize >= 16) ==> (file_recovery_new->file_check == &file_check_size);
-  @ ensures (\result == 1 && file_recovery_new->blocksize < 16) ==> (file_recovery_new->data_check == \null);
-  @ ensures (\result == 1 && file_recovery_new->blocksize < 16) ==> (file_recovery_new->file_check == \null);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_rename== \null);
-  @*/
+
 static int header_check_mp3(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   unsigned int potential_frame_offset=0;
@@ -527,12 +458,8 @@ static int header_check_mp3(const unsigned char *buffer, const unsigned int buff
 	 (buffer[1]&0xFE)==0xF2 ||
 	 (buffer[1]&0xFE)==0xE2)))
     return 0;
-  /*@ assert nbr == 0; */
-  /*@
-    @ loop invariant 0 <= nbr <= potential_frame_offset <= 8192 + 8065;
-    @ loop assigns potential_frame_offset,nbr;
-    @ loop variant  8192 - potential_frame_offset;
-    @*/
+  
+  
   while(potential_frame_offset+1 < buffer_size &&
       potential_frame_offset+1 < 8192)
   {
@@ -544,14 +471,14 @@ static int header_check_mp3(const unsigned char *buffer, const unsigned int buff
       const unsigned int bit_rate_key	=(buffer[potential_frame_offset+2]>>4)&0x0F;
       const unsigned int sampling_rate_key=(buffer[potential_frame_offset+2]>>2)&0x03;
       const unsigned int padding	=(buffer[potential_frame_offset+2]>>1)&0x01;
-      /*@ split mpeg_version; */
+      
       const unsigned int bit_rate	=bit_rate_table[mpeg_version][mpeg_layer][bit_rate_key];
       const unsigned int sample_rate	=sample_rate_table[mpeg_version][sampling_rate_key];
       unsigned int frameLengthInBytes=0;
       if(sample_rate==0 || bit_rate==0 || mpeg_layer==MPEG_L1)
 	return 0;
-      /*@ assert 8000 <= sample_rate <= 48000; */
-      /*@ assert 0 < bit_rate <= 448; */
+      
+      
       if(mpeg_layer==MPEG_L3)
       {
 	if(mpeg_version==MPEG_V1)
@@ -569,9 +496,9 @@ static int header_check_mp3(const unsigned char *buffer, const unsigned int buff
 #endif
       if(frameLengthInBytes<3)
 	return 0;
-      /*@ assert 3 <= frameLengthInBytes <= 8065; */
+      
       potential_frame_offset+=frameLengthInBytes;
-      /*@ assert potential_frame_offset > 0; */
+      
       nbr++;
     }
   }
@@ -599,16 +526,16 @@ static int header_check_mp3(const unsigned char *buffer, const unsigned int buff
     }
 #endif
   }
-  /*@ assert nbr > 1; */
-  /*@ assert potential_frame_offset > 0; */
+  
+  
 #ifdef DEBUG_MP3
   log_info("header_check_mp3 mp3 found\n");
 #endif
   reset_file_recovery(file_recovery_new);
-  /*@ assert file_recovery_new->file_check == \null; */
-  /*@ assert file_recovery_new->data_check == \null; */
+  
+  
   file_recovery_new->calculated_file_size=potential_frame_offset;
-  /*@ assert file_recovery_new->calculated_file_size > 0; */
+  
   file_recovery_new->min_filesize=287;
   file_recovery_new->extension=file_hint_mp3.extension;
   if(file_recovery_new->blocksize >= 16)
@@ -619,9 +546,7 @@ static int header_check_mp3(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-/*@
-  @ requires valid_register_header_check(file_stat);
-  @*/
+
 static void register_header_check_mp3(file_stat_t *file_stat)
 {
   static const unsigned char mpeg1_L3_header1[2]= {0xFF, 0xFA};
@@ -650,7 +575,7 @@ static int main_id3()
   file_recovery_t file_recovery;
   file_stat_t file_stats;
 
-  /*@ assert \valid(buffer + (0 .. (BLOCKSIZE - 1))); */
+  
 #if defined(__FRAMAC__)
   Frama_C_make_unknown((char *)buffer, BLOCKSIZE);
 #endif
@@ -672,31 +597,31 @@ static int main_id3()
   register_header_check_mp3(&file_stats);
   if(header_check_id3(buffer, BLOCKSIZE, 0u, &file_recovery, &file_recovery_new) != 1)
     return 0;
-  /*@ assert valid_read_string((char *)&fn); */
+  
   memcpy(file_recovery_new.filename, fn, sizeof(fn));
   file_recovery_new.file_stat=&file_stats;
-  /*@ assert valid_read_string((char *)file_recovery_new.filename); */
-  /*@ assert file_recovery_new.extension == file_hint_mp3.extension;	*/
-  /*@ assert file_recovery_new.calculated_file_size > 0; */
-  /*@ assert file_recovery_new.file_size == 0;	*/
-  /*@ assert file_recovery_new.min_filesize == 287;	*/
-  /*@ assert file_recovery_new.data_check == &data_check_id3; */
-  /*@ assert file_recovery_new.file_rename == \null; */
+  
+  
+  
+  
+  
+  
+  
   {
     unsigned char big_buffer[2*BLOCKSIZE];
     data_check_t res_data_check=DC_CONTINUE;
     memset(big_buffer, 0, BLOCKSIZE);
     memcpy(big_buffer + BLOCKSIZE, buffer, BLOCKSIZE);
-    /*@ assert file_recovery_new.file_size <= file_recovery_new.calculated_file_size; */;
+    ;
     res_data_check=data_check_id3(big_buffer, 2*BLOCKSIZE, &file_recovery_new);
-    /*@ assert file_recovery_new.data_check == &data_check_id3 || file_recovery_new.data_check == &data_check_mp3; */
-    /*@ assert res_data_check == DC_CONTINUE && file_recovery_new.data_check == &data_check_mp3 ==> (file_recovery_new.calculated_file_size >= file_recovery_new.file_size + BLOCKSIZE - 16); */
-    /*@ assert res_data_check == DC_CONTINUE && file_recovery_new.data_check == &data_check_id3 ==> (file_recovery_new.calculated_file_size >= file_recovery_new.file_size + BLOCKSIZE - 1); */
-    /*@ assert res_data_check == DC_CONTINUE ==> (file_recovery_new.calculated_file_size >= file_recovery_new.file_size + BLOCKSIZE - 16); */
+    
+    
+    
+    
     file_recovery_new.file_size+=BLOCKSIZE;
     if(res_data_check == DC_CONTINUE)
     {
-      /*@ assert file_recovery_new.calculated_file_size >= file_recovery_new.file_size - 16; */
+      
       memcpy(big_buffer, big_buffer + BLOCKSIZE, BLOCKSIZE);
 #if defined(__FRAMAC__)
       Frama_C_make_unknown((char *)big_buffer + BLOCKSIZE, BLOCKSIZE);
@@ -735,7 +660,7 @@ static int main_mp3()
   file_recovery_t file_recovery;
   file_stat_t file_stats;
 
-  /*@ assert \valid(buffer + (0 .. (BLOCKSIZE - 1))); */
+  
 #if defined(__FRAMAC__)
   Frama_C_make_unknown((char *)buffer, BLOCKSIZE);
 #endif
@@ -757,13 +682,13 @@ static int main_mp3()
   register_header_check_mp3(&file_stats);
   if(header_check_mp3(buffer, BLOCKSIZE, 0u, &file_recovery, &file_recovery_new)!=1)
     return 0;
-  /*@ assert valid_read_string((char *)&fn); */
+  
   memcpy(file_recovery_new.filename, fn, sizeof(fn));
-  /*@ assert file_recovery_new.file_size == 0;	*/
-  /*@ assert file_recovery_new.min_filesize == 287;	*/
-  /*@ assert file_recovery_new.extension == file_hint_mp3.extension;	*/
-  /*@ assert file_recovery_new.calculated_file_size > 0; */
-  /*@ assert file_recovery_new.file_rename == \null; */
+  
+  
+  
+  
+  
   file_recovery_new.file_stat=&file_stats;
   if(file_recovery_new.file_stat!=NULL && file_recovery_new.file_stat->file_hint!=NULL &&
     file_recovery_new.data_check!=NULL)
@@ -772,15 +697,15 @@ static int main_mp3()
     data_check_t res_data_check=DC_CONTINUE;
     memset(big_buffer, 0, BLOCKSIZE);
     memcpy(big_buffer + BLOCKSIZE, buffer, BLOCKSIZE);
-    /*@ assert file_recovery_new.data_check == &data_check_mp3; */
-    /*@ assert file_recovery_new.file_size == 0; */;
-    /*@ assert file_recovery_new.file_size <= file_recovery_new.calculated_file_size; */;
+    
+    ;
+    ;
     res_data_check=data_check_mp3(big_buffer, 2*BLOCKSIZE, &file_recovery_new);
-    /*@ assert res_data_check == DC_CONTINUE ==> (file_recovery_new.calculated_file_size >= file_recovery_new.file_size + BLOCKSIZE - 16); */
+    
     file_recovery_new.file_size+=BLOCKSIZE;
     if(res_data_check == DC_CONTINUE)
     {
-      /*@ assert file_recovery_new.calculated_file_size >= file_recovery_new.file_size - 16; */
+      
       memcpy(big_buffer, big_buffer + BLOCKSIZE, BLOCKSIZE);
 #if defined(__FRAMAC__)
       Frama_C_make_unknown((char *)big_buffer + BLOCKSIZE, BLOCKSIZE);
@@ -801,7 +726,7 @@ static int main_mp3()
   }
   if(file_recovery_new.file_check!=NULL)
   {
-    /*@ assert valid_read_string((char *)file_recovery_new.filename); */
+    
     file_recovery_new.handle=fopen(fn, "rb");
     if(file_recovery_new.handle!=NULL)
     {

@@ -29,9 +29,6 @@
 #include "types.h"
 #include "common.h"
 #include "intrf.h"
-#ifdef HAVE_NCURSES
-#include "intrfn.h"
-#endif
 #include "dir_common.h"
 #include "dir.h"
 #include "fat_dir.h"
@@ -86,233 +83,6 @@ static void format_size(char *buf, size_t bufsz, uint64_t bytes)
   else
     snprintf(buf, bufsz, "%.1f %s", v, units[u]);
 }
-
-#ifdef HAVE_NCURSES
-static WINDOW *g_backup_win = NULL;
-static const char *g_backup_phase = NULL;
-
-static void backup_draw_bar(WINDOW *win, int row, uint64_t done,
-    uint64_t total, const char *spin_char, const char *label)
-{
-    int i;
-    int pct;
-    int bar_width;
-    int filled;
-
-    if (total == 0) total = 1;
-    pct = (int)(done * 100 / total);
-    if (pct > 100) pct = 100;
-    bar_width = COLS - 24;
-    if (bar_width < 10) bar_width = 10;
-    filled = (int)(done * bar_width / total);
-    if (filled > bar_width) filled = bar_width;
-
-    if (has_colors())
-        wbkgdset(win, ' ' | COLOR_PAIR(CP_HEADER) | A_BOLD);
-    wmove(win, row, 0);
-    wclrtoeol(win);
-    wprintw(win, "  %.*s", COLS - 4, label);
-    if (has_colors())
-        wbkgdset(win, ' ' | COLOR_PAIR(CP_NORMAL));
-
-    row++;
-    wmove(win, row, 0);
-    wclrtoeol(win);
-    wprintw(win, "  +");
-    for (i = 0; i < bar_width + 9; i++)
-        waddch(win, ACS_HLINE);
-    wprintw(win, "+");
-
-    row++;
-    wmove(win, row, 0);
-    wclrtoeol(win);
-    wprintw(win, "  | ");
-    if (has_colors())
-        wbkgdset(win, ' ' | COLOR_PAIR(CP_MARKED));
-    for (i = 0; i < filled; i++)
-        waddch(win, ACS_BLOCK);
-    if (has_colors())
-        wbkgdset(win, ' ' | COLOR_PAIR(CP_DIM));
-    for (i = filled; i < bar_width; i++)
-        waddch(win, ACS_BOARD);
-    if (has_colors())
-        wbkgdset(win, ' ' | COLOR_PAIR(CP_NORMAL));
-    wprintw(win, " | %3d%% |", pct);
-
-    row++;
-    wmove(win, row, 0);
-    wclrtoeol(win);
-    wprintw(win, "  +");
-    for (i = 0; i < bar_width + 9; i++)
-        waddch(win, ACS_HLINE);
-    wprintw(win, "+");
-
-  row++;
-  wmove(win, row, 0);
-  wclrtoeol(win);
-  {
-    char buf_done[32], buf_total[32];
-    format_size(buf_done, sizeof(buf_done), done);
-    format_size(buf_total, sizeof(buf_total), total);
-    wprintw(win, "  %s %s / %s", spin_char, buf_done, buf_total);
-  }
-
-    if (g_backup_extra > 0)
-    {
-        row++;
-        wmove(win, row, 0);
-        wclrtoeol(win);
-        if (has_colors())
-            wbkgdset(win, ' ' | COLOR_PAIR(CP_MARKED));
-        wprintw(win, "  %llu found", (unsigned long long)g_backup_extra);
-        if (has_colors())
-            wbkgdset(win, ' ' | COLOR_PAIR(CP_NORMAL));
-    }
-
-    wrefresh(win);
-}
-
-static void backup_show_progress(const char *current_path)
-{
-    static int spin_idx = 0;
-    char buf_size[32];
-    int spin_c;
-
-    if (g_backup_win == NULL)
-        return;
-    spin_c = spin_idx % 4;
-    spin_idx = (spin_idx + 1) % 4;
-
-    if (g_backup_total == 0)
-    {
-        format_size(buf_size, sizeof(buf_size), g_backup_processed);
-        if (has_colors())
-            wbkgdset(g_backup_win, ' ' | COLOR_PAIR(CP_HEADER) | A_BOLD);
-        wmove(g_backup_win, 5, 0);
-        wclrtoeol(g_backup_win);
-        wprintw(g_backup_win, "  Index Backup: %s", g_backup_phase);
-        if (has_colors())
-            wbkgdset(g_backup_win, ' ' | COLOR_PAIR(CP_NORMAL));
-        wmove(g_backup_win, 6, 0);
-        wclrtoeol(g_backup_win);
-        wprintw(g_backup_win, "  %c %s",
-            "|/-\\"[spin_c],
-            current_path ? current_path : "");
-        wmove(g_backup_win, 7, 0);
-        wclrtoeol(g_backup_win);
-        wprintw(g_backup_win, "  Files indexed: %llu  |  Metadata: %s",
-            (unsigned long long)g_backup_extra,
-            buf_size);
-        wrefresh(g_backup_win);
-    }
-    else
-    {
-        backup_draw_bar(g_backup_win, 5, g_backup_processed, g_backup_total,
-            "|/-\\"[spin_c], "Index Backup");
-    }
-}
-
-static void backup_count_progress(const char *current_path)
-{
-    static int spin_idx = 0;
-    int spin_c;
-    int max_path;
-
-    if (g_backup_win == NULL)
-        return;
-    spin_c = spin_idx % 4;
-    spin_idx = (spin_idx + 1) % 4;
-
-    if (has_colors())
-        wbkgdset(g_backup_win, ' ' | COLOR_PAIR(CP_HEADER) | A_BOLD);
-    wmove(g_backup_win, 5, 0);
-    wclrtoeol(g_backup_win);
-    wprintw(g_backup_win, "  Index Backup: counting files...");
-    if (has_colors())
-        wbkgdset(g_backup_win, ' ' | COLOR_PAIR(CP_NORMAL));
-
-    wmove(g_backup_win, 7, 0);
-    wclrtoeol(g_backup_win);
-    max_path = COLS - 30;
-    if (max_path < 10) max_path = 10;
-    if (current_path != NULL && (int)strlen(current_path) > max_path)
-    {
-        wprintw(g_backup_win, "  %c ...%s (found %llu files)",
-            "|/-\\"[spin_c],
-            current_path + strlen(current_path) - max_path + 4,
-            (unsigned long long)g_backup_processed);
-    }
-    else
-    {
-        wprintw(g_backup_win, "  %c %s (found %llu files)",
-            "|/-\\"[spin_c],
-            current_path ? current_path : "",
-            (unsigned long long)g_backup_processed);
-    }
-
-    wrefresh(g_backup_win);
-}
-
-static void backup_load_progress(uint64_t parsed, uint64_t total)
-{
-    char label[200];
-
-    if (g_backup_win == NULL)
-        return;
-
-    snprintf(label, sizeof(label), "Restore: loading .dsk file...");
-    g_backup_extra = 0;
-    backup_draw_bar(g_backup_win, 5, parsed, total,
-        "-", label);
-}
-
-static void backup_walk_live_progress(uint64_t done, uint64_t total,
-    const char *path)
-{
-    static int spin_idx = 0;
-    char label[200];
-    char spin_char[200];
-    int spin_c;
-    int max_path;
-
-    if (g_backup_win == NULL)
-        return;
-    spin_c = spin_idx % 4;
-    spin_idx = (spin_idx + 1) % 4;
-
-    snprintf(label, sizeof(label), "Restore: walking live filesystem...");
-    max_path = COLS - 40;
-    if (max_path < 10) max_path = 10;
-    if (path != NULL && (int)strlen(path) > max_path)
-    {
-        snprintf(spin_char, sizeof(spin_char), "%c ...%s",
-            "|/-\\"[spin_c], path + strlen(path) - max_path + 4);
-    }
-    else
-    {
-        snprintf(spin_char, sizeof(spin_char), "%c %s",
-            "|/-\\"[spin_c], path ? path : "");
-    }
-
-    g_backup_extra = 0;
-    backup_draw_bar(g_backup_win, 5, done, total,
-        spin_char, label);
-}
-
-static void backup_restore_progress(uint64_t processed, uint64_t total,
-    uint64_t found)
-{
-    char label[200];
-
-    if (g_backup_win == NULL)
-        return;
-
-    snprintf(label, sizeof(label), "Restore: comparing backup entries...");
-    g_backup_extra = found;
-    backup_draw_bar(g_backup_win, 5, processed, total,
-        "-", label);
-}
-#endif
 
 static int write_le32(FILE *f, uint32_t v)
 {
@@ -1008,9 +778,6 @@ static int backup_walk_dir(scan_tree_t *tree, disk_t *disk,
 
         g_backup_processed += fi->st_size;
         g_backup_extra++;
-#ifdef HAVE_NCURSES
-        backup_show_progress(path);
-#endif
 
         if (!is_dir)
         {
@@ -1175,10 +942,6 @@ static uint32_t count_live_files(dir_data_t *dir_data, disk_t *disk,
             *total_size += fi->st_size;
 
         g_backup_processed++;
-#ifdef HAVE_NCURSES
-        if (g_backup_processed % 50 == 0)
-            backup_count_progress(path);
-#endif
 
         if (is_dir)
         {
@@ -1274,10 +1037,6 @@ static int backup_walk_live(disk_t *disk, const partition_t *partition,
         path_array[(*path_count)++] = be;
 
         g_backup_processed++;
-#ifdef HAVE_NCURSES
-        if (g_backup_processed % 50 == 0)
-            backup_walk_live_progress(g_backup_processed, g_backup_total, path);
-#endif
 
         if (is_dir)
         {
@@ -1380,11 +1139,6 @@ static int backup_restore_build_tree(scan_tree_t *tree,
         }
 
         processed++;
-#ifdef HAVE_NCURSES
-        if (processed % 50 == 0)
-            backup_restore_progress(processed, backup_total,
-                found_deleted + found_modified);
-#endif
 
         if (is_deleted || is_modified)
         {
@@ -1475,23 +1229,10 @@ int backup_create(disk_t *disk, const partition_t *partition,
                     partition->upart_type <= UP_EXT4)
                     label = "ext volume";
                 log_error("backup_create: I/O error opening %s\n", label);
-#ifdef HAVE_NCURSES
-                {
-                char msg[512];
-                    snprintf(msg, sizeof(msg),
-                        "Cannot read %s (I/O error or damaged volume)\n"
-                        "Check photorec-nc.log for details.", label);
-                    display_message(msg);
-                }
-#endif
             }
             else if (init_res == DIR_PART_ENOSYS)
             {
                 log_error("backup_create: filesystem library not available\n");
-#ifdef HAVE_NCURSES
-                display_message("Required filesystem library not available.\n"
-                    "Recompile with libntfs/libext2fs support.");
-#endif
             }
             else
             {
@@ -1505,18 +1246,6 @@ int backup_create(disk_t *disk, const partition_t *partition,
                     "fsname=\"%s\")\n",
                     (int)partition->upart_type,
                     partition->part_type_i386, fs_label);
-#ifdef HAVE_NCURSES
-                {
-                    char msg[512];
-                    snprintf(msg, sizeof(msg),
-                        "Unsupported filesystem for index backup.\n"
-                        "Detected: %s (type code 0x%02x)\n"
-                        "Currently supported: FAT, NTFS, exFAT, ext2/3/4.",
-                        fs_label[0] ? fs_label : "none",
-                        partition->part_type_i386);
-                    display_message(msg);
-                }
-#endif
             }
             return -1;
         }
@@ -1531,9 +1260,6 @@ int backup_create(disk_t *disk, const partition_t *partition,
     {
         log_error("backup_create: cannot create %s: %s\n",
             file_path, strerror(errno));
-#ifdef HAVE_NCURSES
-        display_message("Cannot create backup file.");
-#endif
         if (dir_data.close)
             dir_data.close(&dir_data);
         return -1;
@@ -1633,34 +1359,11 @@ int backup_create(disk_t *disk, const partition_t *partition,
         return -1;
     }
 
-#ifdef HAVE_NCURSES
-    g_backup_win = stdscr;
-    wclear(stdscr);
-    if (has_colors())
-        wbkgdset(stdscr, ' ' | COLOR_PAIR(CP_HEADER) | A_BOLD);
-    wmove(stdscr, 0, 0);
-    wclrtoeol(stdscr);
-    wprintw(stdscr, " photorec_nc  Create Index Backup  (%s)", fsname);
-    if (has_colors())
-        wbkgdset(stdscr, ' ' | COLOR_PAIR(CP_NORMAL));
-    wmove(stdscr, 2, 0);
-    wclrtoeol(stdscr);
-    wprintw(stdscr, " Destination: %s", file_path);
-    wmove(stdscr, 3, 0);
-    wclrtoeol(stdscr);
-    wprintw(stdscr, " =========================================");
-    wrefresh(stdscr);
-#endif
-
     g_backup_processed = 0;
     g_backup_total = 0;
     g_last_update = 0;
     g_backup_extra = 0;
     written_count = 0;
-#ifdef HAVE_NCURSES
-    g_backup_phase = "indexing";
-    backup_show_progress("");
-#endif
     write_backup_entry(f_out, "/", 1, 0, 0, 1, NULL, 0);
     written_count++;
 
@@ -1703,10 +1406,6 @@ int backup_create(disk_t *disk, const partition_t *partition,
         fseek(f_out, pos, SEEK_SET);
     }
 
-#ifdef HAVE_NCURSES
-    backup_show_progress("");
-#endif
-
     fclose(f_out);
 
     if (dir_data.close)
@@ -1714,18 +1413,6 @@ int backup_create(disk_t *disk, const partition_t *partition,
 
     log_info("backup_create: wrote %u entries to %s\n",
         (unsigned int)written_count, file_path);
-
-#ifdef HAVE_NCURSES
-    {
-        char msg[512];
-        snprintf(msg, sizeof(msg),
-            "Backup created: %u files indexed\n\nFile: %.400s",
-            (unsigned int)(written_count > 0 ? written_count - 1 : 0),
-            file_path);
-        display_message(msg);
-    }
-    g_backup_win = NULL;
-#endif
 
     return 0;
 }
@@ -1751,9 +1438,6 @@ int backup_restore(scan_tree_t *tree, disk_t *disk,
     if (f_in == NULL)
     {
         log_error("backup_restore: cannot open %s\n", path);
-#ifdef HAVE_NCURSES
-        display_message("Cannot open backup file.");
-#endif
         return -1;
     }
 
@@ -1766,17 +1450,6 @@ int backup_restore(scan_tree_t *tree, disk_t *disk,
             log_error("backup_restore: %s is too short "
                 "(read %zu of %d bytes)\n",
                 path, nread, PBACKUP_HEADER_SIZE);
-#ifdef HAVE_NCURSES
-            {
-                char msg[256];
-                snprintf(msg, sizeof(msg),
-                    "Invalid or truncated backup file:\n"
-                    "%.200s\n"
-                    "(read %zu bytes, need %d)",
-                    path, nread, (int)PBACKUP_HEADER_SIZE);
-                display_message(msg);
-            }
-#endif
         fclose(f_in);
         return -1;
     }
@@ -1797,18 +1470,12 @@ int backup_restore(scan_tree_t *tree, disk_t *disk,
 
     if (hdr.magic != PBACKUP_MAGIC)
     {
-#ifdef HAVE_NCURSES
-        display_message("Not a valid .dsk backup file (bad magic).");
-#endif
         fclose(f_in);
         return -1;
     }
 
     if (hdr.version != PBACKUP_VERSION)
     {
-#ifdef HAVE_NCURSES
-        display_message("Unsupported .dsk file version.");
-#endif
         fclose(f_in);
         return -1;
     }
@@ -1830,9 +1497,6 @@ int backup_restore(scan_tree_t *tree, disk_t *disk,
                 "Disk size mismatch.\nBackup: %llu MB, Current: %llu MB",
                 (unsigned long long)(orig_size / (1024 * 1024)),
                 (unsigned long long)(disk->disk_size / (1024 * 1024)));
-#ifdef HAVE_NCURSES
-            display_message(msg);
-#endif
             fclose(f_in);
             return -1;
         }
@@ -1862,25 +1526,6 @@ int backup_restore(scan_tree_t *tree, disk_t *disk,
         (void)pad_len;
     }
 
-#ifdef HAVE_NCURSES
-    g_backup_win = stdscr;
-    wclear(stdscr);
-    if (has_colors())
-        wbkgdset(stdscr, ' ' | COLOR_PAIR(CP_HEADER) | A_BOLD);
-    wmove(stdscr, 0, 0);
-    wclrtoeol(stdscr);
-    wprintw(stdscr, " photorec_nc  Restore from Backup");
-    if (has_colors())
-        wbkgdset(stdscr, ' ' | COLOR_PAIR(CP_NORMAL));
-    wmove(stdscr, 2, 0);
-    wclrtoeol(stdscr);
-    wprintw(stdscr, " Backup: %s", path);
-    wmove(stdscr, 3, 0);
-    wclrtoeol(stdscr);
-    wprintw(stdscr, " =========================================");
-    wrefresh(stdscr);
-#endif
-
     TD_INIT_LIST_HEAD(&backup_entries);
 
     backup_total = hdr.file_count;
@@ -1898,9 +1543,6 @@ int backup_restore(scan_tree_t *tree, disk_t *disk,
 
         if (i % 500 == 0)
         {
-#ifdef HAVE_NCURSES
-            backup_load_progress((uint64_t)i, (uint64_t)backup_total);
-#endif
         }
 
         if (fread(entry_buf, 1, 27, f_in) != 27)
@@ -1981,16 +1623,6 @@ int backup_restore(scan_tree_t *tree, disk_t *disk,
     log_info("backup_restore: loaded %u entries from %s\n",
         backup_total, path);
 
-#ifdef HAVE_NCURSES
-    wmove(stdscr, 4, 0);
-    wclrtoeol(stdscr);
-    wprintw(stdscr, " =========================================");
-    wmove(stdscr, 5, 0);
-    wclrtoeol(stdscr);
-    wprintw(stdscr, " Opening live filesystem...");
-    wrefresh(stdscr);
-#endif
-
     memset(&dir_data, 0, sizeof(dir_data));
     {
         dir_partition_t init_res;
@@ -2001,28 +1633,16 @@ int backup_restore(scan_tree_t *tree, disk_t *disk,
             {
                 log_error("backup_restore: I/O error opening "
                     "live filesystem\n");
-#ifdef HAVE_NCURSES
-                display_message("Cannot read live filesystem "
-                    "(I/O error or damaged volume).");
-#endif
             }
             else if (init_res == DIR_PART_ENOSYS)
             {
                 log_error("backup_restore: filesystem library "
                     "not available\n");
-#ifdef HAVE_NCURSES
-                display_message("Required filesystem library not "
-                    "available for comparison.");
-#endif
             }
             else
             {
                 log_error("backup_restore: cannot open live "
                     "filesystem\n");
-#ifdef HAVE_NCURSES
-                display_message("Cannot open live filesystem "
-                    "for comparison.");
-#endif
             }
             free_backup_entries(&backup_entries);
             return -1;
@@ -2036,12 +1656,6 @@ int backup_restore(scan_tree_t *tree, disk_t *disk,
         uint64_t dummy_size;
         memset(count_inodes, 0, sizeof(count_inodes));
         dummy_size = 0;
-#ifdef HAVE_NCURSES
-        wmove(stdscr, 5, 0);
-        wclrtoeol(stdscr);
-        wprintw(stdscr, " Counting live files...");
-        wrefresh(stdscr);
-#endif
         live_capacity = count_live_files(&dir_data, disk, partition,
             dir_data.current_inode, "/", 0, count_inodes, &dummy_size);
     }
@@ -2061,12 +1675,6 @@ int backup_restore(scan_tree_t *tree, disk_t *disk,
     g_backup_processed = 0;
     g_backup_total = live_capacity;
     log_info("backup_restore: walking live FS, capacity=%u\n", live_capacity);
-#ifdef HAVE_NCURSES
-    wmove(stdscr, 5, 0);
-    wclrtoeol(stdscr);
-    wprintw(stdscr, " Comparing against live filesystem...");
-    wrefresh(stdscr);
-#endif
     ret = backup_walk_live(disk, partition, &dir_data,
         dir_data.current_inode, "/", 0, inode_known,
         live_array, &live_count, live_capacity);
@@ -2116,10 +1724,6 @@ int backup_restore(scan_tree_t *tree, disk_t *disk,
         }
         free(live_array);
     }
-
-#ifdef HAVE_NCURSES
-    g_backup_win = NULL;
-#endif
 
     return 0;
 }

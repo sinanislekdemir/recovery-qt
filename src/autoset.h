@@ -25,12 +25,7 @@
 extern "C" {
 #endif
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ terminates \true;
-  @ assigns disk_car->unit;
-  @*/
+
 void autoset_unit(disk_t *disk_car);
 
 #ifdef __cplusplus

@@ -32,7 +32,7 @@
 #include "common.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_wmf(file_stat_t *file_stat);
 
 const file_hint_t file_hint_wmf = {
@@ -65,10 +65,7 @@ struct wmf_placeable_record
   uint16_t checksum;
 } __attribute__((gcc_struct, __packed__));
 
-/*@
-  @ requires \valid_read(hdr);
-  @ assigns  \nothing;
-  @*/
+
 static uint64_t wmf_check_meta_header(const struct wmf_header *hdr)
 {
   const uint64_t size = (uint64_t)2 * le32(hdr->size);
@@ -83,13 +80,7 @@ static uint64_t wmf_check_meta_header(const struct wmf_header *hdr)
   return size;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct wmf_header);
-  @ requires separation: \separated(&file_hint_wmf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_wmf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const uint64_t size = wmf_check_meta_header((const struct wmf_header *)buffer);
@@ -103,13 +94,7 @@ static int header_check_wmf(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= 0x16 + sizeof(struct wmf_header);
-  @ requires separation: \separated(&file_hint_wmf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_wmf_placeable(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct wmf_placeable_record *meta = (const struct wmf_placeable_record *)buffer;

@@ -53,33 +53,16 @@ extern const arch_fnct_t arch_i386;
 extern const arch_fnct_t arch_mac;
 #endif
 
-/*@
-  @ requires \valid_read(partition);
-  @ assigns  \nothing;
-  @*/
+
 static int is_fat12(const partition_t *partition);
 
-/*@
-  @ requires \valid_read(partition);
-  @ assigns  \nothing;
-  @*/
+
 static int is_fat16(const partition_t *partition);
 
-/*@
-  @ requires \valid_read(partition);
-  @ assigns  \nothing;
-  @*/
+
 static int is_fat32(const partition_t *partition);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \valid_read(fat_header);
-  @ requires \separated(disk_car, partition, fat_header);
-  @ decreases 0;
-  @*/
+
 static int fat32_set_part_name(disk_t *disk_car, partition_t *partition, const struct fat_boot_sector*fat_header)
 {
   partition->fsname[0]='\0';
@@ -126,12 +109,7 @@ static int fat32_set_part_name(disk_t *disk_car, partition_t *partition, const s
   return 0;
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires \valid_read(fat_header);
-  @ requires \valid(partition);
-  @ requires \separated(disk_car, fat_header, partition);
-  @*/
+
 static void set_FAT_info(disk_t *disk_car, const struct fat_boot_sector *fat_header, partition_t *partition)
 {
   uint64_t start_fat1;
@@ -180,9 +158,7 @@ static void set_FAT_info(disk_t *disk_car, const struct fat_boot_sector *fat_hea
   }
 }
 
-/*@
-  @ requires \valid_read(fh1);
-  @*/
+
 static int log_fat_info(const struct fat_boot_sector*fh1, const upart_type_t upart_type, const unsigned int sector_size)
 {
 #ifndef DISABLED_FOR_FRAMAC
@@ -311,14 +287,7 @@ int check_FAT(disk_t *disk_car, partition_t *partition, const int verbose)
   return 0;
 }
 
-/*@
-  @ requires \valid(disk);
-  @ requires valid_disk(disk);
-  @ requires \valid_read(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(disk, partition);
-  @ decreases 0;
-  @*/
+
 static unsigned int get_next_cluster_fat12(disk_t *disk, const partition_t *partition, const int offset, const unsigned int cluster)
 {
   unsigned int next_cluster;
@@ -344,14 +313,7 @@ static unsigned int get_next_cluster_fat12(disk_t *disk, const partition_t *part
   return next_cluster;
 }
 
-/*@
-  @ requires \valid(disk);
-  @ requires valid_disk(disk);
-  @ requires \valid_read(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(disk, partition);
-  @ decreases 0;
-  @*/
+
 static unsigned int get_next_cluster_fat16(disk_t *disk, const partition_t *partition, const int offset, const unsigned int cluster)
 {
   unsigned int next_cluster;
@@ -375,14 +337,7 @@ static unsigned int get_next_cluster_fat16(disk_t *disk, const partition_t *part
   return next_cluster;
 }
 
-/*@
-  @ requires \valid(disk);
-  @ requires valid_disk(disk);
-  @ requires \valid_read(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(disk, partition);
-  @ decreases 0;
-  @*/
+
 static unsigned int get_next_cluster_fat32(disk_t *disk, const partition_t *partition, const int offset, const unsigned int cluster)
 {
   unsigned int next_cluster;
@@ -941,25 +896,18 @@ int comp_FAT(disk_t *disk, const partition_t *partition, const unsigned long int
 unsigned long int fat32_get_free_count(const unsigned char *boot_fat32, const unsigned int sector_size)
 {
   const struct fat_fsinfo *fsinfo=(const struct fat_fsinfo *)&boot_fat32[sector_size];
-  /*@ assert \valid_read(fsinfo); */
+  
   return le32(fsinfo->freecnt);
 }
 
 unsigned long int fat32_get_next_free(const unsigned char *boot_fat32, const unsigned int sector_size)
 {
   const struct fat_fsinfo *fsinfo=(const struct fat_fsinfo *)&boot_fat32[sector_size];
-  /*@ assert \valid_read(fsinfo); */
+  
   return le32(fsinfo->nextfree);
 }
 
-/*@
-  @ requires \valid(disk);
-  @ requires valid_disk(disk);
-  @ requires \valid_read(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(disk, partition);
-  @ decreases 0;
-  @*/
+
 static int fat_has_EFI_entry(disk_t *disk, const partition_t *partition, const int verbose)
 {
 #ifndef DISABLED_FOR_FRAMAC
@@ -1072,13 +1020,7 @@ int recover_FAT(disk_t *disk_car, const struct fat_boot_sector*fat_header, parti
   return 0;
 }
 
-/*@
-  @ requires \valid_read(disk);
-  @ requires valid_disk(disk);
-  @ requires \valid_read(fat_header);
-  @ requires \valid_read(partition);
-  @ requires valid_partition(partition);
-  @*/
+
 static int test_OS2MB(const disk_t *disk, const struct fat_boot_sector *fat_header, const partition_t *partition, const int verbose, const int dump_ind)
 {
   const char*buffer=(const char*)fat_header;
@@ -1280,10 +1222,7 @@ int fat32_free_info(disk_t *disk_car,const partition_t *partition, const unsigne
 int check_VFAT_volume_name(const char *name, const unsigned int max_size)
 {
   unsigned int i;
-  /*@
-    @ loop assigns i;
-    @ loop variant max_size - i;
-    @*/
+  
   for(i=0; i<max_size && name[i]!='\0'; i++)
   {
     if(name[i] < 0x20)

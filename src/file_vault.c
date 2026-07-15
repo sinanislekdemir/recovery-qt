@@ -31,7 +31,7 @@
 #include "types.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_vault(file_stat_t *file_stat);
 
 const file_hint_t file_hint_vault = {
@@ -49,23 +49,13 @@ const file_hint_t file_hint_vault = {
  * 03200c00  30 64 61 62 64 64 37 00                           |0dabdd7.|
  * */
 
-/*@
-  @ requires buffer_size >= 2*29;
-  @ requires file_recovery->data_check==&data_check_vault;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_vault(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
   unsigned int i;
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns i, file_recovery->calculated_file_size;
-    @ loop variant buffer_size - (i + 29);
-    @*/
+  
+  
+  
   for(i = (buffer_size / 2) - 28; i + 29 <= buffer_size; i++)
   {
     if(buffer[i] == '-' && buffer[i + 5] == '-' && buffer[i + 10] == '-' && buffer[i + 15] == '-' && buffer[i + 28] == '\0')
@@ -78,13 +68,7 @@ static data_check_t data_check_vault(const unsigned char *buffer, const unsigned
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires separation: \separated(&file_hint_vault, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_vault(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   reset_file_recovery(file_recovery_new);

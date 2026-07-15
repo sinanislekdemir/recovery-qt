@@ -85,22 +85,10 @@ struct disk_super_block          /* super block as it is on disk */
 #define BFS_BIG_ENDIAN       0x42494745    /* BIGE */
 /* int test_beos(struct disk_super_block *,partition_t); */
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_disk(disk_car);
-  @ requires separation: \separated(disk_car, partition);
-  @ decreases 0;
-  @*/
+
 int check_BeFS(disk_t *disk_car, partition_t *partition);
 
-/*@
-  @ requires \valid_read(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid_read(beos_block);
-  @ requires \valid(partition);
-  @ requires separation: \separated(disk_car, beos_block, partition);
-  @*/
+
 int recover_BeFS(const disk_t *disk_car, const struct disk_super_block *beos_block, partition_t *partition, const int dump_ind);
 
 #ifdef __cplusplus

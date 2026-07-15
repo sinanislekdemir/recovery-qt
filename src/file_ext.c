@@ -34,7 +34,7 @@
 #include "filegen.h"
 #include "log.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_ext2_sb(file_stat_t *file_stat);
 
 const file_hint_t file_hint_ext2_sb= {
@@ -46,11 +46,7 @@ const file_hint_t file_hint_ext2_sb= {
   .register_header_check=&register_header_check_ext2_sb
 };
 
-/*@
-  @ requires file_recovery->file_rename==&file_rename_ext;
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_ext(file_recovery_t *file_recovery)
 {
   unsigned char buffer[1024];
@@ -65,11 +61,11 @@ static void file_rename_ext(file_recovery_t *file_recovery)
   fclose(file);
   if(buffer_size!=sizeof(buffer))
     return;
-  /*@ assert buffer_size == sizeof(buffer); */
+  
 #if defined(__FRAMAC__)
   Frama_C_make_unknown(buffer, sizeof(buffer));
 #endif
-  /*@ assert \initialized(buffer + (0 .. sizeof(buffer)-1)); */
+  
   block_nr=(unsigned long int)le32(sb->s_first_data_block) + (unsigned long int)le16(sb->s_block_group_nr)*le32(sb->s_blocks_per_group);
   sprintf(buffer_cluster, "sb_%lu", block_nr);
 #if defined(DISABLED_FOR_FRAMAC)
@@ -78,19 +74,13 @@ static void file_rename_ext(file_recovery_t *file_recovery)
   file_rename(file_recovery, buffer_cluster, strlen(buffer_cluster), 0, NULL, 1);
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct ext2_super_block);
-  @ requires separation: \separated(&file_hint_ext2_sb, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_ext2_sb(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct ext2_super_block *sb=(const struct ext2_super_block *)buffer;
   if(test_EXT2(sb, NULL)!=0)
     return 0;
-  /*@ assert le32(sb->s_log_block_size) <= 6; */
+  
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension=file_hint_ext2_sb.extension;
   file_recovery_new->file_size=(uint64_t)EXT2_MIN_BLOCK_SIZE<<le32(sb->s_log_block_size);
@@ -100,12 +90,7 @@ static int header_check_ext2_sb(const unsigned char *buffer, const unsigned int 
   return 1;
 }
 
-/*@
-  @ requires file_recovery->data_check==&data_check_extdir;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_extdir(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
   /* Save only one block */
@@ -113,10 +98,7 @@ static data_check_t data_check_extdir(const unsigned char *buffer, const unsigne
   return DC_STOP;
 }
 
-/*@
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_extdir(file_recovery_t *file_recovery)
 {
   unsigned char buffer[512];
@@ -130,11 +112,11 @@ static void file_rename_extdir(file_recovery_t *file_recovery)
   fclose(file);
   if(buffer_size!=sizeof(buffer))
     return;
-  /*@ assert buffer_size == sizeof(buffer); */
+  
 #if defined(__FRAMAC__)
   Frama_C_make_unknown(buffer, sizeof(buffer));
 #endif
-  /*@ assert \initialized(buffer + (0 .. sizeof(buffer)-1)); */
+  
   sprintf(buffer_cluster, "inode_%u", (unsigned int)le32(*inode));
 #if defined(DISABLED_FOR_FRAMAC)
   buffer_cluster[sizeof(buffer_cluster)-1]='\0';
@@ -142,13 +124,7 @@ static void file_rename_extdir(file_recovery_t *file_recovery)
   file_rename(file_recovery, buffer_cluster, strlen(buffer_cluster), 0, NULL, 1);
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct ext2_super_block);
-  @ requires separation: \separated(&file_hint_ext2_sb, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_ext2_dir(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   static const unsigned char ext2_ll_dir2[6]= { 0x02, 0x02, '.',  '.', 0x00, 0x00};
@@ -159,7 +135,7 @@ static int header_check_ext2_dir(const unsigned char *buffer, const unsigned int
   file_recovery_new->data_check=&data_check_extdir;
   file_recovery_new->file_check=&file_check_size;
   file_recovery_new->file_rename=&file_rename_extdir;
-  /*@ assert valid_file_recovery(file_recovery_new); */
+  
   return 1;
 }
 

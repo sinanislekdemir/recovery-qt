@@ -33,7 +33,7 @@
 #include "file_tiff.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_rw2(file_stat_t *file_stat);
 
 const file_hint_t file_hint_rw2= {
@@ -45,13 +45,7 @@ const file_hint_t file_hint_rw2= {
   .register_header_check=&register_header_check_rw2
 };
 
-/*@
-  @ requires buffer_size >= sizeof(TIFFHeader);
-  @ requires separation: \separated(&file_hint_rw2, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_rw2(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const TIFFHeader *header=(const TIFFHeader *)buffer;

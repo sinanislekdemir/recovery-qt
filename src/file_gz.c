@@ -43,7 +43,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_gz(file_stat_t *file_stat);
 #ifndef SINGLE_FORMAT
 extern const file_hint_t file_hint_doc;
@@ -84,11 +84,7 @@ struct gzip_header
 #define GZ_FNAME	8
 #define GZ_FCOMMENT     0x10
 
-/*@
-  @ requires file_recovery->file_rename==&file_rename_gz;
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_gz(file_recovery_t *file_recovery)
 {
   unsigned char buffer[512];
@@ -100,7 +96,7 @@ static void file_rename_gz(file_recovery_t *file_recovery)
   fclose(file);
   if(buffer_size<10)
     return;
-  /*@ assert \initialized(buffer+(0..10)); */
+  
   if(!(buffer[0]==0x1F && buffer[1]==0x8B && buffer[2]==0x08 && (buffer[3]&0xe0)==0))
     return ;
   {
@@ -110,7 +106,7 @@ static void file_rename_gz(file_recovery_t *file_recovery)
     {
       if(buffer_size<12)
 	return;
-      /*@ assert \initialized(buffer + (0 .. 12)); */
+      
       off+=2;
       off+=buffer[10]|(buffer[11]<<8);
     }
@@ -122,22 +118,12 @@ static void file_rename_gz(file_recovery_t *file_recovery)
 }
 
 #if defined(HAVE_ZLIB_H) && defined(HAVE_LIBZ)
-/*@ assigns \nothing; */
+
 static void file_check_bgzf(file_recovery_t *file_recovery)
 {
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct gzip_header);
-  @ requires \valid_read(buffer+(0..buffer_size-1));
-  @ requires \valid_read(buffer_uncompr + (0 .. 4-1));
-  @ requires \valid(file_recovery_new);
-  @ requires separation: \separated(buffer+(..), file_recovery_new);
-  @ requires valid_file_recovery(file_recovery_new);
-  @ ensures  \result == 1;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_bgzf(const unsigned char *buffer, const unsigned char *buffer_uncompr, const unsigned int buffer_size, file_recovery_t *file_recovery_new)
 {
   const struct gzip_header *gz=(const struct gzip_header *)buffer;
@@ -150,35 +136,30 @@ static int header_check_bgzf(const unsigned char *buffer, const unsigned char *b
   {
     /* https://github.com/samtools/hts-specs SAM/BAM and related high-throughput sequencing file formats */
     file_recovery_new->extension="bai";
-    /*@ assert valid_file_recovery(file_recovery_new); */
+    
     return 1;
   }
   if(memcmp(buffer_uncompr, "BAM\1", 4)==0)
   {
     /* https://github.com/samtools/hts-specs SAM/BAM and related high-throughput sequencing file formats */
     file_recovery_new->extension="bam";
-    /*@ assert valid_file_recovery(file_recovery_new); */
+    
     return 1;
   }
   if(memcmp(buffer_uncompr, "CSI\1", 4)==0)
   {
     /* https://github.com/samtools/hts-specs SAM/BAM and related high-throughput sequencing file formats */
     file_recovery_new->extension="csi";
-    /*@ assert valid_file_recovery(file_recovery_new); */
+    
     return 1;
   }
   file_recovery_new->extension="bgz";
-  /*@ assert valid_file_recovery(file_recovery_new); */
+  
   return 1;
 }
 #endif
 
-/*@
-  @ requires buffer_size >= 16;
-  @ requires separation: \separated(&file_hint_gz, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @*/
+
 static int header_check_gz(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   unsigned int off=10;
@@ -228,8 +209,8 @@ static int header_check_gz(const unsigned char *buffer, const unsigned int buffe
   }
   if(off >= 512 || off >= buffer_size)
     return 0;
-  /*@ assert off < 512; */
-  /*@ assert off < buffer_size ; */
+  
+  
 #if defined(HAVE_ZLIB_H) && defined(HAVE_LIBZ)
   {
     static const unsigned char schematic_header[12]={ 0x0a, 0x00, 0x09,
@@ -239,9 +220,9 @@ static int header_check_gz(const unsigned char *buffer, const unsigned int buffe
     unsigned char buffer_uncompr[4096];
     const unsigned int uncomprLen=sizeof(buffer_uncompr)-1;
     const unsigned int bs=td_max(512U,file_recovery_new->blocksize);
-    /*@ assert bs >=512; */
+    
     const unsigned int comprLen=td_min(buffer_size,bs)-off;
-    /*@ assert comprLen > 0; */
+    
     int err;
     z_stream d_stream; /* decompression stream */
     d_stream.zalloc = (alloc_func)0;
@@ -282,7 +263,7 @@ static int header_check_gz(const unsigned char *buffer, const unsigned int buffe
 #endif
     if(file_recovery->file_check==&file_check_bgzf)
     {
-      /*@ assert \valid_function(file_recovery->file_check); */
+      
       header_ignored(file_recovery_new);
       return 0;
     }

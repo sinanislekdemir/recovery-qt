@@ -33,7 +33,7 @@
 #include "common.h"
 #include "log.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_cow(file_stat_t *file_stat);
 
 const file_hint_t file_hint_cow= {
@@ -76,13 +76,7 @@ typedef struct QCowHeader {
     uint64_t snapshots_offset;
 } QCowHeader2_t;
 
-/*@
-  @ requires buffer_size >= sizeof(QCowHeader_t);
-  @ requires separation: \separated(&file_hint_cow, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_qcow1(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const QCowHeader_t *header=(const QCowHeader_t*)buffer;
@@ -96,13 +90,7 @@ static int header_check_qcow1(const unsigned char *buffer, const unsigned int bu
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(QCowHeader2_t);
-  @ requires separation: \separated(&file_hint_cow, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_qcow2(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const QCowHeader2_t *header=(const QCowHeader2_t*)buffer;

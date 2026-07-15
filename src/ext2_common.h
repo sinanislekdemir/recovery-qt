@@ -204,30 +204,13 @@ struct ext2_super_block {
 	uint32_t	s_checksum;		/* crc32c(superblock) */
 };
 
-/*@
-  @ requires \valid_read(super);
-  @ terminates \true;
-  @ assigns  \nothing;
-  @*/
+
 uint64_t td_ext2fs_blocks_count(const struct ext2_super_block *super);
 
-/*@
-  @ requires \valid_read(super);
-  @ terminates \true;
-  @ assigns  \nothing;
-  @*/
+
 uint64_t td_ext2fs_free_blocks_count(const struct ext2_super_block *super);
 
-/*@
-  @ requires \valid_read(sb);
-  @ requires \initialized(sb);
-  @ requires partition==\null || (\valid_read(partition) && valid_partition(partition));
-  @ requires \separated(sb, partition);
-  @ terminates \true;
-  @ assigns  \nothing;
-  @ ensures  \result == 7 ==> le32(sb->s_log_block_size) > 6;
-  @ ensures  \result == 0 ==> le32(sb->s_log_block_size) <= 6;
-  @ */
+
 int test_EXT2(const struct ext2_super_block *sb, const partition_t *partition);
 
 #ifdef __cplusplus

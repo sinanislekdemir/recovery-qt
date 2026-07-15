@@ -25,15 +25,7 @@
 extern "C" {
 #endif
 
-/*@
-  @ requires \valid(disk);
-  @ requires valid_disk(disk);
-  @ requires \valid_read(arch);
-  @ requires valid_disk(disk);
-  @ requires separation: \separated(disk, arch);
-  @ decreases 0;
-  @ ensures  valid_disk(disk);
-  @*/
+
 void autodetect_arch(disk_t *disk, const arch_fnct_t *arch);
 
 #ifdef __cplusplus

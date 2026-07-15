@@ -31,7 +31,7 @@
 #include "types.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_pdb(file_stat_t *file_stat);
 
 const file_hint_t file_hint_pdb= {
@@ -43,27 +43,18 @@ const file_hint_t file_hint_pdb= {
   .register_header_check=&register_header_check_pdb
 };
 
-/*@
-  @ requires file_recovery->data_check==&data_check_pdb81;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns  file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_pdb81(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
   unsigned int i;
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 81);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 81 <= file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i <= buffer_size - 81 ; */
+    
     if(buffer[i+80]!='\n')
     {
       return DC_STOP;
@@ -73,27 +64,18 @@ static data_check_t data_check_pdb81(const unsigned char *buffer, const unsigned
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires file_recovery->data_check==&data_check_pdb82;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns  file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_pdb82(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
   unsigned int i;
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 82);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 82 <= file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i <= buffer_size - 82 ; */
+    
     if(buffer[i+80]!='\r' || buffer[i+81]!='\n')
     {
       return DC_STOP;
@@ -103,14 +85,7 @@ static data_check_t data_check_pdb82(const unsigned char *buffer, const unsigned
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires buffer_size >= 70;
-  @ requires separation: \separated(&file_hint_pdb, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_pdb(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   /* Check date */

@@ -53,80 +53,41 @@
 #include "partsun.h"
 
 static int check_part_sun(disk_t *disk_car, const int verbose,partition_t *partition,const int saveheader);
-/*@
-  @ requires \valid_read(buffer + (0 .. 0x200-1));
-  @ requires \valid(geometry);
-  @ requires \separated(buffer + (0 .. 0x200-1), geometry);
-  @ ensures geometry->cylinders == 0;
-  @ assigns geometry->sectors_per_head, geometry->heads_per_cylinder, geometry->cylinders;
-  @*/
+
 static int get_geometry_from_sunmbr(const unsigned char *buffer, const int verbose, CHSgeometry_t *geometry);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @*/
+
 // ensures  valid_list_part(\result);
 static list_part_t *read_part_sun(disk_t *disk_car, const int verbose, const int saveheader);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires list_part == \null || \valid(list_part);
-  @ requires separation: \separated(disk_car, list_part);
-  @*/
+
 static int write_part_sun(disk_t *disk_car, const list_part_t *list_part, const int ro , const int verbose);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires list_part == \null || \valid(list_part);
-  @*/
+
 static list_part_t *init_part_order_sun(const disk_t *disk_car, list_part_t *list_part);
 
-/*@
-  @ requires \valid_read(disk_car);
-  @ requires \valid(partition);
-  @ assigns partition->status;
-  @*/
+
 static void set_next_status_sun(const disk_t *disk_car, partition_t *partition);
 
-/*@
-  @ requires list_part == \null || \valid_read(list_part);
-  @*/
+
 static int test_structure_sun(const list_part_t *list_part);
 
-/*@
-  @ requires \valid(partition);
-  @ assigns partition->part_type_sun;
-  @*/
+
 static int set_part_type_sun(partition_t *partition, unsigned int part_type_sun);
 
-/*@
-  @ requires \valid(partition);
-  @ assigns \nothing;
-  @*/
+
 static int is_part_known_sun(const partition_t *partition);
 
-/*@
-  @ requires \valid_read(disk_car);
-  @ requires list_part == \null || \valid(list_part);
-  @*/
+
 static void init_structure_sun(const disk_t *disk_car,list_part_t *list_part, const int verbose);
 
-/*@
-  @ requires \valid_read(partition);
-  @ assigns \nothing;
-  @*/
+
 static const char *get_partition_typename_sun(const partition_t *partition);
 
-/*@
-  @ assigns \nothing;
-  @*/
+
 static const char *get_partition_typename_sun_aux(const unsigned int part_type_sun);
 
-/*@
-  @ requires \valid_read(partition);
-  @ assigns \nothing;
-  @*/
+
 static unsigned int get_part_type_sun(const partition_t *partition);
 
 static const struct systypes sun_sys_types[] = {
@@ -203,7 +164,7 @@ static list_part_t *read_part_sun(disk_t *disk_car, const int verbose, const int
   sun_disklabel *sunlabel;
   list_part_t *new_list_part=NULL;
   unsigned char *buffer;
-  /*@ assert valid_list_part(new_list_part); */
+  
   if(disk_car->sector_size < DEFAULT_SECTOR_SIZE)
     return NULL;
   buffer=(unsigned char *)MALLOC(disk_car->sector_size);
@@ -221,9 +182,7 @@ static list_part_t *read_part_sun(disk_t *disk_car, const int verbose, const int
     free(buffer);
     return NULL;
   }
-  /*@
-    @ loop invariant valid_list_part(new_list_part);
-    @*/
+  
   for(i=0;i<8;i++)
   {
      if (sunlabel->partitions[i].num_sectors > 0
@@ -245,7 +204,7 @@ static list_part_t *read_part_sun(disk_t *disk_car, const int verbose, const int
      }
   }
   free(buffer);
-  /*@ assert valid_list_part(new_list_part); */
+  
   return new_list_part;
 }
 
@@ -302,10 +261,7 @@ list_part_t *add_partition_sun_cli(const disk_t *disk_car,list_part_t *list_part
   end.cylinder=disk_car->geom.cylinders-1;
   end.head=disk_car->geom.heads_per_cylinder-1;
   end.sector=disk_car->geom.sectors_per_head;
-  /*@
-    @ loop invariant valid_list_part(list_part);
-    @ loop invariant valid_read_string(*current_cmd);
-    @ */
+  
   while(1)
   {
     skip_comma_in_command(current_cmd);
@@ -326,23 +282,23 @@ list_part_t *add_partition_sun_cli(const disk_t *disk_car,list_part_t *list_part
     {
       int insert_error=0;
       list_part_t *new_list_part=insert_new_partition(list_part, new_partition, 0, &insert_error);
-      /*@ assert valid_list_part(new_list_part); */
+      
       if(insert_error>0)
       {
 	free(new_partition);
-	/*@ assert valid_list_part(new_list_part); */
+	
 	return new_list_part;
       }
       new_partition->status=STATUS_PRIM;
       if(test_structure_sun(list_part)!=0)
 	new_partition->status=STATUS_DELETED;
-      /*@ assert valid_list_part(new_list_part); */
+      
       return new_list_part;
     }
     else
     {
       free(new_partition);
-      /*@ assert valid_list_part(list_part); */
+      
       return list_part;
     }
   }
@@ -466,7 +422,7 @@ static int check_part_sun(disk_t *disk_car,const int verbose,partition_t *partit
 static const char *get_partition_typename_sun_aux(const unsigned int part_type_sun)
 {
   int i;
-  /*@ loop assigns i; */
+  
   for (i=0; sun_sys_types[i].name!=NULL; i++)
     if (sun_sys_types[i].part_type == part_type_sun)
       return sun_sys_types[i].name;

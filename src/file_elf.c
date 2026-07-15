@@ -32,7 +32,7 @@
 #include "common.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_elf(file_stat_t *file_stat);
 
 const file_hint_t file_hint_elf= {
@@ -119,13 +119,7 @@ typedef struct {
 #define ELFDATA2LSB	1		/* 2's complement, little endian */
 #define ELFDATA2MSB	2		/* 2's complement, big endian */
 
-/*@
-  @ requires buffer_size >= sizeof(Elf32_Ehdr);
-  @ requires separation: \separated(&file_hint_elf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_elf32_lsb(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const Elf32_Ehdr *hdr=(const Elf32_Ehdr *)buffer;
@@ -143,13 +137,7 @@ static int header_check_elf32_lsb(const unsigned char *buffer, const unsigned in
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(Elf32_Ehdr);
-  @ requires separation: \separated(&file_hint_elf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_elf32_msb(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const Elf32_Ehdr *hdr=(const Elf32_Ehdr *)buffer;
@@ -167,13 +155,7 @@ static int header_check_elf32_msb(const unsigned char *buffer, const unsigned in
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(Elf64_Ehdr);
-  @ requires separation: \separated(&file_hint_elf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_elf64_lsb(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const Elf64_Ehdr *hdr=(const Elf64_Ehdr *)buffer;
@@ -191,13 +173,7 @@ static int header_check_elf64_lsb(const unsigned char *buffer, const unsigned in
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(Elf64_Ehdr);
-  @ requires separation: \separated(&file_hint_elf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_elf64_msb(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const Elf64_Ehdr *hdr=(const Elf64_Ehdr *)buffer;

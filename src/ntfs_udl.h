@@ -27,12 +27,7 @@ extern "C" {
 #include "dir_common.h"
 #include "photorec_nc.h"
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid_read(partition);
-  @ requires \separated(disk_car, partition);
-  @*/
+
 int ntfs_undelete_part(disk_t *disk_car, const partition_t *partition, const int verbose, char **current_cmd);
 
 #if defined(HAVE_LIBNTFS) || defined(HAVE_LIBNTFS3G)

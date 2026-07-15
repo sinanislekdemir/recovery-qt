@@ -36,7 +36,7 @@
 extern const file_hint_t file_hint_indd;
 #endif
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_pct(file_stat_t *file_stat);
 
 const file_hint_t file_hint_pct= {
@@ -82,12 +82,7 @@ struct pct_file_entry {
   uint32_t Reserved2;		/* 0x24 */
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires file_recovery->file_check == &file_check_pct;
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @ assigns  file_recovery->file_size;
-  @*/
+
 static void file_check_pct(file_recovery_t *file_recovery)
 {
   uint64_t diff;
@@ -97,17 +92,12 @@ static void file_check_pct(file_recovery_t *file_recovery)
     file_recovery->file_size=0;
     return ;
   }
-  /*@ assert file_recovery->file_size >= file_recovery->min_filesize; */
+  
   diff=file_recovery->file_size-file_recovery->min_filesize;
   file_recovery->file_size=file_recovery->min_filesize + (diff&0xffffffffffff0000);
 }
 
-/*@
-  @ requires buffer_size >= 0x200+sizeof(struct pct_file_entry);
-  @ requires separation: \separated(&file_hint_pct, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @*/
+
 static int header_check_pct(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct pct_file_entry *pct=(const struct pct_file_entry *)(&buffer[0x200]);

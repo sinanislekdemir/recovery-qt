@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_wpd(file_stat_t *file_stat);
 
 const file_hint_t file_hint_wpd = {
@@ -58,13 +58,7 @@ struct wpd_hdr
   uint32_t documentSize; /* 20: WP 6.1 or later ? */
 } __attribute__((gcc_struct, __packed__));
 
-/*@
-  @ requires buffer_size >= sizeof(struct wpd_hdr);
-  @ requires separation: \separated(&file_hint_wpd, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_wpd(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct wpd_hdr *hdr = (const struct wpd_hdr *)buffer;

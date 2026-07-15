@@ -43,9 +43,7 @@
 #include "__fc_builtin.h"
 #endif
 
-/*@
-  @ requires valid_register_header_check(file_stat);
-  @*/
+
 static void register_header_check_pdf(file_stat_t *file_stat);
 
 const file_hint_t file_hint_pdf= {
@@ -57,20 +55,13 @@ const file_hint_t file_hint_pdf= {
   .register_header_check=&register_header_check_pdf
 };
 
-/*@
-  @ terminates \true;
-  @ assigns \nothing;
-  @*/
+
 static int is_hexa(const int c)
 {
   return ((c>='0' && c<='9') || (c>='A' && c<='F') || (c>='a' && c<='f'));
 }
 
-/*@
-  @ terminates \true;
-  @ assigns \nothing;
-  @ ensures 0 <= \result <= 15;
-  @*/
+
 static unsigned int hex(const int c)
 {
   if(c>='0' && c<='9')
@@ -82,11 +73,7 @@ static unsigned int hex(const int c)
   return 0;
 }
 
-/*@
-  @ requires file_recovery->file_rename==&file_rename_pdf;
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_pdf(file_recovery_t *file_recovery)
 {
   char title[512];
@@ -137,18 +124,14 @@ static void file_rename_pdf(file_recovery_t *file_recovery)
     fclose(handle);
     return ;
   }
-  /*@ assert 2 < bsize; */
+  
 #if defined(__FRAMAC__)
   Frama_C_make_unknown(buffer, 512);
 #endif
-  /*@ assert \initialized(buffer + (0 .. 512-1)); */
+  
   fclose(handle);
   /* Skip spaces after /Title */
-  /*@
-    @ loop invariant 0 <= i <= bsize;
-    @ loop assigns i;
-    @ loop variant bsize - i;
-    @ */
+  
   for(i=0; i<bsize && buffer[i]==' '; i++);
   if(i + 2 >= bsize)
   {
@@ -156,21 +139,15 @@ static void file_rename_pdf(file_recovery_t *file_recovery)
     free(buffer);
     return ;
   }
-  /*@ assert i + 2 < bsize; */
+  
   if(buffer[i]=='<')
   {
     unsigned int j;
     unsigned int s;
     /* hexa to ascii */
     buffer[i]='(';
-    /*@ assert \valid(buffer + (0 .. bsize -1)); */
-    /*@
-      @ loop invariant s <= bsize;
-      @ loop invariant j <= s;
-      @ loop invariant j <  bsize;
-      @ loop assigns s, j, buffer[0 .. 512-1];
-      @ loop variant bsize - (s+1);
-      @ */
+    
+    
     for(s=i+1, j=i+1;
 	s+1<bsize && is_hexa(buffer[s]) && is_hexa(buffer[s+1]);
 	s+=2, j++)
@@ -181,19 +158,14 @@ static void file_rename_pdf(file_recovery_t *file_recovery)
   if(buffer[i]=='(')
   {
     const char *sbuffer=(const char *)buffer;
-    /*@ assert \valid_read(sbuffer + (0 .. 512-1)); */
-    /*@ assert \initialized(sbuffer + (0 .. 512-1)); */
+    
+    
     i++;	/* Skip '(' */
     if(i+8<bsize && memcmp(&buffer[i], "\\376\\377", 8)==0)
     {
       /* escape utf-16 title */
       i+=8;
-      /*@
-        @ loop invariant l < i;
-        @ loop invariant \initialized(title + (0 .. l-1));
-        @ loop assigns i, l, title[0 .. 512-1];
-	@ loop variant bsize - i;
-	@*/
+      
       while(i<bsize)
       {
 	if(buffer[i]==')')
@@ -204,18 +176,13 @@ static void file_rename_pdf(file_recovery_t *file_recovery)
 	else
 	  title[l++]=sbuffer[i++];
       }
-      /*@ assert \initialized(title + (0 .. l-1)); */
+      
     }
     else if(i+3<bsize && memcmp(&buffer[i], &utf16, 3)==0)
     {
       /* utf-16 title */
       i+=2;
-      /*@
-        @ loop invariant l < i;
-        @ loop invariant \initialized(title + (0 .. l-1));
-        @ loop assigns i, l, title[0 .. 512-1];
-	@ loop variant bsize - (i+1);
-	@*/
+      
       while(i+1 < bsize)
       {
 	if(buffer[i]==')')
@@ -223,20 +190,15 @@ static void file_rename_pdf(file_recovery_t *file_recovery)
 	title[l++]=sbuffer[i+1];
 	i+=2;
       }
-      /*@ assert \initialized(title + (0 .. l-1)); */
+      
     }
     else
     {
       /* ascii title */
-      /*@
-        @ loop invariant l < i;
-        @ loop invariant \initialized(title + (0 .. l-1));
-        @ loop assigns i, l, title[0 .. 512-1];
-	@ loop variant bsize - i;
-	@*/
+      
       while(i<bsize && buffer[i]!=')')
 	title[l++]=sbuffer[i++];
-      /*@ assert \initialized(title + (0 .. l-1)); */
+      
     }
   }
   else
@@ -244,7 +206,7 @@ static void file_rename_pdf(file_recovery_t *file_recovery)
     free(buffer);
     return ;
   }
-  /*@ assert \initialized(title + (0 .. l-1)); */
+  
   /* Try to avoid some double-extensions */
   if(l>4 &&
       (memcmp(&title[l-4], ".doc", 4)==0 ||
@@ -258,14 +220,7 @@ static void file_rename_pdf(file_recovery_t *file_recovery)
   free(buffer);
 }
 
-/*@
-  @ requires \valid(file_recovery);
-  @ requires valid_file_recovery(file_recovery);
-  @ requires \separated(file_recovery, file_recovery->handle, file_recovery->extension, &errno, &Frama_C_entropy_source);
-  @ assigns *file_recovery->handle, file_recovery->time;
-  @ assigns errno;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static void file_date_pdf(file_recovery_t *file_recovery)
 {
   const unsigned char pattern[14]={'x', 'a', 'p', ':', 'C', 'r', 'e', 'a', 't', 'e', 'D', 'a', 't', 'e'};
@@ -274,18 +229,12 @@ static void file_date_pdf(file_recovery_t *file_recovery)
   char buffer[4096];
   if(file_recovery->file_size > PHOTOREC_MAX_FILE_SIZE)
     return ;
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
+  
   if(my_fseek(file_recovery->handle, 0, SEEK_SET)<0)
   {
     return ;
   }
-  /*@
-    @ loop invariant \separated(file_recovery, file_recovery->handle, file_recovery->extension, &errno, buffer + (..));
-    @ loop assigns offset, j, *file_recovery->handle, file_recovery->time, buffer[0..4095];
-    @ loop assigns errno;
-    @ loop assigns Frama_C_entropy_source;
-    @ loop variant file_recovery->file_size - offset;
-    @*/
+  
   while(offset < file_recovery->file_size)
   {
     int i;
@@ -297,14 +246,7 @@ static void file_date_pdf(file_recovery_t *file_recovery)
 #if defined(__FRAMAC__)
     Frama_C_make_unknown(buffer, bsize);
 #endif
-    /*@
-      @ loop invariant \initialized(buffer + (0 .. bsize-1));
-      @ loop invariant \separated(file_recovery, file_recovery->handle, file_recovery->extension, &errno, buffer + (..));
-      @ loop invariant 0 <= i <= bsize;
-      @ loop assigns i, j, *file_recovery->handle, file_recovery->time, buffer[0..21];
-      @ loop assigns errno;
-      @ loop variant bsize - i;
-      @*/
+    
     for(i=0; i<bsize; i++)
     {
       if(buffer[i]==pattern[j])
@@ -314,7 +256,7 @@ static void file_date_pdf(file_recovery_t *file_recovery)
 	  if(my_fseek(file_recovery->handle, offset+i+1, SEEK_SET)>=0 &&
 	      fread(buffer, 1, 22, file_recovery->handle) == 22)
 	  {
-	    /*@ assert \initialized( buffer+ (0 .. 22-1)); */
+	    
 	    if(buffer[0]=='=' && (buffer[1]=='\'' || buffer[1]=='"'))
 	    {
 	      file_recovery->time=get_time_from_YYYY_MM_DD_HH_MM_SS((const unsigned char *)&buffer[2]);
@@ -337,13 +279,7 @@ static void file_date_pdf(file_recovery_t *file_recovery)
 
 #define PDF_READ_SIZE 20
 
-/*@
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @ assigns *file_recovery->handle, file_recovery->time, file_recovery->file_size;
-  @ assigns errno;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static void file_check_pdf_and_size(file_recovery_t *file_recovery)
 {
   char buffer[PDF_READ_SIZE + 3];
@@ -355,9 +291,9 @@ static void file_check_pdf_and_size(file_recovery_t *file_recovery)
     file_recovery->file_size=0;
     return;
   }
-  /*@ assert file_recovery->calculated_file_size >= PDF_READ_SIZE; */
+  
   file_recovery->file_size=file_recovery->calculated_file_size;
-  /*@ assert file_recovery->file_size >= PDF_READ_SIZE; */
+  
   if(my_fseek(file_recovery->handle,file_recovery->file_size-PDF_READ_SIZE,SEEK_SET)<0)
   {
     file_recovery->file_size=0;
@@ -367,13 +303,7 @@ static void file_check_pdf_and_size(file_recovery_t *file_recovery)
 #if defined(__FRAMAC__)
   Frama_C_make_unknown(&buffer, sizeof(buffer));
 #endif
-  /*@
-    @ loop assigns i;
-    @ loop assigns *file_recovery->handle, file_recovery->time;
-    @ loop assigns errno;
-    @ loop assigns Frama_C_entropy_source;
-    @ loop variant i;
-    @*/
+  
   for(i=taille-4;i>=0;i--)
   {
     if(buffer[i]=='%' && buffer[i+1]=='E' && buffer[i+2]=='O' && buffer[i+3]=='F')
@@ -385,13 +315,7 @@ static void file_check_pdf_and_size(file_recovery_t *file_recovery)
   file_recovery->file_size=0;
 }
 
-/*@
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @ assigns  *file_recovery->handle, file_recovery->time, file_recovery->file_size;
-  @ assigns errno;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static void file_check_pdf(file_recovery_t *file_recovery)
 {
   const unsigned char pdf_footer[4]= { '%', 'E', 'O', 'F'};
@@ -400,25 +324,15 @@ static void file_check_pdf(file_recovery_t *file_recovery)
   file_date_pdf(file_recovery);
 }
 
-/*@
-  @ requires \valid_read(buffer+(0..512-1));
-  @ assigns \nothing;
-  @*/
+
 static uint64_t read_pdf_file_aux(const unsigned char *buffer, unsigned int i)
 {
   uint64_t file_size=0;
-  /*@
-    @ loop assigns i;
-    @ loop variant 512 - i;
-    @*/
+  
   while(i < 512 &&
       (buffer[i] ==' ' || buffer[i]=='\t' || buffer[i]=='\n' || buffer[i]=='\r'))
     i++;
-  /*@
-    @ loop invariant file_size <= PHOTOREC_MAX_FILE_SIZE;
-    @ loop assigns i, file_size;
-    @ loop variant 512 - i;
-    @ */
+  
   for(;i<512 && buffer[i]>='0' && buffer[i]<='9'; i++)
   {
     file_size*=10;
@@ -427,15 +341,12 @@ static uint64_t read_pdf_file_aux(const unsigned char *buffer, unsigned int i)
     {
       return PHOTOREC_MAX_FILE_SIZE + 1;
     }
-    /*@ assert file_size <= PHOTOREC_MAX_FILE_SIZE; */
+    
   }
   return file_size;
 }
 
-/*@
-  @ requires \valid_read(buffer+(0..512-1));
-  @ assigns  \nothing;
-  @*/
+
 static uint64_t read_pdf_file(const unsigned char *buffer)
 {
   const unsigned char sig_linearized[10]={'L','i','n','e','a','r','i','z','e','d'};
@@ -449,11 +360,8 @@ static uint64_t read_pdf_file(const unsigned char *buffer)
   i+=sizeof(sig_linearized);
   if( i >= 512 -1)
     return 0;
-  /*@ assert i < 512-1; */
-  /*@
-    @ loop assigns i;
-    @ loop variant 512 - 1 - i;
-    @ */
+  
+  
   for(; i < 512-1 && buffer[i]!='>'; i++)
   {
     if(buffer[i]=='/' && buffer[i+1]=='L')
@@ -462,13 +370,7 @@ static uint64_t read_pdf_file(const unsigned char *buffer)
   return 0;
 }
 
-/*@
-  @ requires buffer_size >= 512;
-  @ requires separation: \separated(&file_hint_pdf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_pdf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   uint64_t file_size;

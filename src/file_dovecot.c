@@ -31,7 +31,7 @@
 #include "types.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_dovecot(file_stat_t *file_stat);
 
 const file_hint_t file_hint_dovecot= {
@@ -43,23 +43,16 @@ const file_hint_t file_hint_dovecot= {
   .register_header_check=&register_header_check_dovecot
 };
 
-/*@
-  @ requires file_recovery->data_check==&data_check_dovecot2;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ ensures \result == DC_CONTINUE || \result == DC_ERROR;
-  @ assigns file_recovery->data_check;
-  @*/
+
 static data_check_t data_check_dovecot2(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
+  
+  
   if(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 2 <= file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i <= buffer_size - 2; */
+    
     if(buffer[i] == 0 && buffer[i+1] == 0)
     {
       return DC_ERROR;
@@ -68,21 +61,11 @@ static data_check_t data_check_dovecot2(const unsigned char *buffer, const unsig
   }
   return DC_CONTINUE;
 }
-/*@
-  @ requires file_recovery->data_check==&data_check_dovecot;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ ensures \result == DC_CONTINUE || \result == DC_ERROR;
-  @ assigns file_recovery->calculated_file_size, file_recovery->data_check;
-  @*/
+
 static data_check_t data_check_dovecot(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
   unsigned int i;
-  /*@
-    @ loop assigns i;
-    @ loop variant buffer_size - i;
-    @*/
+  
   for(i=buffer_size/2;
       i<buffer_size && file_recovery->calculated_file_size+i <= 0x14000;
       i++)
@@ -100,11 +83,7 @@ static data_check_t data_check_dovecot(const unsigned char *buffer, const unsign
   return data_check_dovecot2(buffer, buffer_size, file_recovery);
 }
 
-/*@
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @*/
+
 static int header_check_dovecot(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(file_recovery->data_check==&data_check_dovecot)

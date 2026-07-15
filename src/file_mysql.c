@@ -31,9 +31,7 @@
 #include "types.h"
 #include "filegen.h"
 
-/*@
-  @ requires valid_register_header_check(file_stat);
-  @*/
+
 static void register_header_check_mysql(file_stat_t *file_stat);
 
 const file_hint_t file_hint_mysql= {
@@ -45,12 +43,7 @@ const file_hint_t file_hint_mysql= {
   .register_header_check=&register_header_check_mysql
 };
 
-/*@
-  @ requires separation: \separated(&file_hint_mysql, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_myisam(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   /* MySQL MYISAM compressed data file Version 1 */
@@ -59,13 +52,7 @@ static int header_check_myisam(const unsigned char *buffer, const unsigned int b
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= 6;
-  @ requires separation: \separated(&file_hint_mysql, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_mysql(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   /* MySQL table definition file Version 7 up to 10 */

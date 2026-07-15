@@ -31,9 +31,9 @@
 #include "types.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_m2ts(file_stat_t *file_stat);
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_ts(file_stat_t *file_stat);
 
 const file_hint_t file_hint_m2ts= {
@@ -59,26 +59,17 @@ static const unsigned char hdpr_header[4] = { 'H','D','P','R'};
 static const unsigned char tshv_header[4] = { 'T','S','H','V'};
 static const unsigned char sdvs_header[4] = { 'S','D','V','S'};
 
-/*@
-  @ requires file_recovery->data_check==&data_check_ts_192;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_ts_192(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 5);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 5 < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - 5; */
+    
     if(buffer[i+4]!=0x47)	/* TS_SYNC_BYTE */
       return DC_STOP;
     file_recovery->calculated_file_size+=192;
@@ -86,11 +77,7 @@ static data_check_t data_check_ts_192(const unsigned char *buffer, const unsigne
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires file_recovery->file_rename==&file_rename_ts_188;
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_ts_188(file_recovery_t *file_recovery)
 {
   FILE *file;
@@ -117,11 +104,7 @@ static void file_rename_ts_188(file_recovery_t *file_recovery)
   file_rename(file_recovery, (const unsigned char*)buffer_pid, strlen(buffer_pid), 0, NULL, 1);
 }
 
-/*@
-  @ requires file_recovery->file_rename==&file_rename_ts_192;
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_ts_192(file_recovery_t *file_recovery)
 {
   FILE *file;
@@ -148,21 +131,13 @@ static void file_rename_ts_192(file_recovery_t *file_recovery)
   file_rename(file_recovery, (const unsigned char*)buffer_pid, strlen(buffer_pid), 0, NULL, 1);
 }
 
-/*@
-  @ requires buffer_size >= 0xe8 + 4;
-  @ requires separation: \separated(&file_hint_m2ts, &file_hint_ts, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @*/
+
 static int header_check_m2ts(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   unsigned int i;
   /* BDAV MPEG-2 transport stream */
   /* Each frame is 192 byte long and begins by a TS_SYNC_BYTE */
-  /*@
-    @ loop assigns i;
-    @ loop variant buffer_size - i;
-    @*/
+  
   for(i=4; i<buffer_size; i+=192)
     if(buffer[i]!=0x47)
       return 0;
@@ -203,26 +178,17 @@ static int header_check_m2ts(const unsigned char *buffer, const unsigned int buf
   return 1;
 }
 
-/*@
-  @ requires file_recovery->data_check==&data_check_ts_188;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_ts_188(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - file_recovery->calculated_file_size;
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size; */
+    
     if(buffer[i]!=0x47)	/* TS_SYNC_BYTE */
       return DC_STOP;
     file_recovery->calculated_file_size+=188;
@@ -230,13 +196,7 @@ static data_check_t data_check_ts_188(const unsigned char *buffer, const unsigne
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires buffer_size >= 0x18b+sizeof(tshv_header);
-  @ requires separation: \separated(&file_hint_m2ts, &file_hint_ts, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_m2t(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   unsigned int i;
@@ -245,10 +205,7 @@ static int header_check_m2t(const unsigned char *buffer, const unsigned int buff
       file_recovery->calculated_file_size == file_recovery->file_size)
     return 0;
   /* Each frame is 188 byte long and begins by a TS_SYNC_BYTE */
-  /*@
-    @ loop assigns i;
-    @ loop variant buffer_size - i;
-    @*/
+  
   for(i=0; i<buffer_size; i+=188)
     if(buffer[i]!=0x47)
       return 0;

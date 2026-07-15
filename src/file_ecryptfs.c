@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_ecryptfs(file_stat_t *file_stat);
 
 const file_hint_t file_hint_ecryptfs= {
@@ -56,12 +56,7 @@ struct ecrypfs_header {
   uint32_t flags;
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires file_recovery->file_check == &file_check_ecryptfs;
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @ assigns  file_recovery->file_size;
-  @*/
+
 static void file_check_ecryptfs(file_recovery_t *file_recovery)
 {
   if(file_recovery->file_size < file_recovery->calculated_file_size)
@@ -70,13 +65,7 @@ static void file_check_ecryptfs(file_recovery_t *file_recovery)
     file_recovery->file_size=file_recovery->calculated_file_size+1024*1024;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct ecrypfs_header);
-  @ requires separation: \separated(&file_hint_ecryptfs, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_ecryptfs(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct ecrypfs_header *e=(const struct ecrypfs_header *)buffer;

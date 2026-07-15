@@ -33,7 +33,7 @@
 #include "filegen.h"
 #include "log.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_mrw(file_stat_t *file_stat);
 
 const file_hint_t file_hint_mrw= {
@@ -72,13 +72,7 @@ struct prd {
 }  __attribute__ ((gcc_struct, __packed__));
 
 /* Minolta */
-/*@
-  @ requires buffer_size >= 2*sizeof(struct hdr) + sizeof(struct prd);
-  @ requires separation: \separated(&file_hint_mrw, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_mrw(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const unsigned char prd_header[4]= { 0x00,'P','R','D'};

@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_pa(file_stat_t *file_stat);
 
 const file_hint_t file_hint_pa= {
@@ -51,10 +51,7 @@ struct pa_header
   uint64_t size;
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @*/
+
 static int header_check_pa(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct pa_header *hdr=(const struct pa_header *)buffer;

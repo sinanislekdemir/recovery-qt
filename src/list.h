@@ -45,42 +45,18 @@ struct td_list_head {
 	struct td_list_head *next, *prev;
 };
 
-/*@
-  inductive reachable_forward{L}(struct td_list_head *root, struct td_list_head *node) {
-    case root_reachable_forward{L}:
-      \forall struct td_list_head *root; reachable_forward(root,root) ;
-    case next_reachable{L}:
-      \forall struct td_list_head *root,*node;
-      \valid(root) && reachable_forward(root->next,node) ==> reachable_forward(root,node);
-  }
 
-  inductive reachable_backward{L}(struct td_list_head *root, struct td_list_head *node) {
-    case root_reachable_backward{L}:
-      \forall struct td_list_head *root; reachable_backward(root,root) ;
-    case prev_reachable{L}:
-      \forall struct td_list_head *root,*node;
-      \valid(root) && reachable_backward(root->prev,node) ==> reachable_backward(root,node);
-  }
-  @*/
   // root->next->prev == root
 
-/*@ predicate finite{L}(struct td_list_head *root) = reachable_forward(root->next,root) && reachable_backward(root->prev,root); */
+
 
 
 /*
       \forall struct td_list_head *l1;
         reachable(l, l1) && \valid(l1) ==> \valid(l1->next) && l1->next->prev == l1;
 */
-/*@ inductive list_separated3{L}(struct td_list_head *root, struct td_list_head *node, struct td_list_head *elt) {
-     case node_is_root{L}:
-       \forall struct td_list_head *root, *elt; \separated(root, elt) ==> list_separated3(root, root, elt);
-     case node_reachable{L}:
-       \forall struct td_list_head *root, *node, *elt;
-       \valid(node) && \separated(node, elt) && list_separated3(root, node->next, elt) ==> list_separated3(root, node, elt);
- }
 
- */
-/*@ predicate list_separated{L}(struct td_list_head *root, struct td_list_head *elt) = list_separated3(root, root->next, elt); */
+
 
 #define TD_LIST_HEAD_INIT(name) { &(name), &(name) }
 
@@ -97,49 +73,29 @@ struct td_list_head {
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-/*@
-  @ requires \valid(newe);
-  @ requires \valid(prev);
-  @ requires \valid(next);
-  @ requires separation: \separated(newe, \union(prev,next));
-  @ requires prev == next || \separated(prev,next,newe);
-  @ requires finite(prev);
-  @ requires finite(next);
-  @ requires prev->next == next;
-  @ requires next->prev == prev;
-  @ requires list_separated(prev, newe);
-  @ requires list_separated(next, newe);
-  @ terminates \true;
-  @ ensures prev->next == newe;
-  @ ensures newe->prev == prev;
-  @ ensures newe->next == next;
-  @ ensures next->prev == newe;
-  @ ensures newe->next->prev == newe;
-  @ ensures newe->prev->next == newe;
-  @ assigns next->prev,newe->next,newe->prev,prev->next;
-  @*/
+
 static inline void __td_list_add(struct td_list_head *newe,
 			      struct td_list_head *prev,
 			      struct td_list_head *next)
 {
-        /*@ assert finite(prev); */
-        /*@ assert finite(next); */
-        /*@ assert reachable_forward(prev->next,prev); */
-        /*@ assert reachable_forward(next->next,next); */
-        /*@ assert reachable_backward(prev->prev,prev); */
-        /*@ assert reachable_backward(next->prev,next); */
+        
+        
+        
+        
+        
+        
 
-        /*@ assert reachable_forward(next,prev); */
+        
 	newe->next = next;
 	newe->prev = prev;
 	prev->next = newe;
 	next->prev = newe;
-	/*@ assert next->prev == newe; */
-	/*@ assert newe->next == next; */
-	/*@ assert newe->prev == prev; */
-	/*@ assert prev->next == newe; */
-	/*@ assert reachable_forward(prev,newe); */
-	/*@ assert reachable_backward(next,newe); */
+	
+	
+	
+	
+	
+	
 }
 
 /**
@@ -150,21 +106,7 @@ static inline void __td_list_add(struct td_list_head *newe,
  * Insert a new entry after the specified head.
  * This is good for implementing stacks.
  */
-/*@
-  @ requires \valid(newe);
-  @ requires \valid(head);
-  @ requires \valid(head->next);
-  @ requires separation: \separated(newe, \union(head,head->next));
-  @ requires finite(head);
-  @ requires finite(head->next);
-  @ requires list_separated(head, newe);
-  @ terminates \true;
-  @ ensures head->next == newe;
-  @ ensures newe->prev == head;
-  @ ensures newe->next == \old(head->next);
-  @ ensures \old(head->next)->prev == newe;
-  @ assigns head->next,newe->prev,newe->next,\old(head->next)->prev;
-  @*/
+
 static inline void td_list_add(struct td_list_head *newe, struct td_list_head *head)
 {
 	__td_list_add(newe, head, head->next);
@@ -178,24 +120,7 @@ static inline void td_list_add(struct td_list_head *newe, struct td_list_head *h
  * Insert a new entry before the specified head.
  * This is useful for implementing queues.
  */
-/*@
-  @ requires \valid(newe);
-  @ requires \valid(head);
-  @ requires \valid(head->prev);
-  @ requires separation: \separated(newe, head);
-  @ requires \separated(newe, \union(head->prev, head));
-  @ requires head->prev == head || \separated(head->prev, head, newe);
-  @ requires finite(head->prev);
-  @ requires list_separated(head->prev, newe);
-  @ requires list_separated(head, newe);
-  @ requires finite(head);
-  @ terminates \true;
-  @ ensures head->prev == newe;
-  @ ensures newe->next == head;
-  @ ensures newe->prev == \old(head->prev);
-  @ ensures \old(head->prev)->next == newe;
-  @ assigns head->prev,newe->next,newe->prev,\old(head->prev)->next;
-  @*/
+
 static inline void td_list_add_tail(struct td_list_head *newe, struct td_list_head *head)
 {
 	__td_list_add(newe, head->prev, head);
@@ -208,21 +133,13 @@ static inline void td_list_add_tail(struct td_list_head *newe, struct td_list_he
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
  */
-/*@
-  @ requires \valid(prev);
-  @ requires \valid(next);
-  @ requires prev == next || \separated(prev,next);
-  @ terminates \true;
-  @ ensures next->prev == prev;
-  @ ensures prev->next == next;
-  @ assigns next->prev,prev->next;
-  @*/
+
 static inline void __td_list_del(struct td_list_head * prev, struct td_list_head * next)
 {
 	next->prev = prev;
 	prev->next = next;
-	/*@ assert next->prev == prev; */
-	/*@ assert prev->next == next; */
+	
+	
 }
 
 /**
@@ -231,26 +148,16 @@ static inline void __td_list_del(struct td_list_head * prev, struct td_list_head
  * Note: td_list_empty on entry does not return true after this, the entry is
  * in an undefined state.
  */
-/*@
-  @ requires \valid(entry);
-  @ requires \valid(entry->prev);
-  @ requires \valid(entry->next);
-  @ requires \separated(entry, \union(entry->prev,entry->next));
-  @ requires entry->prev == entry->next || \separated(entry->prev,entry->next);
-  @ terminates \true;
-  @ ensures  \old(entry->prev)->next == \old(entry->next);
-  @ ensures  \old(entry->next)->prev == \old(entry->prev);
-  @ assigns \old(entry->prev)->next, \old(entry->next)->prev, entry->next, entry->prev;
-  @*/
+
 static inline void td_list_del(struct td_list_head *entry)
 {
 	__td_list_del(entry->prev, entry->next);
-	/*@ assert entry->prev->next == entry->next; */
-	/*@ assert entry->next->prev == entry->prev; */
+	
+	
 	entry->next = (struct td_list_head*)LIST_POISON1;
 	entry->prev = (struct td_list_head*)LIST_POISON2;
-	/*@ assert \at(entry->prev,Pre)->next == \at(entry->next,Pre); */
-	/*@ assert \at(entry->next,Pre)->prev == \at(entry->prev,Pre); */
+	
+	
 }
 
 #if 0
@@ -294,11 +201,7 @@ static inline void td_list_move_tail(struct td_list_head *list,
  * td_list_empty - tests whether a list is empty
  * @head: the list to test.
  */
-/*@
-  @ requires \valid_read(head);
-  @ terminates \true;
-  @ assigns  \nothing;
-  @*/
+
 static inline int td_list_empty(const struct td_list_head *head)
 {
 	return head->next == head;

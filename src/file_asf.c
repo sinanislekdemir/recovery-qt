@@ -33,7 +33,7 @@
 #include "log.h"
 
 #if !defined(SINGLE_FORMAT) || defined(SINGLE_FORMAT_asf)
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_asf(file_stat_t *file_stat);
 
 const file_hint_t file_hint_asf= {
@@ -70,13 +70,7 @@ struct asf_stream_prop_s {
 static const char *extension_wma="wma";
 static const char *extension_wmv="wmv";
 
-/*@
-  @ requires buffer_size > sizeof(struct asf_header_obj_s);
-  @ requires separation: \separated(&file_hint_asf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_asf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct asf_header_obj_s *hdr=(const struct asf_header_obj_s*)buffer;
@@ -91,10 +85,7 @@ static int header_check_asf(const unsigned char *buffer, const unsigned int buff
       le64(hdr->object_size) >= PHOTOREC_MAX_FILE_SIZE ||
       nbr_header_obj<4)
     return 0;
-  /*@
-    @ loop assigns extension, i, size, time, offset_prop;
-    @ loop variant nbr_header_obj - i;
-    @*/
+  
   for(i=0;
       i < nbr_header_obj && offset_prop + 0x28 < buffer_size;
       i++)

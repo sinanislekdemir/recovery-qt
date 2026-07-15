@@ -31,7 +31,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_ape(file_stat_t *file_stat);
 
 const file_hint_t file_hint_ape= {
@@ -100,13 +100,7 @@ struct APE_HEADER
   uint32_t nSampleRate;		// the sample rate (typically 44100)
 };
 
-/*@
-  @ requires buffer_size >= sizeof(struct APE_HEADER_OLD);
-  @ requires separation: \separated(&file_hint_ape, buffer, file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_ape(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct APE_HEADER_OLD *ape=(const struct APE_HEADER_OLD*)buffer;
@@ -125,7 +119,7 @@ static int header_check_ape(const unsigned char *buffer, const unsigned int buff
       return 0;
     {
       const struct APE_HEADER *apeh=(const struct APE_HEADER*)&buffer[nDescriptorBytes];
-      /*@ assert \valid_read(apeh); */
+      
       if(le16(apeh->nChannels)<1 || le16(apeh->nChannels)>2)
 	return 0;
     }

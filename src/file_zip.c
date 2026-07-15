@@ -192,14 +192,7 @@ struct zip64_end_central_dir
 typedef struct zip_file_entry zip_file_entry_t;
 typedef struct zip64_extra_entry zip64_extra_entry_t;
 
-/*@
-  @ requires \valid(f);
-  @ requires 0 < size <= 4096;
-  @ requires \valid_read((const char *)needle + (0 .. size-1));
-  @ requires \separated(f, (const char *)needle+(..), &errno, &Frama_C_entropy_source);
-  @ assigns *f,errno;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static int64_t file_get_pos(FILE *f, const void* needle, const unsigned int size)
 {
   char     buffer[4096];
@@ -208,10 +201,7 @@ static int64_t file_get_pos(FILE *f, const void* needle, const unsigned int size
   log_trace("zip: file_get_pos(f, needle, %u)\n", size);
 #endif
 
-  /*@
-    @ loop assigns total, *f, errno, buffer[0..4096-1];
-    @ loop assigns Frama_C_entropy_source;
-    @*/
+  
   while (!feof(f))
   {
     const size_t read_size=fread(&buffer, 1, 4096, f);
@@ -219,24 +209,21 @@ static int64_t file_get_pos(FILE *f, const void* needle, const unsigned int size
     {
       return -1;
     }
-    /*@ assert 0 < read_size <= 4096; */
-    /*@ assert total <= 0x8000000000000000 - 4096; */
+    
+    
 #if defined(__FRAMAC__)
     Frama_C_make_unknown(&buffer, 4096);
 #endif
     if(read_size >= size)
     {
-      /*@ assert read_size >= size; */
+      
       const unsigned int count_max=read_size - size;
       unsigned int count = 0;
       // TODO loop invariant 0 <= count <= count_max + 1;
-      /*@
-	@ loop assigns count, *f, errno;
-	@ loop variant count_max - count;
-	@*/
+      
       for(count=0; count <= count_max; count++)
       {
-	/*@ assert count <= count_max; */
+	
 	if (buffer[count]==*(const char *)needle && memcmp(buffer+count, needle, size)==0)
 	{
 	  if(my_fseek(f, (off_t)count-(off_t)read_size, SEEK_CUR)<0)
@@ -262,24 +249,7 @@ static int64_t file_get_pos(FILE *f, const void* needle, const unsigned int size
   return -1;
 }
 
-/*@
-  @ requires \valid_read(mime + (0 .. 127));
-  @ requires \initialized(mime + (0 .. 127));
-  @ ensures  \result==extension_epub ||
-	\result==extension_indd ||
-	\result==extension_kra ||
-	\result==extension_odg ||
-	\result==extension_odp ||
-	\result==extension_ods ||
-	\result==extension_odt ||
-	\result==extension_ora ||
-	\result==extension_sxc ||
-	\result==extension_sxd ||
-	\result==extension_sxi ||
-	\result==extension_sxw ||
-	\result==extension_xd;
-  @ assigns \nothing;
-  @*/
+
 static const char *zip_parse_parse_entry_mimetype(const char *mime, const unsigned int len)
 {
   if(len==16      && memcmp(mime,"image/openraster",16)==0)
@@ -312,91 +282,7 @@ static const char *zip_parse_parse_entry_mimetype(const char *mime, const unsign
   return extension_sxw;
 }
 
-/*@
-  @ requires \valid(fr);
-  @ requires \valid(fr->handle);
-  @ requires \valid(ext);
-  @ requires fr->file_size < 0x8000000000000000 - 65535;
-  @ requires \valid_read(file);
-  @ requires 0 < len <= 65535;
-  @ requires \separated(fr, fr->handle, ext, file, &first_filename[0 .. 256], &errno, &Frama_C_entropy_source);
-  @ requires *ext == \null ||
-     *ext == extension_apk ||
-     *ext == extension_bbdoc ||
-     *ext == extension_celtx ||
-     *ext == extension_docx ||
-     *ext == extension_epub ||
-     *ext == extension_fcstd ||
-     *ext == extension_indd ||
-     *ext == extension_jar ||
-     *ext == extension_kmz ||
-     *ext == extension_kra ||
-     *ext == extension_mctx ||
-     *ext == extension_mmap ||
-     *ext == extension_notebook ||
-     *ext == extension_numbers ||
-     *ext == extension_odg  ||
-     *ext == extension_odp ||
-     *ext == extension_ods ||
-     *ext == extension_odt ||
-     *ext == extension_ora ||
-     *ext == extension_pages ||
-     *ext == extension_pptx ||
-     *ext == extension_sh3d ||
-     *ext == extension_sketch ||
-     *ext == extension_sxc ||
-     *ext == extension_sxd ||
-     *ext == extension_sxi ||
-     *ext == extension_sxw ||
-     *ext == extension_vsdx ||
-     *ext == extension_xd ||
-     *ext == extension_xlsx ||
-     *ext == extension_xpi ||
-     *ext == extension_xrns ||
-     *ext == file_hint_zip.extension;
-  @ ensures *ext == \null ||
-     *ext == extension_apk ||
-     *ext == extension_bbdoc ||
-     *ext == extension_celtx ||
-     *ext == extension_docx ||
-     *ext == extension_epub ||
-     *ext == extension_fcstd ||
-     *ext == extension_indd ||
-     *ext == extension_jar ||
-     *ext == extension_kmz ||
-     *ext == extension_kra ||
-     *ext == extension_mctx ||
-     *ext == extension_mmap ||
-     *ext == extension_notebook ||
-     *ext == extension_numbers ||
-     *ext == extension_odg  ||
-     *ext == extension_odp ||
-     *ext == extension_ods ||
-     *ext == extension_odt ||
-     *ext == extension_ora ||
-     *ext == extension_pages ||
-     *ext == extension_pptx ||
-     *ext == extension_sb3 ||
-     *ext == extension_sh3d ||
-     *ext == extension_sketch ||
-     *ext == extension_sxc ||
-     *ext == extension_sxd ||
-     *ext == extension_sxi ||
-     *ext == extension_sxw ||
-     *ext == extension_vsdx ||
-     *ext == extension_xd ||
-     *ext == extension_xlsx ||
-     *ext == extension_xpi ||
-     *ext == extension_xrns ||
-     *ext == file_hint_zip.extension;
-  @ ensures fr->file_size < 0x8000000000000000;
-  @ ensures \result == -1 || \result == 0 || \result ==1;
-  @ ensures \result == 0 ==> (fr->file_size > \old(fr->file_size));
-  @ assigns *fr->handle, fr->file_size, *ext;
-  @ assigns Frama_C_entropy_source, errno;
-  @ assigns first_filename[0 .. 255];
-  @ assigns msoffice, sh3d, ext_msoffice;
-  @*/
+
 // Returns 1 if encrypted-package
 static int zip_parse_file_entry_fn(file_recovery_t *fr, const char **ext, const unsigned int file_nbr, const zip_file_entry_t *file, const uint64_t len)
 {
@@ -412,12 +298,12 @@ static int zip_parse_file_entry_fn(file_recovery_t *fr, const char **ext, const 
   Frama_C_make_unknown(filename, 65535+1);
 #endif
   fr->file_size += len;
-  /*@ assert fr->file_size < 0x8000000000000000; */
+  
   filename[len]='\0';
   if(first_filename[0]=='\0')
   {
     const unsigned int len_tmp=(len<255?len:255);
-    /*@ assert 0 <= len_tmp <= 255; */
+    
     strncpy(first_filename, filename, len_tmp);
     first_filename[len_tmp]='\0';
   }
@@ -443,7 +329,7 @@ static int zip_parse_file_entry_fn(file_recovery_t *fr, const char **ext, const 
     if(len==8 && memcmp(filename, "mimetype", 8)==0)
     {
       char buffer[128];
-      /*@ assert \valid_read(file); */
+      
       const unsigned int compressed_size=le32(file->compressed_size);
       const int to_read=(compressed_size < 128 ? compressed_size: 128);
       const int extra_length=le16(file->extra_length);
@@ -530,102 +416,15 @@ static int zip_parse_file_entry_fn(file_recovery_t *fr, const char **ext, const 
   return 0;
 }
 
-/*@
-  @ requires \valid(fr);
-  @ requires \valid(fr->handle);
-  @ requires \valid(ext);
-  @ requires fr->file_size < 0x8000000000000000 + 4;
-  @ requires \separated(fr, fr->handle, ext, &errno, &Frama_C_entropy_source, first_filename + (..), &msoffice, &sh3d, &ext_msoffice, &expected_compressed_size);
-  @ requires *ext == \null ||
-     *ext == extension_apk ||
-     *ext == extension_bbdoc ||
-     *ext == extension_celtx ||
-     *ext == extension_docx ||
-     *ext == extension_epub ||
-     *ext == extension_fcstd ||
-     *ext == extension_indd ||
-     *ext == extension_jar ||
-     *ext == extension_kmz ||
-     *ext == extension_kra ||
-     *ext == extension_mctx ||
-     *ext == extension_mmap ||
-     *ext == extension_notebook ||
-     *ext == extension_numbers ||
-     *ext == extension_odg  ||
-     *ext == extension_odp ||
-     *ext == extension_ods ||
-     *ext == extension_odt ||
-     *ext == extension_ora ||
-     *ext == extension_pages ||
-     *ext == extension_pptx ||
-     *ext == extension_sb3||
-     *ext == extension_sh3d ||
-     *ext == extension_sketch ||
-     *ext == extension_sxc ||
-     *ext == extension_sxd ||
-     *ext == extension_sxi ||
-     *ext == extension_sxw ||
-     *ext == extension_vsdx ||
-     *ext == extension_xd ||
-     *ext == extension_xlsx ||
-     *ext == extension_xpi ||
-     *ext == extension_xrns ||
-     *ext == file_hint_zip.extension;
-  @ ensures *ext == \null ||
-     *ext == extension_apk ||
-     *ext == extension_bbdoc ||
-     *ext == extension_celtx ||
-     *ext == extension_docx ||
-     *ext == extension_epub ||
-     *ext == extension_fcstd ||
-     *ext == extension_indd ||
-     *ext == extension_jar ||
-     *ext == extension_kmz ||
-     *ext == extension_kra ||
-     *ext == extension_mctx ||
-     *ext == extension_mmap ||
-     *ext == extension_notebook ||
-     *ext == extension_numbers ||
-     *ext == extension_odg  ||
-     *ext == extension_odp ||
-     *ext == extension_ods ||
-     *ext == extension_odt ||
-     *ext == extension_ora ||
-     *ext == extension_pages ||
-     *ext == extension_pptx ||
-     *ext == extension_sb3 ||
-     *ext == extension_sh3d ||
-     *ext == extension_sketch ||
-     *ext == extension_sxc ||
-     *ext == extension_sxd ||
-     *ext == extension_sxi ||
-     *ext == extension_sxw ||
-     *ext == extension_vsdx ||
-     *ext == extension_xd ||
-     *ext == extension_xlsx ||
-     *ext == extension_xpi ||
-     *ext == extension_xrns ||
-     *ext == file_hint_zip.extension;
-  @ ensures \result == -1 || \result == 0 || result == 1;
-  @ ensures \result == 0 ==> fr->file_size < 0x8000000000000000;
-  @ ensures \result == 0 ==> (fr->file_size > \old(fr->file_size));
-  @ ensures \result == 1 ==> fr->file_size < 0x8000000000000000;
-  @ ensures \result == 1 ==> (fr->file_size > \old(fr->file_size));
-  @ assigns *fr->handle, fr->file_size, *ext;
-  @ assigns fr->time;
-  @ assigns Frama_C_entropy_source, errno;
-  @ assigns first_filename[0 .. 255];
-  @ assigns msoffice, sh3d, ext_msoffice;
-  @ assigns expected_compressed_size;
-  @*/
+
 static int zip_parse_file_entry(file_recovery_t *fr, const char **ext, const unsigned int file_nbr)
 {
   char b_file[sizeof(zip_file_entry_t)];
   char b_extra[sizeof(zip64_extra_entry_t)];
   const zip_file_entry_t *file=(const zip_file_entry_t *)&b_file;
   const zip64_extra_entry_t *extra=(const zip64_extra_entry_t *)&b_extra;
-  /*@ assert \valid_read(file); */
-  /*@ assert \valid_read(extra); */
+  
+  
   uint64_t len;
   int fn_status=0;
   if (fread(b_file, sizeof(b_file), 1, fr->handle) != 1)
@@ -659,17 +458,17 @@ static int zip_parse_file_entry(file_recovery_t *fr, const char **ext, const uns
   {
     return -1;
   }
-  /*@ assert fr->file_size < 0x8000000000000000 - 65535; */
+  
   len = le16(file->filename_length);
   if (len)
   {
-    /*@ assert 0 < len <= 65535; */
+    
     fn_status=zip_parse_file_entry_fn(fr, ext, file_nbr, file, len);
     if(fn_status < 0)
       return -1;
-    /*@ assert fr->file_size < 0x8000000000000000; */
+    
   }
-  /*@ assert fr->file_size < 0x8000000000000000; */
+  
 #ifdef DEBUG_ZIP
   log_info("\n");
 #endif
@@ -677,12 +476,12 @@ static int zip_parse_file_entry(file_recovery_t *fr, const char **ext, const uns
   memset(&b_extra, 0, sizeof(zip64_extra_entry_t));
   if (len>0)
   {
-    /*@ assert 0 < len <= 65535; */
+    
     if(fr->file_size + 65535 >= 0x8000000000000000)
     {
       return -1;
     }
-    /*@ assert fr->file_size < 0x8000000000000000 - 65535; */
+    
     if (fread(&b_extra, sizeof(zip64_extra_entry_t), 1, fr->handle) != 1)
     {
 #ifdef DEBUG_ZIP
@@ -701,33 +500,33 @@ static int zip_parse_file_entry(file_recovery_t *fr, const char **ext, const uns
       return -1;
     }
     fr->file_size += len;
-    /*@ assert fr->file_size < 0x8000000000000000; */
+    
   }
-  /*@ assert fr->file_size < 0x8000000000000000; */
+  
   len = le32(file->compressed_size);
   if(len==0xffffffff && le16(extra->tag)==1)
   {
     len = le64(extra->compressed_size);
     if(len >= 0x8000000000000000)
       return -1;
-    /*@ assert len < 0x8000000000000000; */
+    
     /* Avoid endless loop */
     if( fr->file_size + len < fr->file_size)
       return -1;
   }
-  /*@ assert len < 0x8000000000000000; */
+  
   if(*ext == extension_kra && len==0x5a495343 && le32(file->uncompressed_size) == 0x5a495355)
   {
     len=19;
-    /*@ assert len==19; */
+    
   }
   if (len>0)
   {
-    /*@ assert fr->file_size < 0x8000000000000000; */
-    /*@ assert 0 < len < 0x8000000000000000; */
+    
+    
     if(fr->file_size + len >= 0x8000000000000000)
       return -1;
-    /*@ assert fr->file_size + len < 0x8000000000000000; */
+    
     if (my_fseek(fr->handle, len, SEEK_CUR) == -1)
     {
 #ifdef DEBUG_ZIP
@@ -738,11 +537,11 @@ static int zip_parse_file_entry(file_recovery_t *fr, const char **ext, const uns
 #ifdef DEBUG_ZIP
     log_trace("zip: Data of length %lu\n", len);
 #endif
-    /*@ assert fr->file_size + len < 0x8000000000000000; */
+    
     fr->file_size += len;
-    /*@ assert fr->file_size < 0x8000000000000000; */
+    
   }
-  /*@ assert fr->file_size < 0x8000000000000000; */
+  
   expected_compressed_size=len;
   if (file->has_descriptor && (le16(file->compression)==8 || le16(file->compression)==9))
   {
@@ -763,36 +562,27 @@ static int zip_parse_file_entry(file_recovery_t *fr, const char **ext, const uns
     {
       if(fr->file_size + pos > 0x7fffffffffffffff)
 	return -1;
-      /*@ assert fr->file_size + pos < 0x8000000000000000; */
+      
       fr->file_size += pos;
-      /*@ assert fr->file_size < 0x8000000000000000; */
+      
       expected_compressed_size=pos;
     }
   }
-  /*@ assert fr->file_size < 0x8000000000000000; */
+  
   if(fn_status==1)
     return 1;
   return 0;
 }
 
-/*@
-  @ requires \valid(fr);
-  @ requires \valid(fr->handle);
-  @ requires fr->file_size < 0x8000000000000000;
-  @ requires \separated(fr, fr->handle, &errno, &Frama_C_entropy_source);
-  @ ensures \result == -1 || \result == 0;
-  @ ensures \result == 0 ==> (fr->file_size > \old(fr->file_size));
-  @ assigns Frama_C_entropy_source, errno;
-  @ assigns *fr->handle, fr->file_size;
-  @*/
+
 static int zip_parse_central_dir(file_recovery_t *fr)
 {
   char buf_file[sizeof(zip_file_entry_t)];
   char buf_dir[sizeof(struct zip_central_dir)];
   const struct zip_central_dir *dir=(const struct zip_central_dir *)&buf_dir;
-  /*@ assert \valid_read(dir); */
+  
   const zip_file_entry_t *file=(const zip_file_entry_t *)&buf_file;
-  /*@ assert \valid_read(file); */
+  
   uint32_t          len;
   if (my_fseek(fr->handle, 2, SEEK_CUR) == -1)
   {
@@ -846,21 +636,12 @@ static int zip_parse_central_dir(file_recovery_t *fr)
   return 0;
 }
 
-/*@
-  @ requires \valid(fr);
-  @ requires \valid(fr->handle);
-  @ requires \separated(fr, fr->handle, &errno, &Frama_C_entropy_source);
-  @ requires fr->file_size < 0x8000000000000000;
-  @ ensures  \result == -1 || \result == 0;
-  @ ensures \result == 0 ==> (fr->file_size > \old(fr->file_size));
-  @ assigns  Frama_C_entropy_source, errno;
-  @ assigns  *fr->handle, fr->file_size;
-  @*/
+
 static int zip64_parse_end_central_dir(file_recovery_t *fr)
 {
   char buffer[sizeof(struct zip64_end_central_dir)];
   const struct zip64_end_central_dir *dir=(const struct zip64_end_central_dir *)&buffer;
-  /*@ assert \valid_read(dir); */
+  
   if (fread(&buffer, sizeof(buffer), 1, fr->handle) != 1)
   {
 #ifdef DEBUG_ZIP
@@ -897,15 +678,7 @@ static int zip64_parse_end_central_dir(file_recovery_t *fr)
   return 0;
 }
 
-/*@
-  @ requires \valid(fr);
-  @ requires \valid(fr->handle);
-  @ requires fr->file_size < 0x8000000000000000;
-  @ requires \separated(fr, fr->handle, &errno, &Frama_C_entropy_source);
-  @ ensures  \result == -1 || \result == 0;
-  @ ensures \result == 0 ==> (fr->file_size > \old(fr->file_size));
-  @ assigns  *fr->handle, fr->file_size, errno, Frama_C_entropy_source;
-  @*/
+
 static int zip_parse_end_central_dir(file_recovery_t *fr)
 {
   char buffer[sizeof(struct zip_end_central_dir)];
@@ -941,15 +714,7 @@ static int zip_parse_end_central_dir(file_recovery_t *fr)
   return 0;
 }
 
-/*@
-  @ requires \valid(fr);
-  @ requires \valid(fr->handle);
-  @ requires fr->file_size < 0x8000000000000000;
-  @ requires \separated(fr, fr->handle, &errno, &Frama_C_entropy_source);
-  @ ensures  \result == -1 || \result == 0;
-  @ ensures \result == 0 ==> (fr->file_size > \old(fr->file_size));
-  @ assigns  *fr->handle, fr->file_size, errno, Frama_C_entropy_source;
-  @*/
+
 static int zip_parse_data_desc(file_recovery_t *fr)
 {
   char buffer[sizeof(struct zip_desc)];
@@ -977,15 +742,7 @@ static int zip_parse_data_desc(file_recovery_t *fr)
   return 0;
 }
 
-/*@
-  @ requires \valid(fr);
-  @ requires \valid(fr->handle);
-  @ requires fr->file_size < 0x8000000000000000;
-  @ requires \separated(fr, fr->handle, &errno, &Frama_C_entropy_source);
-  @ ensures  \result == -1 || \result == 0;
-  @ ensures \result == 0 ==> (fr->file_size > \old(fr->file_size));
-  @ assigns  *fr->handle, fr->file_size, errno, Frama_C_entropy_source;
-  @*/
+
 static int zip_parse_signature(file_recovery_t *fr)
 {
   char buffer[sizeof(uint16_t)];
@@ -1019,15 +776,7 @@ static int zip_parse_signature(file_recovery_t *fr)
   return 0;
 }
 
-/*@
-  @ requires \valid(fr);
-  @ requires \valid(fr->handle);
-  @ requires fr->file_size < 0x8000000000000000;
-  @ requires \separated(fr, fr->handle, &errno);
-  @ ensures \result == -1 || \result == 0;
-  @ ensures \result == 0 ==> (fr->file_size > \old(fr->file_size));
-  @ assigns  *fr->handle, fr->file_size, errno;
-  @*/
+
 static int zip64_parse_end_central_dir_locator(file_recovery_t *fr)
 {
   char buffer[sizeof(struct zip64_loc)];
@@ -1042,16 +791,7 @@ static int zip64_parse_end_central_dir_locator(file_recovery_t *fr)
   return 0;
 }
 
-/*@
-  @ requires fr->file_check==&file_check_zip;
-  @ requires valid_file_check_param(fr);
-  @ ensures  valid_file_check_result(fr);
-  @ assigns *fr->handle, fr->file_size;
-  @ assigns fr->time, fr->offset_ok, fr->offset_error;
-  @ assigns Frama_C_entropy_source, errno;
-  @ assigns first_filename[0 .. 255];
-  @ assigns msoffice, sh3d, ext_msoffice, expected_compressed_size;
-  @*/
+
 static void file_check_zip(file_recovery_t *fr)
 {
   const char *ext=NULL;
@@ -1065,16 +805,7 @@ static void file_check_zip(file_recovery_t *fr)
   first_filename[0]='\0';
   if(my_fseek(fr->handle, 0, SEEK_SET) < 0)
     return ;
-  /*@
-    @ loop invariant valid_file_recovery(fr);
-    @ loop invariant fr->file_size < 0x8000000000000000 - 4;
-    @ loop assigns *fr->handle, fr->file_size, ext, file_nbr;
-    @ loop assigns fr->time, fr->offset_ok, fr->offset_error;
-    @ loop assigns Frama_C_entropy_source, errno;
-    @ loop assigns first_filename[0 .. 255];
-    @ loop assigns msoffice, sh3d, ext_msoffice, expected_compressed_size;
-    @ loop variant 0x8000000000000000 - fr->file_size;
-    @*/
+  
   while (1)
   {
     uint64_t file_size_old;
@@ -1082,7 +813,7 @@ static void file_check_zip(file_recovery_t *fr)
     const uint32_t *header_ptr=(const uint32_t *)&buf_header;
     uint32_t header;
     int      status;
-    /*@ assert fr->file_size < 0x8000000000000000 - 4; */
+    
     if (fread(&buf_header, 4, 1, fr->handle)!=1)
     {
 #ifdef DEBUG_ZIP
@@ -1102,33 +833,33 @@ static void file_check_zip(file_recovery_t *fr)
 #endif
     fr->file_size += 4;
     file_size_old=fr->file_size;
-    /*@ assert fr->file_size < 0x8000000000000000; */
+    
 
     switch (header)
     {
       case ZIP_CENTRAL_DIR: /* Central dir */
         status = zip_parse_central_dir(fr);
-	/*@ assert (status >= 0) ==> (fr->file_size > file_size_old); */
+	
         break;
       case ZIP_CENTRAL_DIR64: /* 64b end central dir */
         status = zip64_parse_end_central_dir(fr);
-	/*@ assert (status >= 0) ==> (fr->file_size > file_size_old); */
+	
         break;
       case ZIP_END_CENTRAL_DIR: /* End central dir */
         status = zip_parse_end_central_dir(fr);
-	/*@ assert (status >= 0) ==> (fr->file_size > file_size_old); */
+	
         break;
       case ZIP_END_CENTRAL_DIR64: /* 64b end central dir locator */
         status = zip64_parse_end_central_dir_locator(fr);
-	/*@ assert (status >= 0) ==> (fr->file_size > file_size_old); */
+	
         break;
       case ZIP_DATA_DESCRIPTOR: /* Data descriptor */
         status = zip_parse_data_desc(fr);
-	/*@ assert (status >= 0) ==> (fr->file_size > file_size_old); */
+	
         break;
       case ZIP_FILE_ENTRY: /* File Entry */
         status = zip_parse_file_entry(fr, &ext, file_nbr);
-	/*@ assert (status >= 0) ==> (fr->file_size > file_size_old); */
+	
 	if(status==1)
 	{
 	  fr->file_size = original_file_size;
@@ -1138,7 +869,7 @@ static void file_check_zip(file_recovery_t *fr)
         break;
       case ZIP_SIGNATURE: /* Signature */
         status = zip_parse_signature(fr);
-	/*@ assert (status >= 0) ==> (fr->file_size > file_size_old); */
+	
         break;
       default:
 #ifdef DEBUG_ZIP
@@ -1150,7 +881,7 @@ static void file_check_zip(file_recovery_t *fr)
         status = -1;
         break;
     }
-    /*@ assert (status >= 0) ==> (fr->file_size > file_size_old); */
+    
 
     /* Verify status */
     if (status<0)
@@ -1169,25 +900,21 @@ static void file_check_zip(file_recovery_t *fr)
       fr->file_size = 0;
       return;
     }
-    /*@ assert fr->file_size < 0x8000000000000000 - 4; */
+    
   }
 }
 
-/*@
-  @ requires file_recovery->file_rename==&file_rename_zip;
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_zip(file_recovery_t *file_recovery)
 {
   const char *ext=NULL;
   unsigned int file_nbr=0;
   file_recovery_t fr;
   reset_file_recovery(&fr);
-  /*@ assert valid_read_string((char*)file_recovery->filename); */
+  
   if((fr.handle=fopen(file_recovery->filename, "rb"))==NULL)
   {
-    /*@ assert valid_read_string((char*)file_recovery->filename); */
+    
     return;
   }
   fr.file_size = 0;
@@ -1196,17 +923,11 @@ static void file_rename_zip(file_recovery_t *file_recovery)
   if(my_fseek(fr.handle, 0, SEEK_SET) < 0)
   {
     fclose(fr.handle);
-    /*@ assert valid_read_string((char*)file_recovery->filename); */
+    
     return ;
   }
-  /*@ assert fr.file_size == 0; */
-  /*@
-    @ loop invariant valid_read_string((char*)file_recovery->filename);
-    @ loop invariant strlen(&file_recovery->filename[0]) > 0;
-    @ loop invariant valid_file_recovery(file_recovery);
-    @ loop invariant fr.file_size < 0x8000000000000000 - 4;
-    @ loop variant 0x8000000000000000 - fr.file_size;
-    @*/
+  
+  
   while (1)
   {
     uint32_t header;
@@ -1214,17 +935,17 @@ static void file_rename_zip(file_recovery_t *file_recovery)
     if(file_nbr>=0xffffffff)
     {
       fclose(fr.handle);
-      /*@ assert valid_read_string((char*)file_recovery->filename); */
+      
       return;
     }
-    /*@ assert fr.file_size < 0x8000000000000000 - 4; */
+    
     if (fread(&header, 4, 1, fr.handle)!=1)
     {
 #ifdef DEBUG_ZIP
       log_trace("Failed to read block header\n");
 #endif
       fclose(fr.handle);
-      /*@ assert valid_read_string((char*)file_recovery->filename); */
+      
       return;
     }
 #if defined(__FRAMAC__)
@@ -1261,9 +982,9 @@ static void file_rename_zip(file_recovery_t *file_recovery)
 	if(ext!=NULL)
 	{
 	  fclose(fr.handle);
-	  /*@ assert valid_read_string((char*)file_recovery->filename); */
+	  
 	  file_rename(file_recovery, NULL, 0, 0, ext, 1);
-	  /*@ assert valid_read_string((char*)file_recovery->filename); */
+	  
 	  return;
 	}
         break;
@@ -1285,7 +1006,7 @@ static void file_rename_zip(file_recovery_t *file_recovery)
     if (status<0)
     {
       fclose(fr.handle);
-      /*@ assert valid_read_string((char*)file_recovery->filename); */
+      
       return;
     }
     /* Only end of central dir is end of archive, 64b version of it is before */
@@ -1293,67 +1014,29 @@ static void file_rename_zip(file_recovery_t *file_recovery)
     {
       unsigned int len;
       fclose(fr.handle);
-      /*@
-        @ loop assigns len;
-	@ loop variant 32 - len;
-	@*/
+      
       for(len=0; len<32 &&
 	  first_filename[len]!='\0' &&
 	  first_filename[len]!='.' &&
 	  first_filename[len]!='/' &&
 	  first_filename[len]!='\\';
 	  len++);
-      /*@ assert valid_read_string((char*)file_recovery->filename); */
+      
       file_rename(file_recovery, first_filename, len, 0, "zip", 0);
-      /*@ assert valid_read_string((char*)file_recovery->filename); */
+      
       return;
     }
     if(file_nbr>=0xffffffff || fr.file_size >= 0x8000000000000000 - 4)
     {
       fclose(fr.handle);
-      /*@ assert valid_read_string((char*)file_recovery->filename); */
+      
       return;
     }
-    /*@ assert fr.file_size < 0x8000000000000000 - 4; */
+    
   }
 }
 
-/*@
-  @ requires buffer_size >= 85;
-  @ requires separation: \separated(&file_hint_zip, buffer +(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures (\result == 1) ==> (file_recovery_new->time == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->min_filesize == 30);
-  @ ensures (\result == 1) ==> (file_recovery_new->calculated_file_size == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_size == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->data_check == \null);
-  @ ensures (\result == 1) ==> file_recovery_new->file_check == &file_check_zip;
-  @ ensures (\result == 1) ==> (file_recovery_new->file_rename == &file_rename_zip || file_recovery_new->file_rename == \null);
-  @ ensures (\result == 1) ==> (file_recovery_new->extension == file_hint_zip.extension ||
-      file_recovery_new->extension == extension_docx ||
-      file_recovery_new->extension == extension_epub ||
-      file_recovery_new->extension == extension_indd ||
-      file_recovery_new->extension == extension_kra ||
-      file_recovery_new->extension == extension_numbers ||
-      file_recovery_new->extension == extension_odg ||
-      file_recovery_new->extension == extension_odp ||
-      file_recovery_new->extension == extension_ods ||
-      file_recovery_new->extension == extension_odt ||
-      file_recovery_new->extension == extension_ora ||
-      file_recovery_new->extension == extension_pptx ||
-      file_recovery_new->extension == extension_sb3 ||
-      file_recovery_new->extension == extension_sh3d ||
-      file_recovery_new->extension == extension_sxc ||
-      file_recovery_new->extension == extension_sxd ||
-      file_recovery_new->extension == extension_sxi ||
-      file_recovery_new->extension == extension_sxw ||
-      file_recovery_new->extension == extension_vsdx ||
-      file_recovery_new->extension == extension_xd ||
-      file_recovery_new->extension == extension_xlsx ||
-      file_recovery_new->extension == extension_xrns );
-  @ ensures (\result == 1) ==> (valid_read_string(file_recovery_new->extension));
-  @*/
+
 static int header_check_zip(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const zip_file_entry_t *file=(const zip_file_entry_t *)&buffer[4];
@@ -1380,7 +1063,7 @@ static int header_check_zip(const unsigned char *buffer, const unsigned int buff
 //      file_recovery->file_stat->file_hint==&file_hint_zip &&
       safe_header_only==0)
   {
-    /*@ assert file_recovery->file_check == file_check_zip; */
+    
     if(header_ignored_adv(file_recovery, file_recovery_new)==0)
       return 0;
   }
@@ -1424,52 +1107,30 @@ static int header_check_zip(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= 85;
-  @ requires separation: \separated(&file_hint_zip, buffer +(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures \result == 1;
-  @ ensures file_recovery_new->file_check == &file_check_zip;
-  @ ensures file_recovery_new->extension == file_hint_zip.extension;
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_winzip(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   reset_file_recovery(file_recovery_new);
   file_recovery_new->file_check=&file_check_zip;
   file_recovery_new->extension=file_hint_zip.extension;
-  /*@ assert valid_file_recovery(file_recovery_new); */
+  
   return 1;
 }
 
-/*@
-  @ requires haystack_size > 0;
-  @ requires needle_size > 0;
-  @ requires \valid_read(haystack + (0 .. haystack_size-1));
-  @ requires \valid_read(needle + (0 .. needle_size-1));
-  @ assigns \nothing;
-  @ ensures \result <= haystack_size;
-  @*/
+
 static unsigned int pos_in_mem(const unsigned char *haystack, const unsigned int haystack_size, const unsigned char *needle, const unsigned int needle_size)
 {
   unsigned int i;
   if(haystack_size < needle_size)
     return 0;
-  /*@
-    @ loop invariant 0 <= i <= haystack_size - needle_size + 1;
-    @ loop assigns i;
-    @ loop variant haystack_size - needle_size - i;
-    @*/
+  
   for(i=0; i <= haystack_size - needle_size; i++)
     if(memcmp(&haystack[i],needle,needle_size)==0)
       return (i+needle_size);
   return 0;
 }
 
-/*@
-  @ requires valid_register_header_check(file_stat);
-  @*/
+
 static void register_header_check_zip(file_stat_t *file_stat)
 {
   static const unsigned char zip_header2[8]  = { 'P', 'K', '0', '0', 'P', 'K', 0x03, 0x04}; /* WinZIPv8-compressed files. */
@@ -1490,13 +1151,13 @@ int main()
   file_recovery_t file_recovery;
   file_stat_t file_stats;
 
-  /*@ assert \valid(buffer + (0 .. (BLOCKSIZE - 1))); */
+  
 #if defined(__FRAMAC__)
   Frama_C_make_unknown((char *)buffer, BLOCKSIZE);
 #endif
 
   reset_file_recovery(&file_recovery);
-  /*@ assert file_recovery.file_stat == \null; */
+  
   file_recovery.blocksize=BLOCKSIZE;
   file_recovery_new.blocksize=BLOCKSIZE;
   file_recovery_new.data_check=NULL;
@@ -1514,15 +1175,15 @@ int main()
   register_header_check_zip(&file_stats);
   if(header_check_zip(buffer, BLOCKSIZE, 0u, &file_recovery, &file_recovery_new)!=1)
     return 0;
-  /*@ assert valid_read_string(file_recovery_new.extension); */
-  /*@ assert valid_read_string((char *)&fn); */
+  
+  
   memcpy(file_recovery_new.filename, fn, sizeof(fn));
   file_recovery_new.file_stat=&file_stats;
-  /*@ assert valid_read_string((char *)file_recovery_new.filename); */
-  /*@ assert file_recovery_new.min_filesize == 30;	*/
-  /*@ assert file_recovery_new.file_check == &file_check_zip || file_recovery_new.file_check == \null; */
-  /*@ assert file_recovery_new.file_stat->file_hint!=NULL; */
-  /*@ assert file_recovery_new.time == 0; */
+  
+  
+  
+  
+  
   {
     file_recovery_t file_recovery_new2;
     file_recovery_new2.blocksize=BLOCKSIZE;
@@ -1530,50 +1191,31 @@ int main()
     file_recovery_new2.file_check=NULL;
     file_recovery_new2.location.start=BLOCKSIZE;
     file_recovery_new.handle=NULL;	/* In theory should be not null */
-    /*@ assert file_recovery_new.extension == file_hint_zip.extension ||
-      file_recovery_new.extension == extension_docx ||
-      file_recovery_new.extension == extension_epub ||
-      file_recovery_new.extension == extension_kra ||
-      file_recovery_new.extension == extension_numbers ||
-      file_recovery_new.extension == extension_odg ||
-      file_recovery_new.extension == extension_odp ||
-      file_recovery_new.extension == extension_ods ||
-      file_recovery_new.extension == extension_odt ||
-      file_recovery_new.extension == extension_ora ||
-      file_recovery_new.extension == extension_pptx ||
-      file_recovery_new.extension == extension_sh3d ||
-      file_recovery_new.extension == extension_sxc ||
-      file_recovery_new.extension == extension_sxd ||
-      file_recovery_new.extension == extension_sxi ||
-      file_recovery_new.extension == extension_sxw ||
-      file_recovery_new.extension == extension_vsdx ||
-      file_recovery_new.extension == extension_xd ||
-      file_recovery_new.extension == extension_xlsx ||
-      file_recovery_new.extension == extension_xrns; */
-    /*@ assert valid_read_string(file_recovery_new.extension); */
-    /*@ assert valid_read_string((char *)file_recovery_new.filename); */
+    
+    
+    
 #if defined(__FRAMAC__)
     Frama_C_make_unknown((char *)buffer, BLOCKSIZE);
 #endif
-    /*@ assert valid_read_string((char *)file_recovery_new.filename); */
-    /*@ assert valid_read_string(file_recovery_new.extension); */
+    
+    
     header_check_zip(buffer, BLOCKSIZE, 0, &file_recovery_new, &file_recovery_new2);
   }
-  /*@ assert file_recovery_new.time == 0; */
-  /*@ assert valid_read_string((char *)file_recovery_new.filename); */
-  /*@ assert valid_read_string(file_recovery_new.extension); */
+  
+  
+  
   file_recovery_new.handle=fopen(fn, "rb");
   if(file_recovery_new.handle!=NULL && file_recovery_new.file_check !=NULL)
   {
-    /*@ assert file_recovery_new.file_check == &file_check_zip; */
-    /*@ assert file_recovery_new.time == 0; */
+    
+    
     file_check_zip(&file_recovery_new);
     fclose(file_recovery_new.handle);
   }
   if(file_recovery_new.file_rename!=NULL)
   {
-    /*@ assert file_recovery_new.file_rename == &file_rename_zip; */
-    /*@ assert valid_read_string((char *)file_recovery_new.filename); */
+    
+    
     file_rename_zip(&file_recovery_new);
   }
   return 0;

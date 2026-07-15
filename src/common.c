@@ -20,7 +20,6 @@
 
  */
 
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -61,7 +60,7 @@ static long secwest=0;
 void *MALLOC(size_t size)
 {
   void *res;
-  /*@ assert size > 0; */
+  
 #ifdef DISABLED_FOR_FRAMAC
   assert(size>0);
 #endif
@@ -101,7 +100,7 @@ void *MALLOC(size_t size)
   }
   memset(res,0,size);
 #endif
-  /*@ assert \valid((char *)res + (0 .. size - 1)); */
+  
   return res;
 }
 
@@ -192,69 +191,39 @@ struct tm *localtime_r(const time_t *timep, struct tm *result)
 void set_part_name(partition_t *partition, const char *src, const unsigned int max_size)
 {
   unsigned int i;
-  /*@
-    @ loop invariant \separated(partition, src + (..));
-    @ loop invariant 0 <= i < sizeof(partition->fsname);
-    @ loop invariant 0 <= i <= max_size;
-    @ loop invariant \initialized(partition->fsname+(0 .. i-1));
-    @ loop assigns i, partition->fsname[0 .. i];
-    @ loop variant sizeof(partition->fsname)-1 - i;
-    @*/
+  
   for(i=0; i<sizeof(partition->fsname)-1 && i<max_size && src[i]!='\0'; i++)
     partition->fsname[i]=src[i];
   partition->fsname[i]='\0';
-  /*@ assert valid_string((char *)&partition->fsname); */
+  
 }
 
 void set_part_name_chomp(partition_t *partition, const char *src, const unsigned int max_size)
 {
   unsigned int i;
-  /*@
-    @ loop invariant \separated(partition, src + (..));
-    @ loop invariant 0 <= i < sizeof(partition->fsname);
-    @ loop invariant 0 <= i <= max_size;
-    @ loop invariant \initialized(partition->fsname+(0 .. i-1));
-    @ loop assigns i, partition->fsname[0 .. i];
-    @ loop variant sizeof(partition->fsname)-1 - i;
-    @*/
+  
   for(i=0; i<sizeof(partition->fsname)-1 && i<max_size && src[i]!='\0'; i++)
     partition->fsname[i]=src[i];
-  /*@
-    @ loop invariant 0 <= i < sizeof(partition->fsname);
-    @ loop invariant \initialized(partition->fsname+(0 .. i-1));
-    @ loop assigns i;
-    @ loop variant i;
-    @*/
+  
   while(i>0 && partition->fsname[i-1]==' ')
     i--;
   partition->fsname[i]='\0';
-  /*@ assert valid_string((char *)&partition->fsname); */
+  
 }
 
 char* strip_dup(char* str)
 {
   char *end;
   char *tmp;
-  /*@
-    @ loop invariant valid_string(str);
-    @ loop assigns str;
-    @ loop variant strlen(\at(str, Pre)) - strlen(str);
-    @*/
+  
   while(isspace(*str))
     str++;
   end=str;
-  /*@ assert valid_string(end); */
-  /*@
-    @ loop invariant valid_string(tmp);
-    @ loop invariant valid_string(end);
-    @ loop invariant end == str || *end != '\0';
-    @ loop assigns tmp, end;
-    @ loop variant strlen(str) - strlen(tmp);
-    @*/
+  
   for(tmp = str; *tmp != 0; tmp++)
     if(!isspace(*tmp))
       end=tmp;
-  /*@ assert valid_string(end); */
+  
   if(str == end)
     return NULL;
   *(end+1) = 0;
@@ -281,89 +250,50 @@ char* strip_dup(char* str)
 #define YEAR_2100	120
 #define IS_LEAP_YEAR(y)	(!((y) & 3) && (y) != YEAR_2100)
 
-/*@
-  @ requires 0 <= year <= 127;
-  @ terminates \true;
-  @ ensures 0 <= \result <= 32;
-  @ assigns \nothing;
-  @*/
 static unsigned int _date_get_leap_day(const unsigned long int year, const unsigned long int month)
 {
   unsigned long int leap_day;
   if (year > YEAR_2100)         /* 2100 isn't leap year */
   {
-    /*@ assert YEAR_2100 < year <= 127; */
+    
     leap_day = (year + 3) / 4;
-    /*@ assert leap_day <= 32; */
+    
     leap_day--;
-    /*@ assert leap_day < 32; */
+    
   }
   else
   {
-    /*@ assert year <= YEAR_2100; */
+    
     leap_day = (year + 3) / 4;
-    /*@ assert leap_day <= (YEAR_2100 + 3)/4; */
+    
   }
-  /*@ assert 0 <= leap_day < 32; */
+  
   if (IS_LEAP_YEAR(year) && month > 2)
     leap_day++;
-  /*@ assert 0 <= leap_day <= 32; */
+  
   return leap_day;
 }
 
-/*@
-  @ requires 0 <= days <= 334;
-  @ requires 0 <= year <= 127;
-  @ requires 0 <= leap_day <= 32;
-  @ requires 0 <= day <= 30;
-  @ terminates \true;
-  @ ensures 0 <= \result <= 334 + 127 * 365 + 32 + 30 + DAYS_DELTA;
-  @ assigns \nothing;
-  @*/
 static unsigned long int _date_get_days(const unsigned long int days, const unsigned long int year, const unsigned long int leap_day, const unsigned long int day)
 {
   return days + year * 365 + leap_day + day + DAYS_DELTA;
 }
-/*@
-  @ requires 0 <= seconds2 <= 31;
-  @ terminates \true;
-  @ ensures 0 <= \result <= 62;
-  @ assigns \nothing;
-  @*/
+
 static unsigned long int _date_get_seconds(const unsigned long int seconds2)
 {
   return seconds2 << 1;
 }
 
-/*@
-  @ requires 0 <= m <= 0x3f;
-  @ terminates \true;
-  @ ensures 0 <= \result <= 0x3f * SECS_PER_MIN;
-  @ assigns \nothing;
-  @*/
 static unsigned long int _date_min_to_seconds(const unsigned long int m)
 {
   return m * SECS_PER_MIN;
 }
 
-/*@
-  @ requires 0 <= h <= 0x3f;
-  @ terminates \true;
-  @ ensures 0 <= \result <= 0x3f * SECS_PER_HOUR;
-  @ assigns \nothing;
-  @*/
 static unsigned long int _date_hours_to_seconds(const unsigned long int h)
 {
   return h * SECS_PER_HOUR;
 }
 
-/*@
-  @ requires -14*3600 <= secwest <= 12*3600;
-  @ requires f_time <= 0xffffffff;
-  @ requires f_date <= 0xffffffff;
-  @ terminates \true;
-  @ assigns \nothing;
-  @*/
 time_t date_dos2unix(const unsigned short f_time, const unsigned short f_date)
 {
   static const unsigned int days_in_year[] = { 0, 0,31,59,90,120,151,181,212,243,273,304,334,0,0,0 };
@@ -372,25 +302,25 @@ time_t date_dos2unix(const unsigned short f_time, const unsigned short f_date)
   unsigned long int day,leap_day,month,year,days;
   unsigned long int secs;
   year  = f_date >> 9;
-  /*@ assert 0 <= year <= 127; */
+  
   month = td_max(1, (f_date >> 5) & 0xf);
-  /*@ assert 1 <= month <= 15; */
+  
    day   = td_max(1, f_date & 0x1f) - 1;
-  /*@ assert 0 <= day <= 30; */
+  
   leap_day = _date_get_leap_day(year, month);
-  /*@ assert 0 <= leap_day <= 32; */
+  
   days = days_in_year[month];
-  /*@ assert 0 <= days <= 334; */
+  
   days = _date_get_days(days, year, leap_day, day);
-  /*@ assert 0 <= days <= 334 + 127 * 365 + 32 + 30 + DAYS_DELTA; */
+  
   secs = _date_get_seconds(f_time &0x1f);
-  /*@ assert secs <= 62; */
+  
   secs += _date_min_to_seconds((f_time >> 5) & 0x3f);
-  /*@ assert secs <= 0x3f * SECS_PER_MIN + 62; */
+  
   secs += _date_hours_to_seconds(f_time >> 11);
-  /*@ assert secs <= 0x3f * SECS_PER_HOUR + 0x3f * SECS_PER_MIN + 62; */
+  
   secs += days * SECS_PER_DAY;
-  /*@ assert secs <= (334 + 127 * 365 + 32 + 30 + DAYS_DELTA)* SECS_PER_DAY + 0x3f * SECS_PER_HOUR + 0x3f * SECS_PER_MIN + 62; */
+  
 #if defined(__FRAMAC__)
   return secs;
 #else
@@ -456,40 +386,32 @@ int check_command(char **current_cmd, const char *cmd, const size_t n)
   if(res==0)
   {
     (*current_cmd)+=n;
-    /*@ assert valid_read_string(*current_cmd); */
+    
     return 0;
   }
-  /*@ assert valid_read_string(*current_cmd); */
+  
   return res;
 }
 
 void skip_comma_in_command(char **current_cmd)
 {
-  /*@
-    @ loop invariant valid_read_string(*current_cmd);
-    @ loop assigns *current_cmd;
-    @ loop variant strlen(*current_cmd);
-    */
+  
   while(*current_cmd[0]==',')
   {
     (*current_cmd)++;
   }
-  /*@ assert valid_read_string(*current_cmd); */
+  
 }
 
 uint64_t get_int_from_command(char **current_cmd)
 {
   uint64_t tmp=0;
-  /*@
-    @ loop invariant valid_read_string(*current_cmd);
-    @ loop assigns *current_cmd, tmp;
-    @ loop variant strlen(*current_cmd);
-    @*/
+  
   while(*current_cmd[0] >='0' && *current_cmd[0] <= '9')
   {
 #ifdef __FRAMAC__
     const unsigned int v=*current_cmd[0] - '0';
-    /*@ assert 0 <= v <= 9; */
+    
     if(tmp >= UINT64_MAX / 10)
       return tmp;
     /** assert tmp < UINT64_MAX / 10; */

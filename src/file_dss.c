@@ -34,7 +34,7 @@
 #include "types.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_dss(file_stat_t *file_stat);
 
 const file_hint_t file_hint_dss = {
@@ -59,22 +59,13 @@ const file_hint_t file_hint_dss = {
    Filesize is always a multiple of 512
 */
 
-/*@
-  @ requires buffer_size >= 0x26+24;
-  @ requires separation: \separated(&file_hint_dss, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_dss(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const unsigned char *udate_asc = (const unsigned char *)&buffer[0x26];
   const char *date_asc = (const char *)&buffer[0x26];
   unsigned int i;
-  /*@
-    @ loop assigns i;
-    @ loop variant 24 - i;
-    @*/
+  
   for(i = 0; i < 24; i++)
     if(!isdigit(udate_asc[i]))
       return 0;

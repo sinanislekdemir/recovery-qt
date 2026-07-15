@@ -25,133 +25,43 @@
 extern "C" {
 #endif
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(buffer, disk_car, partition);
-  @ decreases 0;
-  @*/
+
 int search_type_0(const unsigned char *buffer, disk_t *disk_car,partition_t *partition,const int verbose, const int dump_ind);
 
-/*@
-  @ requires \valid_read(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(buffer, disk_car, partition);
-  @ decreases 0;
-  @*/
+
 int search_type_1(const unsigned char *buffer, const disk_t *disk_car, partition_t *partition, const int verbose, const int dump_ind);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(buffer, disk_car, partition);
-  @ decreases 0;
-  @*/
+
 int search_type_2(const unsigned char *buffer, disk_t *disk_car,partition_t *partition,const int verbose, const int dump_ind);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(buffer, disk_car, partition);
-  @ decreases 0;
-  @*/
+
 int search_type_8(unsigned char *buffer, disk_t *disk_car,partition_t *partition,const int verbose, const int dump_ind);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(buffer, disk_car, partition);
-  @ decreases 0;
-  @*/
+
 int search_type_16(unsigned char *buffer, disk_t *disk_car,partition_t *partition,const int verbose, const int dump_ind);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(buffer, disk_car, partition);
-  @ decreases 0;
-  @*/
+
 int search_type_64(unsigned char *buffer, disk_t *disk_car,partition_t *partition,const int verbose, const int dump_ind);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(buffer, disk_car, partition);
-  @ decreases 0;
-  @*/
+
 int search_type_128(unsigned char *buffer, disk_t *disk_car,partition_t *partition,const int verbose, const int dump_ind);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(buffer, disk_car, partition);
-  @ decreases 0;
-  @*/
+
 int search_type_2048(unsigned char *buffer, disk_t *disk_car,partition_t *partition,const int verbose, const int dump_ind);
 
-/*@
-  @ requires \valid(disk);
-  @ requires valid_disk(disk);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(buffer, disk, partition);
-  @ decreases 0;
-  @*/
+
 int search_exFAT_backup(unsigned char *buffer, disk_t *disk, partition_t *partition);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(buffer, disk_car, partition);
-  @ decreases 0;
-  @*/
+
 int search_FAT_backup(unsigned char *buffer, disk_t *disk_car,partition_t *partition, const int verbose, const int dump_ind);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(buffer, disk_car, partition);
-  @ decreases 0;
-  @*/
+
 int search_HFS_backup(unsigned char *buffer, disk_t *disk_car,partition_t *partition, const int verbose, const int dump_ind);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(buffer, disk_car, partition);
-  @ decreases 0;
-  @*/
+
 int search_NTFS_backup(unsigned char *buffer, disk_t *disk_car,partition_t *partition, const int verbose, const int dump_ind);
 
-/*@
-  @ requires \valid(disk);
-  @ requires valid_disk(disk);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(disk, partition);
-  @*/
+
 int check_linux(disk_t *disk, partition_t *partition, const int verbose);
 
 #ifdef __cplusplus

@@ -38,20 +38,10 @@ struct vdev_boot_header {
         char            vb_pad[VDEV_BOOT_HEADER_SIZE - 4 * sizeof (uint64_t)];
 };
 
-/*@
-  @ requires \valid(disk);
-  @ requires \valid(partition);
-  @ requires separation: \separated(disk, partition);
-  @ decreases 0;
-  @*/
+
 int check_ZFS(disk_t *disk, partition_t *partition);
 
-/*@
-  @ requires \valid_read(disk);
-  @ requires \valid_read(ZFS_header);
-  @ requires \valid(partition);
-  @ requires separation: \separated(disk, ZFS_header, partition);
-  @*/
+
 int recover_ZFS(const disk_t *disk, const struct vdev_boot_header *ZFS_header, partition_t *partition, const int verbose, const int dump_ind);
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

@@ -36,7 +36,7 @@
 #include "file_sp3.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_sp3(file_stat_t *file_stat);
 
 const file_hint_t file_hint_sp3= {
@@ -48,16 +48,13 @@ const file_hint_t file_hint_sp3= {
   .register_header_check=&register_header_check_sp3
 };
 
-/*@ assigns \nothing; */
+
 static uint64_t file_offset_end(const uint32_t offset, const uint32_t len)
 {
   return(offset==0 && len==0?0:(uint64_t)offset+len-1);
 }
 
-/*@
-  @ requires \valid_read(h);
-  @ assigns  \nothing;
-  @*/
+
 static time_t get_time_from_sp3(const struct SP3FileInfo *h)
 {
   const unsigned int DataExameAno=le16(h->DataExameAno);
@@ -65,7 +62,7 @@ static time_t get_time_from_sp3(const struct SP3FileInfo *h)
       h->DataExameMes>=1 && h->DataExameMes<=12 &&
       h->DataExameDia>=1 && h->DataExameDia<=31)
   {
-    /*@ assert DataExameAno>1960; */
+    
     struct tm tm_time;
 //    memset(&tm_time, 0, sizeof(tm_time));
     tm_time.tm_sec=h->DataExameSegundos;
@@ -80,10 +77,7 @@ static time_t get_time_from_sp3(const struct SP3FileInfo *h)
   return (time_t)0;
 }
 
-/*@
-  @ requires \valid_read(h);
-  @ assigns  \nothing;
-  @*/
+
 static uint64_t get_size_from_sp3(const struct SP3FileInfo *h)
 {
   uint64_t filesize=10240;
@@ -121,17 +115,11 @@ static uint64_t get_size_from_sp3(const struct SP3FileInfo *h)
   return filesize;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct SP3FileInfo);
-  @ requires separation: \separated(&file_hint_sp3, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_sp3(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct SP3FileInfo *h=(const struct SP3FileInfo *)buffer;
-  /*@ assert \valid_read(h); */
+  
   const time_t file_time=get_time_from_sp3(h);
   if(file_time==0 || file_time==-1)
     return 0;

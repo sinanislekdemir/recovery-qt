@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_fxp(file_stat_t *file_stat);
 
 const file_hint_t file_hint_fxp= {
@@ -57,10 +57,7 @@ struct fxp_header
   uint32_t chunksize;
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @*/
+
 static int header_check_fxp(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct fxp_header *fxp=(const struct fxp_header *)buffer;

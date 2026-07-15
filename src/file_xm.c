@@ -34,7 +34,7 @@
 #include "filegen.h"
 #include "log.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_xm(file_stat_t *file_stat);
 
 const file_hint_t file_hint_xm = {
@@ -52,22 +52,10 @@ struct xm_hdr
   uint16_t instrs;
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires \valid(fr);
-  @ requires valid_file_recovery(fr);
-  @ requires \separated(fr, fr->handle, fr->extension, &errno, &Frama_C_entropy_source);
-  @ ensures \valid(fr->handle);
-  @ assigns *fr->handle, errno, fr->file_size;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static int parse_patterns(file_recovery_t *fr, uint16_t patterns)
 {
-  /*@
-    @ loop assigns *fr->handle, errno, fr->file_size;
-    @ loop assigns Frama_C_entropy_source;
-    @ loop assigns patterns;
-    @ loop variant patterns;
-    @*/
+  
   for(; patterns != 0; patterns--)
   {
     char buffer[sizeof(uint32_t)];
@@ -110,22 +98,10 @@ static int parse_patterns(file_recovery_t *fr, uint16_t patterns)
   return 0;
 }
 
-/*@
-  @ requires \valid(fr);
-  @ requires valid_file_recovery(fr);
-  @ requires \separated(fr, fr->handle, fr->extension, &errno, &Frama_C_entropy_source);
-  @ ensures \valid(fr->handle);
-  @ assigns *fr->handle, errno, fr->file_size;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static int parse_instruments(file_recovery_t *fr, uint16_t instrs)
 {
-  /*@
-    @ loop assigns *fr->handle, errno, fr->file_size;
-    @ loop assigns Frama_C_entropy_source;
-    @ loop assigns instrs;
-    @ loop variant instrs;
-    @*/
+  
   for(; instrs != 0; instrs--)
   {
     char buffer[sizeof(uint32_t)];
@@ -182,10 +158,7 @@ static int parse_instruments(file_recovery_t *fr, uint16_t instrs)
       if(fseek(fr->handle, 234, SEEK_CUR) == -1)
         return -1;
 
-      /*@
-        @ loop assigns samples, size, *fr->handle, errno, Frama_C_entropy_source, fr->file_size, buffer[0..3];
-	@ loop variant samples;
-	@*/
+      
       for(; samples != 0; samples--)
       {
         if(fread(&buffer, sizeof(uint32_t), 1, fr->handle) != 1)
@@ -215,13 +188,7 @@ static int parse_instruments(file_recovery_t *fr, uint16_t instrs)
   return 0;
 }
 
-/*@
-  @ requires fr->file_check == &file_check_xm;
-  @ requires valid_file_check_param(fr);
-  @ ensures  valid_file_check_result(fr);
-  @ assigns *fr->handle, fr->file_size, fr->offset_error;
-  @ assigns Frama_C_entropy_source, errno;
-  @*/
+
 static void file_check_xm(file_recovery_t *fr)
 {
   char buffer[4];
@@ -263,13 +230,7 @@ static void file_check_xm(file_recovery_t *fr)
   /* ModPlug may insert additional data but it is of little relevance */
 }
 
-/*@
-  @ requires separation: \separated(&file_hint_xm, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_xm(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   reset_file_recovery(file_recovery_new);

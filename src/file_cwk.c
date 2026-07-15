@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_cwk(file_stat_t *file_stat);
 
 const file_hint_t file_hint_cwk= {
@@ -64,27 +64,14 @@ struct cwk_header
   uint16_t	inner_width;
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires file_recovery->file_check == &file_check_cwk;
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @ assigns *file_recovery->handle, errno, file_recovery->file_size;
-  @ assigns Frama_C_entropy_source;
-  @
-  @*/
+
 static void file_check_cwk(file_recovery_t *file_recovery)
 {
   const unsigned char cwk_footer[4]= {0xf0, 0xf1, 0xf2, 0xf3};
   file_search_footer(file_recovery, cwk_footer, sizeof(cwk_footer), 4);
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct cwk_header);
-  @ requires separation: \separated(&file_hint_cwk, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_cwk(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct cwk_header *cwk=(const struct cwk_header *)buffer;

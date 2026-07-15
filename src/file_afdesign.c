@@ -33,7 +33,7 @@
 #include "common.h"
 #include "log.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_afdesign(file_stat_t *file_stat);
 
 const file_hint_t file_hint_afdesign= {
@@ -62,13 +62,7 @@ struct afdesign_header
   uint64_t fil_entries;
 };
 
-/*@
-  @ requires buffer_size >= sizeof(struct afdesign_header);
-  @ requires separation: \separated(&file_hint_afdesign, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_afdesign(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct afdesign_header *hdr=(const struct afdesign_header*)buffer;

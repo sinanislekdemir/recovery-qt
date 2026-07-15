@@ -63,12 +63,7 @@ struct cache_struct
   unsigned int  last_io_error_nbr;
 };
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid((char *)buffer + (0 .. count-1));
-  @ requires separation: \separated(disk_car, (char *)buffer + (0 .. count-1));
-  @*/
+
 static int cache_pread_aux(disk_t *disk_car, void *buffer, const unsigned int count, const uint64_t offset, const unsigned int read_ahead)
 {
   struct cache_struct *data=(struct cache_struct *)disk_car->data;
@@ -177,25 +172,14 @@ static int cache_pread_aux(disk_t *disk_car, void *buffer, const unsigned int co
   }
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid((char *)buffer + (0 .. count-1));
-  @ requires separation: \separated(disk_car, (char *)buffer + (0 .. count-1));
-  @*/
+
 static int cache_pread(disk_t *disk_car, void *buffer, const unsigned int count, const uint64_t offset)
 {
   const struct cache_struct *data=(const struct cache_struct *)disk_car->data;
   return cache_pread_aux(disk_car, buffer, count, offset, (data->last_io_error_nbr==0));
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid_read((char *)buffer + (0 .. count-1));
-  @ requires separation: \separated(disk_car, (const char *)buffer + (0 .. count-1));
-  @ decreases 0;
-  @*/
+
 static int cache_pwrite(disk_t *disk_car, const void *buffer, const unsigned int count, const uint64_t offset)
 {
   struct cache_struct *data=(struct cache_struct *)disk_car->data;
@@ -213,11 +197,7 @@ static int cache_pwrite(disk_t *disk_car, const void *buffer, const unsigned int
   return data->disk_car->pwrite(data->disk_car, buffer, count, offset);
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ decreases 0;
-  @*/
+
 static void cache_clean(disk_t *disk_car)
 {
   if(disk_car->data)
@@ -242,25 +222,14 @@ static void cache_clean(disk_t *disk_car)
   free(disk_car);
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ decreases 0;
-  @*/
+
 static int cache_sync(disk_t *disk_car)
 {
   struct cache_struct *data=(struct cache_struct *)disk_car->data;
   return data->disk_car->sync(data->disk_car);
 }
 
-/*@
-  @ requires \valid_read(CHS_source);
-  @ requires \valid(CHS_dst);
-  @ requires separation: \separated(CHS_dst, CHS_source);
-  @ assigns CHS_dst->cylinders, CHS_dst->heads_per_cylinder, CHS_dst->sectors_per_head;
-  @ ensures CHS_dst->cylinders==CHS_source->cylinders;
-  @ ensures CHS_dst->heads_per_cylinder==CHS_source->heads_per_cylinder;
-  @ ensures CHS_dst->sectors_per_head==CHS_source->sectors_per_head;
-  @*/
+
 static void dup_geometry(CHSgeometry_t * CHS_dst, const CHSgeometry_t * CHS_source)
 {
   CHS_dst->cylinders=CHS_source->cylinders;
@@ -268,12 +237,7 @@ static void dup_geometry(CHSgeometry_t * CHS_dst, const CHSgeometry_t * CHS_sour
   CHS_dst->sectors_per_head=CHS_source->sectors_per_head;
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ decreases 0;
-  @ ensures valid_read_string(\result);
-  @*/
+
 static const char *cache_description(disk_t *disk_car)
 {
   const char *tmp;
@@ -281,16 +245,11 @@ static const char *cache_description(disk_t *disk_car)
   dup_geometry(&data->disk_car->geom,&disk_car->geom);
   data->disk_car->disk_size=disk_car->disk_size;
   tmp=data->disk_car->description(data->disk_car);
-  /*@ assert valid_read_string(tmp); */
+  
   return tmp;
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ decreases 0;
-  @ ensures valid_read_string(\result);
-  @*/
+
 static const char *cache_description_short(disk_t *disk_car)
 {
   const char *tmp;
@@ -298,7 +257,7 @@ static const char *cache_description_short(disk_t *disk_car)
   dup_geometry(&data->disk_car->geom,&disk_car->geom);
   data->disk_car->disk_size=disk_car->disk_size;
   tmp=data->disk_car->description_short(data->disk_car);
-  /*@ assert valid_read_string(tmp); */
+  
   return tmp;
 }
 

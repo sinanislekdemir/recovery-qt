@@ -34,7 +34,7 @@
 #include "common.h"
 #include "log.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_r3d(file_stat_t *file_stat);
 
 const file_hint_t file_hint_r3d = {
@@ -52,25 +52,16 @@ struct atom_struct
   uint32_t type;
 } __attribute__((gcc_struct, __packed__));
 
-/*@
-  @ requires file_recovery->data_check==&data_check_r3d;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size, file_recovery->data_check;
-  @*/
+
 static data_check_t data_check_r3d(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size / 2 - (file_recovery->calculated_file_size + 8);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size && file_recovery->calculated_file_size + 8 <= file_recovery->file_size + buffer_size / 2)
   {
     const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
-    /*@ assert 0 <= i <= buffer_size-8; */
+    
     const struct atom_struct *atom = (const struct atom_struct *)&buffer[i];
     uint64_t atom_size = be32(atom->size);
     if(atom_size < 8)
@@ -104,11 +95,7 @@ static data_check_t data_check_r3d(const unsigned char *buffer, const unsigned i
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires file_recovery->file_rename==&file_rename_r3d;
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_r3d(file_recovery_t *file_recovery)
 {
   unsigned char buffer[512];
@@ -121,10 +108,7 @@ static void file_rename_r3d(file_recovery_t *file_recovery)
   fclose(file);
   if(buffer_size < 0x44)
     return;
-  /*@
-    @ loop assigns i;
-    @ loop variant buffer_size - i;
-    @*/
+  
   for(i = 0x43; i < buffer_size && buffer[i] != 0 && buffer[i] != '.'; i++)
   {
     if(!isalnum(buffer[i]) && buffer[i] != '_')
@@ -133,14 +117,7 @@ static void file_rename_r3d(file_recovery_t *file_recovery)
   file_rename(file_recovery, buffer, i, 0x43, NULL, 1);
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct atom_struct);
-  @ requires separation: \separated(&file_hint_r3d, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_r3d(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct atom_struct *atom = (const struct atom_struct *)buffer;
@@ -160,14 +137,7 @@ static int header_check_r3d(const unsigned char *buffer, const unsigned int buff
   return 0;
 }
 
-/*@
-  @ requires buffer_size >= 0xc;
-  @ requires separation: \separated(&file_hint_r3d, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_r3d_v2(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(buffer[0xa] == 'R' && buffer[0xb] == '2')

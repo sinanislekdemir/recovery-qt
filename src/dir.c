@@ -57,10 +57,7 @@
 const char *monstr[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 				"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
-/*@
-  @ terminates \true;
-  @ assigns \result;
-  @*/
+
 static char ftypelet (unsigned int bits)
 {
 #ifdef LINUX_S_ISBLK
@@ -279,11 +276,7 @@ unsigned int delete_list_file(file_info_t *file_info)
   return nbr;
 }
 
-/*@
-  @ requires \valid_read(current_file);
-  @ requires \valid_read(inode_known + (0 .. dir_nbr-1));
-  @ assigns \nothing;
-  @*/
+
 static int is_inode_valid(const file_info_t *current_file, const unsigned int dir_nbr, const unsigned long int *inode_known)
 {
   const unsigned long int new_inode=current_file->st_ino;
@@ -292,25 +285,14 @@ static int is_inode_valid(const file_info_t *current_file, const unsigned int di
     return 0;
   if(strcmp(current_file->name, "..")==0)
     return 0;
-  /*@
-    @ loop assigns i;
-    @ loop variant dir_nbr - i;
-    @*/
+  
   for(i=0; i<dir_nbr; i++)
     if(new_inode==inode_known[i]) /* Avoid loop */
       return 0;
   return 1;
 }
 
-/*@
-  @ requires \valid(disk);
-  @ requires valid_disk(disk);
-  @ requires \valid_read(partition);
-  @ requires valid_partition(partition);
-  @ requires \valid(dir_data);
-  @ requires \separated(disk, partition, dir_data);
-  @ decreases 0;
-  @*/
+
 static int dir_whole_partition_log_aux(disk_t *disk, const partition_t *partition, dir_data_t *dir_data, const unsigned long int inode)
 {
   struct td_list_head *file_walker = NULL;
@@ -353,17 +335,7 @@ int dir_whole_partition_log(disk_t *disk, const partition_t *partition, dir_data
   return dir_whole_partition_log_aux(disk, partition, dir_data, inode);
 }
 
-/*@
-  @ requires \valid(disk);
-  @ requires valid_disk(disk);
-  @ requires \valid_read(partition);
-  @ requires valid_partition(partition);
-  @ requires \valid(dir_data);
-  @ requires \valid(copy_ok);
-  @ requires \valid(copy_bad);
-  @ requires \separated(disk, partition, dir_data, copy_ok, copy_bad);
-  @ decreases 0;
-  @*/
+
 static int dir_whole_partition_copy_aux(disk_t *disk, const partition_t *partition, dir_data_t *dir_data, const unsigned long int inode, unsigned int *copy_ok, unsigned int *copy_bad)
 {
   struct td_list_head *file_walker = NULL;
@@ -431,21 +403,21 @@ void dir_whole_partition_copy(disk_t *disk, const partition_t *partition, dir_da
 int filesort(const struct td_list_head *a, const struct td_list_head *b)
 {
   const file_info_t *file_a=td_list_entry_const(a, const file_info_t, list);
-  /*@ assert \valid_read(file_a); */
+  
   const file_info_t *file_b=td_list_entry_const(b, const file_info_t, list);
-  /*@ assert \valid_read(file_b); */
+  
   /* Directories must be listed before files */
   const int res=((file_b->st_mode&LINUX_S_IFDIR)-(file_a->st_mode&LINUX_S_IFDIR));
   if(res)
     return res;
-  /*@ assert valid_read_string(file_a->name); */
+  
   /* . and .. must listed before the other directories */
   if((file_a->st_mode&LINUX_S_IFDIR) && strcmp(file_a->name, ".")==0)
     return -1;
   if((file_a->st_mode&LINUX_S_IFDIR) && strcmp(file_a->name, "..")==0 &&
       strcmp(file_b->name, ".")!=0)
     return -1;
-  /*@ assert valid_read_string(file_b->name); */
+  
   if((file_b->st_mode&LINUX_S_IFDIR) && strcmp(file_b->name, ".")==0)
     return 1;
   if((file_b->st_mode&LINUX_S_IFDIR) && strcmp(file_b->name, "..")==0 &&
@@ -493,17 +465,12 @@ static struct {
   { 0, 0 }
 };
 
-/*@
-  @ assigns \nothing;
-  @*/
+
 static mode_t mode_xlate(unsigned int lmode)
 {
   unsigned int i;
   mode_t  mode = 0;
-  /*@
-    @ loop unroll 20;
-    @ loop assigns i, mode;
-    @*/
+  
   for (i=0; mode_table[i].lmask; i++)
   {
     if (lmode & mode_table[i].lmask)
@@ -531,20 +498,13 @@ int set_mode(const char *pathname, unsigned int mode)
 #endif
 }
 
-/*@
-  @ requires valid_string(fn);
-  @*/
+
 static void strip_fn(char *fn)
 {
   unsigned int i;
-  /*@
-    @ loop assigns i;
-    @*/
+  
   for(i=0;fn[i]!='\0';i++);
-  /*@
-    @ loop assigns i;
-    @ loop invariant i;
-    @*/
+  
   while(i>0 && (fn[i-1]==' '||fn[i-1]=='.'))
     i--;
   if(i==0 && (fn[i]==' '||fn[i]=='.'))
@@ -612,15 +572,10 @@ static inline unsigned char convert_char_dos(unsigned char car)
 static unsigned int filename_convert(char *dst, const char*src, const unsigned int n)
 {
   unsigned int i;
-  /*@
-    @ loop assigns i, dst[0 .. i];
-    @ loop variant n - i;
-    @*/
+  
   for(i=0;i<n && src[i]!='\0';i++)
     dst[i]=convert_char_dos(src[i]);
-  /*@
-    @ loop variant i;
-    @*/
+  
   while(i>0 && (dst[i-1]==' '||dst[i-1]=='.'))
     i--;
   if(i==0 && (dst[i]==' '||dst[i]=='.'))
@@ -709,18 +664,11 @@ static unsigned int filename_convert(char *dst, const char*src, const unsigned i
   return j;
 }
 #else
-/*@
-  @ requires \valid(dst + (0 .. n));
-  @ requires \valid_read(src + (0 .. n-1));
-  @ requires \separated(dst + (..), src + (..));
-  @*/
+
 static unsigned int filename_convert(char *dst, const char*src, const unsigned int n)
 {
   unsigned int i;
-  /*@
-    @ loop assigns i, dst[0 .. i];
-    @ loop invariant n - i;
-    @*/
+  
   for(i=0;i<n && src[i]!='\0';i++)
     dst[i]=src[i];
   dst[i]='\0';

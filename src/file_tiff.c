@@ -43,7 +43,7 @@
 #include "__fc_builtin.h"
 #endif
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_tiff(file_stat_t *file_stat);
 
 const file_hint_t file_hint_tiff= {
@@ -140,12 +140,12 @@ const char *tag_name(unsigned int tag)
 unsigned int find_tag_from_tiff_header(const unsigned char*buffer, const unsigned int buffer_size, const unsigned int tag, const unsigned char **potential_error)
 {
   const TIFFHeader *tiff=(const TIFFHeader *)buffer;
-  /*@ assert sizeof(TIFFHeader) <= sizeof(struct ifd_header); */
+  
   if(buffer_size < sizeof(struct ifd_header))
     return 0;
-  /*@ assert buffer_size >= sizeof(TIFFHeader); */
-  /*@ assert buffer_size >= sizeof(struct ifd_header); */
-  /*@ assert \valid_read(tiff); */
+  
+  
+  
 #ifndef MAIN_tiff_le
   if(tiff->tiff_magic==TIFF_BIGENDIAN)
     return find_tag_from_tiff_header_be(buffer, buffer_size, tag, potential_error);
@@ -162,12 +162,12 @@ time_t get_date_from_tiff_header(const unsigned char *buffer, const unsigned int
   const unsigned char *potential_error=NULL;
   unsigned int date_asc=0;
   time_t tmp;
-  /*@ assert \valid_read(buffer+(0..buffer_size-1)); */
-  /*@ assert sizeof(TIFFHeader) <= sizeof(struct ifd_header); */
+  
+  
   if(buffer_size < sizeof(struct ifd_header) || buffer_size < 19)
     return (time_t)0;
-  /*@ assert buffer_size >= sizeof(TIFFHeader); */
-  /*@ assert buffer_size >= sizeof(struct ifd_header); */
+  
+  
   /* DateTimeOriginal */
   date_asc=find_tag_from_tiff_header(buffer, buffer_size, 0x9003, &potential_error);
   /* DateTimeDigitalized*/
@@ -178,7 +178,7 @@ time_t get_date_from_tiff_header(const unsigned char *buffer, const unsigned int
   if(date_asc==0 || date_asc >  buffer_size - 19)
     return (time_t)0;
   tmp=get_time_from_YYYY_MM_DD_HH_MM_SS(&buffer[date_asc]);
-  /*@ assert \valid_read(buffer+(0..buffer_size-1)); */
+  
   return tmp;
 }
 

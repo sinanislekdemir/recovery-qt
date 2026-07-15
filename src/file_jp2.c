@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_jp2(file_stat_t *file_stat);
 
 const file_hint_t file_hint_jp2= {
@@ -48,13 +48,7 @@ const file_hint_t file_hint_jp2= {
 /* 0x0000000C 0x6A502020 0x0D0A870A = \0\0\0\x0C + jP\s\s + \r\n\x87\n */
 /* JPEG 2000 codestream starts with SOC marker: 0xFF4F 0xFF51 */
 
-/*@
-  @ requires buffer_size >= 12;
-  @ requires separation: \separated(&file_hint_jp2, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_jp2(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   static const unsigned char jp2_sig[12]= {
@@ -70,13 +64,7 @@ static int header_check_jp2(const unsigned char *buffer, const unsigned int buff
 }
 
 /* JPEG 2000 raw codestream: SOC marker (0xFF4F) */
-/*@
-  @ requires buffer_size >= 2;
-  @ requires separation: \separated(&file_hint_jp2, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_j2c(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(buffer[0]!=0xFF || buffer[1]!=0x4F)

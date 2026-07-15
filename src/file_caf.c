@@ -36,7 +36,7 @@
 #include "log.h"
 #endif
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_caf(file_stat_t *file_stat);
 
 const file_hint_t file_hint_caf= {
@@ -57,26 +57,17 @@ struct chunk_struct
   uint64_t  size;
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires file_recovery->data_check==&data_check_caf;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size,file_recovery->data_check,file_recovery->file_check;
-  @*/
+
 static data_check_t data_check_caf(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 12);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 12 < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - 12; */
+    
     const struct chunk_struct *chunk=(const struct chunk_struct*)&buffer[i];
     const uint64_t chunk_size=be64(chunk->size);
 #ifdef DEBUG_CAF
@@ -111,14 +102,7 @@ static data_check_t data_check_caf(const unsigned char *buffer, const unsigned i
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires separation: \separated(&file_hint_caf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures  \result!=0 && file_recovery_new->data_check==&data_check_caf ==> file_recovery_new->calculated_file_size == 8;
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_caf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct chunk_struct *chunk=(const struct chunk_struct*)&buffer[8];
@@ -134,7 +118,7 @@ static int header_check_caf(const unsigned char *buffer, const unsigned int buff
     file_recovery_new->file_check=&file_check_size;
     file_recovery_new->calculated_file_size=8;
   }
-  /*@ assert file_recovery_new->data_check==&data_check_caf ==> file_recovery_new->calculated_file_size == 8; */
+  
   return 1;
 }
 

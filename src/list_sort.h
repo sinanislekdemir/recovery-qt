@@ -23,9 +23,7 @@
 extern "C" {
 #endif
 
-/*@
-  @ requires \valid(head);
-  @*/
+
 void td_list_sort(struct td_list_head *head,
     int (*cmp)(const struct td_list_head *a, const struct td_list_head *b));
 

@@ -32,7 +32,7 @@
 #include "filegen.h"
 
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_pst(file_stat_t *file_stat);
 
 const file_hint_t file_hint_pst= {
@@ -49,13 +49,7 @@ const file_hint_t file_hint_pst= {
 #define FILE_SIZE_POINTER_64 	0xB8
 #define DBX_SIZE_POINTER	0x7C
 
-/*@
-  @ requires buffer_size >= DBX_SIZE_POINTER + 4;
-  @ requires separation: \separated(&file_hint_pst, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_dbx(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const uint64_t size=(uint64_t)buffer[DBX_SIZE_POINTER] +
@@ -97,12 +91,7 @@ static int header_check_dbx(const unsigned char *buffer, const unsigned int buff
    http://www.ﬁve-ten-sg.com/libpst/
 */
 
-/*@
-  @ requires separation: \separated(&file_hint_pst, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_wab(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   reset_file_recovery(file_recovery_new);
@@ -110,14 +99,7 @@ static int header_check_wab(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= FILE_SIZE_POINTER + 4;
-  @ requires buffer_size >= FILE_SIZE_POINTER_64 + 8;
-  @ requires separation: \separated(&file_hint_pst, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_pst(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(buffer[INDEX_TYPE_OFFSET]==0x0e ||

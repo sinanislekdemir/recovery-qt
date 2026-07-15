@@ -33,7 +33,7 @@
 #include "common.h"
 #include "ntfs_struct.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_mft(file_stat_t *file_stat);
 
 const file_hint_t file_hint_mft= {
@@ -45,10 +45,7 @@ const file_hint_t file_hint_mft= {
   .register_header_check=&register_header_check_mft
 };
 
-/*@
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_mft(file_recovery_t *file_recovery)
 {
   unsigned char buffer[512];
@@ -65,7 +62,7 @@ static void file_rename_mft(file_recovery_t *file_recovery)
 #if defined(__FRAMAC__)
   Frama_C_make_unknown(buffer, sizeof(buffer));
 #endif
-  /*@ assert \initialized(buffer + (0 .. sizeof(buffer)-1)); */
+  
   sprintf(buffer_cluster, "record_%u", (unsigned int)le32(record->mft_record_number));
 #if defined(DISABLED_FOR_FRAMAC)
   buffer_cluster[sizeof(buffer_cluster)-1]='\0';
@@ -73,13 +70,7 @@ static void file_rename_mft(file_recovery_t *file_recovery)
   file_rename(file_recovery, buffer_cluster, strlen(buffer_cluster), 0, NULL, 1);
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct ntfs_mft_record);
-  @ requires separation: \separated(&file_hint_mft, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_mft(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct ntfs_mft_record *mft_rec=(const struct ntfs_mft_record *)buffer;

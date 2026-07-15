@@ -40,7 +40,7 @@
 #include "__fc_builtin.h"
 #endif
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_exe(file_stat_t *file_stat);
 
 const file_hint_t file_hint_exe= {
@@ -95,16 +95,7 @@ static char InternalName[24]={
   'N', 0x0, 'a', 0x0, 'm', 0x0, 'e', 0x0
 };
 
-/*@
-  @ requires \valid(file_recovery);
-  @ requires valid_read_string((char*)&file_recovery->filename);
-  @ requires 4096 >= needle_len > 0;
-  @ requires end <= 0xffff;
-  @ requires \valid_read(buffer+(0..end-1));
-  @ requires \valid_read(needle+(0..needle_len-1));
-  @ requires \separated(file_recovery, buffer+(..), needle+(..));
-  @ ensures \result <= 0xffff;
-  @*/
+
 static int parse_String(file_recovery_t *file_recovery, const char*buffer, const unsigned int end, const char *needle, const unsigned int needle_len, const int force_ext)
 {
   const struct PE_index *PE_index;
@@ -116,9 +107,9 @@ static int parse_String(file_recovery_t *file_recovery, const char*buffer, const
     return -1;
   }
   PE_index=(const struct PE_index*)buffer;
-  /*@ assert \valid_read(PE_index); */
+  
   len=le16(PE_index->len);
-  /*@ assert len <= 0xffff; */
+  
   val_len=le16(PE_index->val_len);
   type=le16(PE_index->type);
 #ifdef DEBUG_EXE
@@ -141,32 +132,20 @@ static int parse_String(file_recovery_t *file_recovery, const char*buffer, const
   return len;
 }
 
-/*@
-  @ requires \valid(file_recovery);
-  @ requires valid_read_string((char*)&file_recovery->filename);
-  @ requires 4096 >= needle_len > 0;
-  @ requires end <= 0xffff;
-  @ requires \valid_read(buffer+(0..end-1));
-  @ requires \valid_read(needle+(0..needle_len-1));
-  @ requires \separated(file_recovery, buffer+(..), needle+(..));
-  @*/
+
 static int parse_StringArray(file_recovery_t *file_recovery, const char*buffer, const unsigned int end, const char *needle, const unsigned int needle_len, const int force_ext)
 {
   unsigned int pos=0;
 #ifdef DEBUG_EXE
   log_info("parse_StringArray end=%u\n", end);
 #endif
-  /*@
-    @ loop invariant end <= 0xffff;
-    @ loop invariant pos <= 0x20000;
-    @ loop variant end - pos;
-    @*/
+  
   while(pos<end)
   {
     const int res=parse_String(file_recovery, &buffer[pos], end - pos, needle, needle_len, force_ext);
     if(res <= 0)
       return -1;
-    /*@ assert 0xffff >= res > 0; */
+    
     pos+=res;
     /* Padding */
     if((pos & 0x03)!=0)
@@ -175,14 +154,7 @@ static int parse_StringArray(file_recovery_t *file_recovery, const char*buffer, 
   return 0;
 }
 
-/*@
-  @ requires \valid(file_recovery);
-  @ requires valid_read_string((char*)&file_recovery->filename);
-  @ requires 4096 >= needle_len > 0;
-  @ requires \valid_read(buffer+(0..end-1));
-  @ requires \valid_read(needle+(0..needle_len-1));
-  @ requires \separated(file_recovery, buffer+(..), needle+(..));
-  @*/
+
 static int parse_StringTable(file_recovery_t *file_recovery, const char*buffer, const unsigned int end, const char *needle, const unsigned int needle_len, const int force_ext)
 {
   const struct PE_index *PE_index;
@@ -196,7 +168,7 @@ static int parse_StringTable(file_recovery_t *file_recovery, const char*buffer, 
     return -1;
   }
   PE_index=(const struct PE_index*)buffer;
-  /*@ assert \valid_read(PE_index); */
+  
   len=le16(PE_index->len);
 #ifdef DEBUG_EXE
   val_len=le16(PE_index->val_len);
@@ -213,14 +185,7 @@ static int parse_StringTable(file_recovery_t *file_recovery, const char*buffer, 
   return parse_StringArray(file_recovery, &buffer[pos], len - pos, needle, needle_len, force_ext);
 }
 
-/*@
-  @ requires \valid(file_recovery);
-  @ requires valid_read_string((char*)&file_recovery->filename);
-  @ requires 4096 >= needle_len > 0;
-  @ requires \valid_read(buffer+(0..end-1));
-  @ requires \valid_read(needle+(0..needle_len-1));
-  @ requires \separated(file_recovery, buffer+(..), needle+(..));
-  @*/
+
 static int parse_StringFileInfo(file_recovery_t *file_recovery, const char*buffer, const unsigned int end, const char *needle, const unsigned int needle_len, const int force_ext)
 {
   /* https://docs.microsoft.com/en-us/windows/win32/menurc/stringfileinfo */
@@ -233,7 +198,7 @@ static int parse_StringFileInfo(file_recovery_t *file_recovery, const char*buffe
     return -1;
   }
   PE_index=(const struct PE_index*)buffer;
-  /*@ assert \valid_read(PE_index); */
+  
   len=le16(PE_index->len);
   val_len=le16(PE_index->val_len);
 #ifdef DEBUG_EXE
@@ -255,16 +220,7 @@ static int parse_StringFileInfo(file_recovery_t *file_recovery, const char*buffe
   return parse_StringTable(file_recovery, &buffer[pos], len - pos, needle, needle_len, force_ext);
 }
 
-/*@
-  @ requires \valid(file_recovery);
-  @ requires valid_read_string((char*)&file_recovery->filename);
-  @ requires end > 0;
-  @ requires 4096 >= needle_len > 0;
-  @ requires \valid_read(buffer+(0..end-1));
-  @ requires \valid_read(needle+(0..needle_len-1));
-  @ requires \separated(vs_version_info+(..), file_recovery, buffer+(..), needle+(..));
-  @ behavior types: requires \separated(vs_version_info+(..), \union(file_recovery, buffer+(..), needle+(..)));
-  @*/
+
 static int parse_VS_VERSIONINFO(file_recovery_t *file_recovery, const char*buffer, const unsigned int end, const char *needle, const unsigned int needle_len, const int force_ext)
 {
   /* https://docs.microsoft.com/en-us/windows/win32/menurc/vs-versioninfo */
@@ -278,7 +234,7 @@ static int parse_VS_VERSIONINFO(file_recovery_t *file_recovery, const char*buffe
     return -1;
   }
   PE_index=(const struct PE_index*)buffer;
-  /*@ assert \valid_read(PE_index); */
+  
   len=le16(PE_index->len);
   val_len=le16(PE_index->val_len);
 #ifdef DEBUG_EXE
@@ -292,7 +248,7 @@ static int parse_VS_VERSIONINFO(file_recovery_t *file_recovery, const char*buffe
     return -1;
   if(len > end)
     return -1;
-  /*@ assert len <= end; */
+  
   pos+=6;
   if(pos + sizeof(vs_version_info) >= len)
     return -1;
@@ -319,11 +275,7 @@ static int parse_VS_VERSIONINFO(file_recovery_t *file_recovery, const char*buffe
   return 0;
 }
 
-/*@
-  @ requires \valid(file);
-  @ requires \valid(file_recovery);
-  @ requires valid_read_string((char*)&file_recovery->filename);
-  @*/
+
 static void PEVersion(FILE *file, const unsigned int offset, const unsigned int length, file_recovery_t *file_recovery)
 {
   char buffer[1024*1024];
@@ -348,14 +300,7 @@ static void PEVersion(FILE *file, const unsigned int offset, const unsigned int 
   parse_VS_VERSIONINFO(file_recovery, buffer, length, InternalName, sizeof(InternalName), 1);
 }
 
-/*@
-  @ requires \valid(file);
-  @ requires base <= 0x7fffffff;
-  @ requires \valid_read(pe_sections);
-  @ requires \valid(file_recovery);
-  @ requires valid_read_string((char*)&file_recovery->filename);
-  @ requires \valid_read(rsrc_entry);
-  @*/
+
 static int pe_resource_language_aux(FILE *file, const unsigned int base, const struct pe_image_section_hdr *pe_sections, const unsigned int nbr_sections, file_recovery_t *file_recovery, const struct rsrc_entries_s *rsrc_entry)
 {
   struct rsrc_offlen buffer;
@@ -381,14 +326,11 @@ static int pe_resource_language_aux(FILE *file, const unsigned int base, const s
 #endif
   off=le32(buffer.off);
   len=le32(buffer.len);
-  /*@
-    @ loop invariant 0 <= j <= nbr_sections;
-    @ loop variant nbr_sections - j;
-    @*/
+  
   for(j=0; j<nbr_sections; j++)
   {
     const struct pe_image_section_hdr *pe_section=&pe_sections[j];
-    /*@ assert \valid_read(pe_section); */
+    
     const uint32_t virt_addr_start=le32(pe_section->VirtualAddress);
     const uint64_t virt_addr_end=(uint64_t)virt_addr_start + le32(pe_section->SizeOfRawData);
     if(virt_addr_end <= 0xffffffff && virt_addr_start <= off && off < virt_addr_end && (uint64_t)off - virt_addr_start + base <=0xffffffff)
@@ -400,14 +342,7 @@ static int pe_resource_language_aux(FILE *file, const unsigned int base, const s
   return 1;
 }
 
-/*@
-  @ requires \valid(file);
-  @ requires base <= 0x7fffffff;
-  @ requires dir_start <= 0x7fffffff;
-  @ requires \valid_read(pe_sections);
-  @ requires \valid(file_recovery);
-  @ requires valid_read_string((char*)&file_recovery->filename);
-  @*/
+
 static void pe_resource_language(FILE *file, const unsigned int base, const unsigned int dir_start, const struct pe_image_section_hdr *pe_sections, const unsigned int nbr_sections, file_recovery_t *file_recovery)
 {
   struct rsrc_entries_s *rsrc_entries;
@@ -436,13 +371,13 @@ static void pe_resource_language(FILE *file, const unsigned int base, const unsi
 #endif
   if(count==0 || count > 1024)
     return ;
-  /*@ assert 0 < count <= 1024; */
+  
 #ifdef DISABLED_FOR_FRAMAC
   rsrc_entries=(struct rsrc_entries_s *)MALLOC(1024 * sizeof(struct rsrc_entries_s));
 #else
   rsrc_entries=(struct rsrc_entries_s *)MALLOC(count * sizeof(struct rsrc_entries_s));
 #endif
-  /*@ assert \valid((char *)rsrc_entries + (0 ..  (unsigned long)((unsigned long)count * sizeof(struct rsrc_entries_s)) - 1)); */
+  
   if(fread(rsrc_entries, sizeof(struct rsrc_entries_s), count, file) != count)
   {
     free(rsrc_entries);
@@ -451,9 +386,7 @@ static void pe_resource_language(FILE *file, const unsigned int base, const unsi
 #if defined(__FRAMAC__)
   Frama_C_make_unknown((char *)rsrc_entries, count * sizeof(struct rsrc_entries_s));
 #endif
-  /*@
-    @ loop variant count - i;
-    @*/
+  
   for(i=0; i<count; i++)
   {
     const struct rsrc_entries_s *rsrc_entry=&rsrc_entries[i];
@@ -467,14 +400,7 @@ static void pe_resource_language(FILE *file, const unsigned int base, const unsi
   free(rsrc_entries);
 }
 
-/*@
-  @ requires \valid(file);
-  @ requires base <= 0x7fffffff;
-  @ requires dir_start <= 0x7fffffff;
-  @ requires \valid_read(pe_sections);
-  @ requires \valid(file_recovery);
-  @ requires valid_read_string((char*)&file_recovery->filename);
-  @*/
+
 static void pe_resource_id(FILE *file, const unsigned int base, const unsigned int dir_start, const struct pe_image_section_hdr *pe_sections, const unsigned int nbr_sections, file_recovery_t *file_recovery)
 {
   struct rsrc_entries_s *rsrc_entries;
@@ -500,13 +426,13 @@ static void pe_resource_id(FILE *file, const unsigned int base, const unsigned i
   }
   if(count==0 || count > 1024)
     return ;
-  /*@ assert 0 < count <= 1024; */
+  
 #ifdef DISABLED_FOR_FRAMAC
   rsrc_entries=(struct rsrc_entries_s *)MALLOC(1024 * sizeof(struct rsrc_entries_s));
 #else
   rsrc_entries=(struct rsrc_entries_s *)MALLOC(count * sizeof(struct rsrc_entries_s));
 #endif
-  /*@ assert \valid((char *)rsrc_entries + (0 ..  (unsigned long)((unsigned long)count * sizeof(struct rsrc_entries_s)) - 1)); */
+  
   if(fread(rsrc_entries, sizeof(struct rsrc_entries_s), count, file) != count)
   {
     free(rsrc_entries);
@@ -515,9 +441,7 @@ static void pe_resource_id(FILE *file, const unsigned int base, const unsigned i
 #if defined(__FRAMAC__)
   Frama_C_make_unknown((char *)rsrc_entries, count * sizeof(struct rsrc_entries_s));
 #endif
-  /*@
-    @ loop variant count - i;
-    @*/
+  
   for(i=0; i<count; i++)
   {
     const struct rsrc_entries_s *rsrc_entry=&rsrc_entries[i];
@@ -538,12 +462,7 @@ static void pe_resource_id(FILE *file, const unsigned int base, const unsigned i
   free(rsrc_entries);
 }
 
-/*@
-  @ requires \valid(file);
-  @ requires \valid_read(pe_sections);
-  @ requires \valid(file_recovery);
-  @ requires valid_read_string((char*)&file_recovery->filename);
-  @*/
+
 static void pe_resource_type(FILE *file, const unsigned int base, const unsigned int dir_start, const struct pe_image_section_hdr *pe_sections, const unsigned int nbr_sections, file_recovery_t *file_recovery)
 {
   struct rsrc_entries_s *rsrc_entries;
@@ -555,7 +474,7 @@ static void pe_resource_type(FILE *file, const unsigned int base, const unsigned
   /* TODO: remove these artifical limits ? */
   if(base > 0x7fffffff || dir_start > 0x7fffffff)
     return ;
-  /*@ assert base <= 0x7fffffff; */
+  
   {
     unsigned char buffer[16];
     unsigned int nameEntries;
@@ -573,13 +492,13 @@ static void pe_resource_type(FILE *file, const unsigned int base, const unsigned
   }
   if(count==0 || count > 1024)
     return ;
-  /*@ assert 0 < count <= 1024; */
+  
 #ifdef DISABLED_FOR_FRAMAC
   rsrc_entries=(struct rsrc_entries_s *)MALLOC(1024 * sizeof(struct rsrc_entries_s));
 #else
   rsrc_entries=(struct rsrc_entries_s *)MALLOC(count * sizeof(struct rsrc_entries_s));
 #endif
-  /*@ assert \valid((char *)rsrc_entries + (0 ..  (unsigned long)((unsigned long)count * sizeof(struct rsrc_entries_s)) - 1)); */
+  
   if(fread(rsrc_entries, sizeof(struct rsrc_entries_s), count, file) != count)
   {
     free(rsrc_entries);
@@ -588,13 +507,11 @@ static void pe_resource_type(FILE *file, const unsigned int base, const unsigned
 #if defined(__FRAMAC__)
   Frama_C_make_unknown((char *)rsrc_entries, count * sizeof(struct rsrc_entries_s));
 #endif
-  /*@
-    @ loop variant count - i;
-    @*/
+  
   for(i=0; i<count; i++)
   {
     const struct rsrc_entries_s *rsrc_entry=&rsrc_entries[i];
-    /*@ assert \valid_read(rsrc_entry); */
+    
     const unsigned int rsrcType=le32(rsrc_entry->Type);
 #ifdef DEBUG_EXE
     log_info("resource type=%u, %x, offset %u\n",
@@ -619,11 +536,7 @@ static void pe_resource_type(FILE *file, const unsigned int base, const unsigned
   free(rsrc_entries);
 }
 
-/*@
-  @ requires file_recovery->file_rename==&file_rename_pe_exe;
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_pe_exe(file_recovery_t *file_recovery)
 {
   unsigned char buffer[4096];
@@ -635,13 +548,13 @@ static void file_rename_pe_exe(file_recovery_t *file_recovery)
   if((file=fopen(file_recovery->filename, "rb"))==NULL)
     return;
   buffer_size=fread(buffer, 1, sizeof(buffer), file);
-  /*@ assert buffer_size <= sizeof(buffer); */
+  
   if(buffer_size < (int)sizeof(struct dos_image_file_hdr))
   {
     fclose(file);
     return ;
   }
-  /*@ assert buffer_size >= sizeof(struct dos_image_file_hdr); */
+  
 #if defined(__FRAMAC__)
   Frama_C_make_unknown((char *)buffer, sizeof(buffer));
 #endif
@@ -651,7 +564,7 @@ static void file_rename_pe_exe(file_recovery_t *file_recovery)
     return ;
   }
   dos_hdr=(const struct dos_image_file_hdr*)buffer;
-  /*@ assert \valid_read(dos_hdr); */
+  
   e_lfanew=le32(dos_hdr->e_lfanew);
   if((unsigned int)buffer_size < e_lfanew+sizeof(struct pe_image_file_hdr))
   {
@@ -665,7 +578,7 @@ static void file_rename_pe_exe(file_recovery_t *file_recovery)
     return ;
   }
   pe_hdr=(const struct pe_image_file_hdr *)(buffer+e_lfanew);
-  /*@ assert \valid_read(pe_hdr); */
+  
   if(le32(pe_hdr->Magic) != IMAGE_NT_SIGNATURE)
   {
     fclose(file);
@@ -684,7 +597,7 @@ static void file_rename_pe_exe(file_recovery_t *file_recovery)
       fclose(file);
       return ;
     }
-    /*@ assert 0 < nbr_sections <= 96; */
+    
     if(fseek(file, offset_sections, SEEK_SET)<0)
     {
       fclose(file);
@@ -699,14 +612,11 @@ static void file_rename_pe_exe(file_recovery_t *file_recovery)
     Frama_C_make_unknown((char *)pe_sections, sizeof(pe_sections));
 #endif
 #ifdef DEBUG_EXE
-    /*@
-      @ loop invariant 0 <= i <= nbr_sections;
-      @ loop variant nbr_sections - i;
-      @*/
+    
     for(i=0; i<nbr_sections; i++)
     {
       const struct pe_image_section_hdr *pe_section=&pe_sections[i];
-      /*@ assert \valid_read(pe_section); */
+      
       if(le32(pe_section->VirtualSize)>0)
       {
 	log_info("%s 0x%lx-0x%lx\n", pe_section->Name,
@@ -715,14 +625,11 @@ static void file_rename_pe_exe(file_recovery_t *file_recovery)
       }
     }
 #endif
-    /*@
-      @ loop invariant 0 <= i <= nbr_sections;
-      @ loop variant nbr_sections - i;
-      @*/
+    
     for(i=0; i<nbr_sections; i++)
     {
       const struct pe_image_section_hdr *pe_section=&pe_sections[i];
-      /*@ assert \valid_read(pe_section); */
+      
       if(le32(pe_section->SizeOfRawData)>0)
       {
 	if(memcmp((const char*)pe_section->Name, ".rsrc", 6)==0)
@@ -740,18 +647,7 @@ static void file_rename_pe_exe(file_recovery_t *file_recovery)
   fclose(file);
 }
 
-/*@
-  @ requires buffer_size >= 2;
-  @ requires separation: \separated(&file_hint_exe, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures (\result == 1) ==> (file_recovery_new->extension == file_hint_exe.extension || file_recovery_new->extension == extension_dll);
-  @ ensures (\result == 1) ==> (file_recovery_new->data_check == \null || file_recovery_new->data_check == &data_check_size);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_check == \null || file_recovery_new->file_check == &file_check_size);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_rename == \null || file_recovery_new->file_rename == &file_rename_pe_exe);
-  @ ensures (\result == 1) ==> (valid_read_string(file_recovery_new->extension));
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_exe(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct dos_image_file_hdr *dos_hdr=(const struct dos_image_file_hdr*)buffer;
@@ -797,7 +693,7 @@ static int header_check_exe(const unsigned char *buffer, const unsigned int buff
 	  (((const unsigned char*)pe_hdr + sizeof(struct pe_image_file_hdr)));
 	if((const unsigned char*)(pe_image_optional32+1) <= buffer+buffer_size)
 	{
-	  /*@ assert \valid_read(pe_image_optional32); */
+	  
 	  if(le16(pe_image_optional32->Magic)==IMAGE_NT_OPTIONAL_HDR_MAGIC)
 	  {
 	    log_debug("SizeOfCode %lx\n", (long unsigned)le32(pe_image_optional32->SizeOfCode));
@@ -818,10 +714,7 @@ static int header_check_exe(const unsigned char *buffer, const unsigned int buff
 	uint64_t sum=le32(dos_hdr->e_lfanew) + sizeof(struct pe_image_file_hdr);
 	const struct pe_image_section_hdr *pe_image_section=(const struct pe_image_section_hdr*)
 	  ((const unsigned char*)pe_hdr + sizeof(struct pe_image_file_hdr) + le16(pe_hdr->SizeOfOptionalHeader));
-	/*@
-	  @ loop assigns i, pe_image_section, sum;
-	  @ loop variant le16(pe_hdr->NumberOfSections) - i;
-	  @*/
+	
 	for(i=0;
 	    i<le16(pe_hdr->NumberOfSections) &&
 	    (const unsigned char*)(pe_image_section+1) <= buffer+buffer_size;
@@ -843,9 +736,9 @@ static int header_check_exe(const unsigned char *buffer, const unsigned int buff
 	  }
 	  if(le16(pe_image_section->NumberOfRelocations)>0)
 	  {
-	    /*@ assert le16(pe_image_section->NumberOfRelocations)>0; */
+	    
 	    const uint64_t tmp=(uint64_t)le32(pe_image_section->PointerToRelocations)+ 1*le16(pe_image_section->NumberOfRelocations);
-	    /*@ assert tmp > 0; */
+	    
 #ifdef DEBUG_EXE
 	    log_debug("relocations 0x%lx-0x%lx\n",
 		(unsigned long)le32(pe_image_section->PointerToRelocations),
@@ -857,9 +750,9 @@ static int header_check_exe(const unsigned char *buffer, const unsigned int buff
 	}
 	if(le32(pe_hdr->NumberOfSymbols)>0)
 	{
-	  /*@ assert le32(pe_hdr->NumberOfSymbols)>0; */
+	  
 	  const uint64_t tmp=(uint64_t)le32(pe_hdr->PointerToSymbolTable)+ IMAGE_SIZEOF_SYMBOL*(uint64_t)le32(pe_hdr->NumberOfSymbols);
-	  /*@ assert tmp > 0; */
+	  
 #ifdef DEBUG_EXE
 	  log_debug("Symboles 0x%lx-0x%lx\n", (long unsigned)le32(pe_hdr->PointerToSymbolTable),
 	      (long unsigned)(tmp-1));
@@ -909,18 +802,15 @@ static int header_check_exe(const unsigned char *buffer, const unsigned int buff
       if(reloc_table_offset + num_relocs * sizeof(struct exe_reloc) <= buffer_size)
       {
 	unsigned int i;
-	/*@ assert reloc_table_offset + num_relocs * sizeof(struct exe_reloc) <= buffer_size; */
+	
 	exe_relocs=(const struct exe_reloc *)(buffer+reloc_table_offset);
-	/*@ assert \valid_read(exe_relocs + (0 .. num_relocs-1)); */
-	/*@
-	  @ loop invariant 0 <= i <= num_relocs;
-	  @ loop variant num_relocs -i;
-	  @ */
+	
+	
 	for(i=0; i < num_relocs; i++)
 	{
-	  /*@ assert 0 <= i <= num_relocs; */
+	  
 	  const struct exe_reloc *exe_reloc=&exe_relocs[i];
-	  /*@ assert \valid_read(exe_reloc); */
+	  
 	  log_info("offset %x, segment %x\n",
 	      le16(exe_reloc->offset), le16(exe_reloc->segment));
 	}
@@ -947,7 +837,7 @@ int main()
   file_recovery_t file_recovery;
   file_stat_t file_stats;
 
-  /*@ assert \valid(buffer + (0 .. (BLOCKSIZE - 1))); */
+  
 #if defined(__FRAMAC__)
   Frama_C_make_unknown((char *)buffer, BLOCKSIZE);
 #endif
@@ -969,11 +859,11 @@ int main()
   register_header_check_exe(&file_stats);
   if(header_check_exe(buffer, BLOCKSIZE, 0u, &file_recovery, &file_recovery_new)!=1)
     return 0;
-  /*@ assert valid_read_string((char *)&fn); */
+  
   memcpy(file_recovery_new.filename, fn, sizeof(fn));
-  /*@ assert valid_read_string((char *)&file_recovery_new.filename); */
-  /*@ assert file_recovery_new.file_size == 0;	*/
-  /*@ assert file_recovery_new.extension == file_hint_exe.extension || file_recovery_new.extension == extension_dll;	*/
+  
+  
+  
   file_recovery_new.file_stat=&file_stats;
   if(file_recovery_new.file_stat!=NULL && file_recovery_new.file_stat->file_hint!=NULL &&
     file_recovery_new.data_check!=NULL)
@@ -982,8 +872,8 @@ int main()
     data_check_t res_data_check=DC_CONTINUE;
     memset(big_buffer, 0, BLOCKSIZE);
     memcpy(big_buffer + BLOCKSIZE, buffer, BLOCKSIZE);
-    /*@ assert file_recovery_new.data_check == &data_check_size; */
-    /*@ assert file_recovery_new.file_size == 0; */;
+    
+    ;
     res_data_check=data_check_size(big_buffer, 2*BLOCKSIZE, &file_recovery_new);
     file_recovery_new.file_size+=BLOCKSIZE;
     if(res_data_check == DC_CONTINUE)
@@ -1008,7 +898,7 @@ int main()
   }
   if(file_recovery_new.file_check!=NULL)
   {
-    /*@ assert file_recovery_new.file_check == &file_check_size; */
+    
     file_recovery_new.handle=fopen(fn, "rb");
     if(file_recovery_new.handle!=NULL)
     {
@@ -1018,8 +908,8 @@ int main()
   }
   if(file_recovery_new.file_rename!=NULL)
   {
-    /*@ assert valid_read_string((char *)&file_recovery_new.filename); */
-    /*@ assert file_recovery_new.file_rename == &file_rename_pe_exe; */
+    
+    
     file_rename_pe_exe(&file_recovery_new);
   }
   return 0;

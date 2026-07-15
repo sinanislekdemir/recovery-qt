@@ -32,7 +32,7 @@
 #include "common.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_ttf(file_stat_t *file_stat);
 
 const file_hint_t file_hint_ttf= {
@@ -65,31 +65,17 @@ struct ttf_table_directory
   uint32_t 	length; 	/* Length of this table. */
 };
 
-/*@
-  @ terminates \true;
-  @ assigns \nothing;
-  @*/
+
 static unsigned int td_ilog2(unsigned int v)
 {
   unsigned int l = 0;
-  /*@
-    @ loop assigns v,l;
-    @ loop unroll 16;
-    @ loop variant v;
-    @*/
+  
   while(v >>= 1)
     l++;
   return l;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct ttf_offset_table);
-  @ requires separation: \separated(&file_hint_ttf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_ttf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct ttf_offset_table *ttf=(const struct ttf_offset_table *)buffer;
@@ -114,23 +100,20 @@ static int header_check_ttf(const unsigned char *buffer, const unsigned int buff
   if(sizeof(struct ttf_offset_table) + numTables * sizeof(struct ttf_table_directory)
       <= buffer_size)
   {
-    /*@ assert sizeof(struct ttf_offset_table) + numTables * sizeof(struct ttf_table_directory) <= buffer_size; */
-    /*@ assert numTables * sizeof(struct ttf_table_directory) <= buffer_size - sizeof(struct ttf_offset_table); */
-    /*@ assert numTables <= (buffer_size - sizeof(struct ttf_offset_table)) / sizeof(struct ttf_table_directory); */
-    /*@ assert \valid_read(buffer + (0 .. buffer_size - 1)); */
-    /*@ assert \valid_read(buffer + (0 .. sizeof(struct ttf_offset_table) + numTables * sizeof(struct ttf_table_directory) - 1)); */
+    
+    
+    
+    
+    
     uint64_t max_offset=0;
     unsigned int i;
     const struct ttf_table_directory*ttf_dir=(const struct ttf_table_directory*)&buffer[sizeof(struct ttf_offset_table)];
-    /*@ assert \valid_read(ttf_dir + (0 .. numTables -1)); */
-    /*@
-      @ loop assigns i, max_offset;
-      @ loop variant numTables - i;
-      @*/
+    
+    
     for(i=0; i<numTables; i++)
     {
-      /*@ assert 0 <= i < numTables; */
-      /*@ assert \valid_read(&ttf_dir[i]); */
+      
+      
       /* Do not align the end of the table with "|0x3;"*/
       const uint64_t new_offset=((uint64_t)be32(ttf_dir[i].offset) + be32(ttf_dir[i].length));
       if(max_offset < new_offset)

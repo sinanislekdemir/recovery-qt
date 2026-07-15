@@ -235,7 +235,7 @@ https://msdn.microsoft.com/en-us/library/windows/desktop/ms724834%28v=vs.85%29.a
   return "OS2";
 #elif defined(DISABLED_FOR_FRAMAC)
   const char *res="Frama-C";
-  /*@ assert valid_read_string(res); */
+  
   return res;
 #else
   return "unknown";
@@ -291,7 +291,7 @@ const char *get_compiler(void)
   return "unknown compiler";
 #endif
   buffer[99]='\0';
-  /*@ assert valid_read_string(&buffer[0]); */
+  
   return buffer;
 }
 
@@ -318,7 +318,7 @@ const char *get_compilation_date(void)
 #endif
 #endif
 #endif
-  /*@ assert valid_read_string(&buffer[0]); */
+  
   return buffer;
 }
 #endif

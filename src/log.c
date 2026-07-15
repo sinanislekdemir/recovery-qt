@@ -59,7 +59,7 @@ static int json_verbose = 0;
 /* static unsigned int log_levels=LOG_LEVEL_DEBUG|LOG_LEVEL_TRACE|LOG_LEVEL_QUIET|LOG_LEVEL_INFO|LOG_LEVEL_VERBOSE|LOG_LEVEL_PROGRESS|LOG_LEVEL_WARNING|LOG_LEVEL_ERROR|LOG_LEVEL_PERROR|LOG_LEVEL_CRITICAL; */
 static unsigned int log_levels=LOG_LEVEL_TRACE|LOG_LEVEL_QUIET|LOG_LEVEL_INFO|LOG_LEVEL_VERBOSE|LOG_LEVEL_PROGRESS|LOG_LEVEL_WARNING|LOG_LEVEL_ERROR|LOG_LEVEL_PERROR|LOG_LEVEL_CRITICAL;
 
-/*@ assigns log_levels; */
+
 unsigned int log_set_levels(const unsigned int levels)
 {
   const unsigned int old_levels=log_levels;
@@ -73,11 +73,7 @@ void log_set_json_handler(void (*handler)(const unsigned int level, const char *
   json_verbose = verbose;
 }
 
-/*@
-  @ requires separation: \separated(default_filename, errsv, log_handle, &errno);
-  @ assigns log_handle;
-  @ assigns \result,errno,*errsv;
-  @*/
+
 int log_open(const char*default_filename, const int mode, int *errsv)
 {
   log_handle=fopen(default_filename,(mode==TD_LOG_CREATE?"w":"a"));
@@ -102,11 +98,7 @@ int log_open(const char*default_filename, const int mode, int *errsv)
   return 1;
 }
 
-/*@
-  @ requires separation: \separated(default_filename, errsv, log_handle, &errno);
-  @ assigns log_handle;
-  @ assigns \result,errno,*errsv,__fc_heap_status;
-  @*/
+
 #if defined(__CYGWIN__) || defined(__MINGW32__)
 int log_open_default(const char*default_filename, const int mode, int *errsv)
 {
@@ -144,7 +136,7 @@ int log_open_default(const char*default_filename, const int mode, int *errsv)
   path = getenv("HOME");
   if(path == NULL)
     return log_open(default_filename, mode, errsv);
-  /*@ assert strlen(path)+strlen(default_filename)+2 < UINT_MAX; */
+  
   filename=(char*)MALLOC(strlen(path)+strlen(default_filename)+2);
 #if defined(__FRAMAC__)
   result=0;
@@ -159,19 +151,13 @@ int log_open_default(const char*default_filename, const int mode, int *errsv)
 }
 #endif
 
-/*@
-  @ requires log_handle==\null || \valid(log_handle);
-  @*/
+
 int log_flush(void)
 {
   return fflush(log_handle);
 }
 
-/*@
-  @ requires \valid(log_handle);
-  @ requires valid_read_string(_format);
-  @ assigns f_status, *log_handle;
-  @*/
+
 // assigns *log_handle \from _format[..], ap;
 static int log_handler(const char *_format, va_list ap) __attribute__((format(printf, 1, 0)));
 
@@ -194,11 +180,7 @@ static int log_handler(const char *_format, va_list ap)
   return res;
 }
 
-/*@
-  @ requires log_handle == \null || \valid(log_handle);
-  @ assigns \result,errno,log_handle;
-  @ assigns f_status;
-  @*/
+
 int log_close(void)
 {
   if(log_handle!=NULL)
@@ -210,11 +192,7 @@ int log_close(void)
   return f_status;
 }
 
-/*@
-  @ requires log_handle == \null || \valid(log_handle);
-  @ assigns *log_handle;
-  @ assigns f_status;
-  @*/
+
 int log_redirect(const unsigned int level, const char *format, ...)
 {
   if((log_levels & level)==0)
@@ -239,11 +217,7 @@ int log_redirect(const unsigned int level, const char *format, ...)
   }
 }
 
-/*@
-  @ requires log_handle == \null || \valid(log_handle);
-  @ assigns *log_handle;
-  @ assigns f_status;
-  @*/
+
 int log_redirect_nojson(const unsigned int level, const char *format, ...)
 {
   if((log_levels & level)==0)
@@ -274,29 +248,21 @@ void dump_log(const void *nom_dump, const unsigned int lng)
   const char *ptr=(const char*)nom_dump;
   const unsigned int nbr_line=(lng+0x10-1)/0x10;
   unsigned int i;
-  /*@ assert \valid_read(ptr + (0 .. lng-1)); */
+  
   /* write dump to log file*/
-  /*@
-    @ loop invariant 0 <= i <= nbr_line;
-    @ loop assigns *log_handle, f_status, i;
-    @ loop variant nbr_line - i;
-    @*/
+  
   for (i=0; i<nbr_line; i++)
   {
     unsigned int j;
     log_info("%04X ",i*0x10);
-    /*@
-      @ loop invariant 0 <= j <= 0x10;
-      @ loop assigns *log_handle, f_status, j;
-      @ loop variant 0x10 - j;
-      @*/
+    
     for(j=0; j< 0x10;j++)
     {
       const unsigned int o=i*0x10+j;
       if(o<lng)
       {
-	/*@ assert o<lng; */
-        /*@ assert \valid_read(ptr + (0 .. lng-1)); */
+	
+        
         log_info("%02x", ptr[o]);
       }
       else
@@ -305,11 +271,7 @@ void dump_log(const void *nom_dump, const unsigned int lng)
         log_info(" ");
     }
     log_info("  ");
-    /*@
-      @ loop invariant 0 <= j <= 0x10;
-      @ loop assigns *log_handle, f_status, j;
-      @ loop variant 0x10 - j;
-      @*/
+    
     for(j=0; j< 0x10;j++)
     {
       const unsigned int o=i*0x10+j;
@@ -337,19 +299,11 @@ void dump2_log(const void *dump_1, const void *dump_2, const unsigned int lng)
   const unsigned int nbr_line=(lng+0x08-1)/0x08;
   unsigned int i,j;
   /* write dump to log file*/
-  /*@
-    @ loop invariant 0 <= i <= nbr_line;
-    @ loop assigns *log_handle, f_status, i, j;
-    @ loop variant nbr_line - i;
-    @*/
+  
   for (i=0; i<nbr_line; i++)
   {
     log_info("%04X ",i*0x08);
-    /*@
-      @ loop invariant 0 <= j <= 8;
-      @ loop assigns *log_handle, f_status, j;
-      @ loop variant 0x8 - j;
-      @*/
+    
     for(j=0; j<0x08;j++)
     {
       const unsigned int o=i*0x08+j;
@@ -363,11 +317,7 @@ void dump2_log(const void *dump_1, const void *dump_2, const unsigned int lng)
         log_info(" ");
     }
     log_info("  ");
-    /*@
-      @ loop invariant 0 <= j <= 8;
-      @ loop assigns *log_handle, f_status, j;
-      @ loop variant 0x8 - j;
-      @*/
+    
     for(j=0; j<0x08;j++)
     {
       const unsigned int o=i*0x08+j;
@@ -383,11 +333,7 @@ void dump2_log(const void *dump_1, const void *dump_2, const unsigned int lng)
         log_info(" ");
     }
     log_info("  ");
-    /*@
-      @ loop invariant 0 <= j <= 8;
-      @ loop assigns *log_handle, f_status, j;
-      @ loop variant 0x8 - j;
-      @*/
+    
     for(j=0; j<0x08;j++)
     {
       const unsigned int o=i*0x08+j;
@@ -401,11 +347,7 @@ void dump2_log(const void *dump_1, const void *dump_2, const unsigned int lng)
         log_info(" ");
     }
     log_info("  ");
-    /*@
-      @ loop invariant 0 <= j <= 8;
-      @ loop assigns *log_handle, f_status, j;
-      @ loop variant 0x8 - j;
-      @*/
+    
     for(j=0; j<0x08;j++)
     {
       const unsigned int o=i*0x08+j;

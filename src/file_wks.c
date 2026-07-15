@@ -31,7 +31,7 @@
 #include "types.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_wks(file_stat_t *file_stat);
 
 const file_hint_t file_hint_wks = {
@@ -54,12 +54,7 @@ const file_hint_t file_hint_wks = {
  * http://www.schnarff.com/file-formats/lotus-1-2-3/WSFF1.TXT
  * http://www.schnarff.com/file-formats/lotus-1-2-3/WSFF2.TXT
  */
-/*@
-  @ requires separation: \separated(&file_hint_wks, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_wk4(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   reset_file_recovery(file_recovery_new);
@@ -67,12 +62,7 @@ static int header_check_wk4(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-/*@
-  @ requires separation: \separated(&file_hint_wks, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_wks(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   reset_file_recovery(file_recovery_new);

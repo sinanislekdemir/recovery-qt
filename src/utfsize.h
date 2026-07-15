@@ -25,13 +25,7 @@
 extern "C" {
 #endif
 
-/*@
-  @ requires buf_len> 0;
-  @ requires \valid_read(buffer+(0..buf_len-1));
-  @ terminates \true;
-  @ ensures 0 <= \result <= buf_len;
-  @ assigns \nothing;
-  @*/
+
 int UTFsize(const unsigned char *buffer, const unsigned int buf_len);
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

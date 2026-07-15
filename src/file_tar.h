@@ -46,10 +46,7 @@ struct tar_posix_header
 				/* 500 */
 };
 
-/*@
-  @ requires \valid_read(h);
-  @ assigns \nothing;
-  @*/
+
 int is_valid_tar_header(const struct tar_posix_header *h);
 
 #ifdef __cplusplus

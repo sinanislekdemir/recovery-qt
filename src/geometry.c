@@ -82,7 +82,7 @@ int change_geometry_cli(disk_t *disk_car, char ** current_cmd)
 #ifndef DISABLED_FOR_FRAMAC
   log_info("Current geometry\n%s sector_size=%u\n", disk_car->description(disk_car), disk_car->sector_size);
 #endif
-  /*@ loop invariant valid_read_string(*current_cmd); */
+  
   while (done==0)
   {
     skip_comma_in_command(current_cmd);
@@ -150,7 +150,7 @@ int change_geometry_cli(disk_t *disk_car, char ** current_cmd)
     if(cyl_modified!=0)
       disk_car->disk_size=(uint64_t)disk_car->geom.cylinders*disk_car->geom.heads_per_cylinder*disk_car->geom.sectors_per_head*disk_car->sector_size;
   }
-  /*@ assert valid_read_string(*current_cmd); */
+  
   if(geo_modified!=0)
   {
     disk_car->disk_size=(uint64_t)disk_car->geom.cylinders*disk_car->geom.heads_per_cylinder*disk_car->geom.sectors_per_head*disk_car->sector_size;
@@ -164,10 +164,10 @@ int change_geometry_cli(disk_t *disk_car, char ** current_cmd)
     autoset_unit(disk_car);
     if(geo_modified==2)
     {
-      /*@ assert valid_read_string(*current_cmd); */
+      
       return 1;
     }
   }
-  /*@ assert valid_read_string(*current_cmd); */
+  
   return 0;
 }

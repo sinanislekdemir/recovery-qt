@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_xar(file_stat_t *file_stat);
 
 const file_hint_t file_hint_xar = {
@@ -57,13 +57,7 @@ struct xar_header
    */
 };
 
-/*@
-  @ requires buffer_size >= sizeof(struct xar_header);
-  @ requires separation: \separated(&file_hint_xar, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_xar(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct xar_header *hdr = (const struct xar_header *)buffer;

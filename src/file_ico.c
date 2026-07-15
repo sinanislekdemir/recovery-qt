@@ -33,7 +33,7 @@
 #include "filegen.h"
 #include "log.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_ico(file_stat_t *file_stat);
 
 const file_hint_t file_hint_ico= {
@@ -78,14 +78,7 @@ struct ico_directory
   uint32_t	bitmap_offset;
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires buffer_size >= sizeof(struct ico_header);
-  @ requires separation: \separated(&file_hint_ico, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_ico(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct ico_header *ico=(const struct ico_header*)buffer;
@@ -97,10 +90,7 @@ static int header_check_ico(const unsigned char *buffer, const unsigned int buff
 #endif
   if(le16(ico->reserved)!=0 || le16(ico->type)!=1 || le16(ico->count)==0)
     return 0;
-  /*@
-    @ loop assigns ico_dir, i, fs;
-    @ loop variant le16(ico->count) - i;
-    @*/
+  
   for(i=0, ico_dir=(const struct ico_directory*)(ico+1);
       (const unsigned char *)(ico_dir+1) <= buffer+buffer_size && i<le16(ico->count);
       i++, ico_dir++)

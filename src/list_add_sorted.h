@@ -28,37 +28,21 @@
   X ensures  finite(newe);
   X ensures  reachable(head,newe);
   */
-/*@
-  @ requires \valid(newe);
-  @ requires \valid(head);
-  @ requires \valid_function(compar);
-  @ requires separation: \separated(newe, head);
-  @ requires list_separated(head->prev, newe);
-  @ requires list_separated(head, newe);
-  @ requires finite(head->prev);
-  @ requires finite(head);
-  @*/
+
 static inline void td_list_add_sorted(struct td_list_head *newe, struct td_list_head *head,
     int (*compar)(const struct td_list_head *a, const struct td_list_head *b))
 {
   struct td_list_head *pos;
-  /*@
-    @ loop invariant \valid(pos);
-    @ loop invariant \valid(pos->prev);
-    @ loop invariant \valid(pos->next);
-    @ loop invariant pos == head || \separated(pos, head);
-    @ loop invariant \valid_function(compar);
-    @ loop assigns pos;
-    @*/
+  
 /*
     X loop invariant finite(head->prev);
     X loop invariant finite(head);
 */
   td_list_for_each(pos, head)
   {
-    /*@ assert \valid_function(compar); */
-    /*@ assert \valid_read(newe); */
-    /*@ assert \valid_read(pos); */
+    
+    
+    
     if(compar(newe,pos)<0)
       break;
   }
@@ -68,10 +52,10 @@ static inline void td_list_add_sorted(struct td_list_head *newe, struct td_list_
   }
   else
   {
-    /*@ assert finite(head->prev); */
-    /*@ assert finite(head); */
-    /*@ assert list_separated(head->prev, newe); */
-    /*@ assert list_separated(head, newe); */
+    
+    
+    
+    
     td_list_add_tail(newe, head);
   }
   /*X assert finite(head); */

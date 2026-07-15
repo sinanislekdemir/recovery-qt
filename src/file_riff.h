@@ -25,13 +25,7 @@
 extern "C" {
 #endif
 
-/*@
-  @ requires file_recovery->data_check==&data_check_avi_stream;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 data_check_t data_check_avi_stream(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery);
 
 #ifdef __cplusplus

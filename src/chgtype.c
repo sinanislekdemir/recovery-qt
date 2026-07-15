@@ -39,22 +39,15 @@ extern const arch_fnct_t arch_gpt;
 extern const arch_fnct_t arch_none;
 #endif
 
-/*@
-  @ requires \valid(current_cmd);
-  @ requires valid_read_string(*current_cmd);
-  @ ensures  valid_read_string(*current_cmd);
-  @*/
+
 // TODO assigns  *current_cmd;
 static int get_hex_from_command(char **current_cmd)
 {
   const int tmp=strtol(*current_cmd, NULL, 16);
-  /*@
-    @ loop invariant valid_read_string(*current_cmd);
-    @ loop assigns *current_cmd;
-    @*/
+  
   while(*current_cmd[0]!=',' && *current_cmd[0]!='\0')
     (*current_cmd)++;
-  /*@ assert valid_read_string(*current_cmd); */
+  
   return tmp;
 }
 

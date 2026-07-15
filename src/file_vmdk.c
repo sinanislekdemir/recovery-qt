@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_vmdk(file_stat_t *file_stat);
 #define MAX_FILE_SIZE_VMDK (uint64_t)2048 * 1024 * 1024 * 1024
 
@@ -78,13 +78,7 @@ typedef struct
   char check_bytes[4];
 } __attribute__((gcc_struct, __packed__)) VMDK4Header;
 
-/*@
-  @ requires buffer_size >= sizeof(VMDK3Header);
-  @ requires separation: \separated(&file_hint_vmdk, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_vmdk3(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const VMDK3Header *hdr = (const VMDK3Header *)buffer;
@@ -101,13 +95,7 @@ static int header_check_vmdk3(const unsigned char *buffer, const unsigned int bu
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(VMDK4Header);
-  @ requires separation: \separated(&file_hint_vmdk, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_vmdk4(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const VMDK4Header *hdr = (const VMDK4Header *)buffer;

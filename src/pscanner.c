@@ -478,12 +478,6 @@ static int scanner_deep_fat(scan_tree_t *tree, disk_t *disk,
 
     if (scanned % 10000 == 0)
     {
-#ifdef HAVE_NCURSES
-      char progress_msg[256];
-      snprintf(progress_msg, sizeof(progress_msg),
-          "FAT deep scan: cluster %lu/%lu", scanned, no_of_cluster);
-      update_progress(progress_msg);
-#endif
     }
   }
 

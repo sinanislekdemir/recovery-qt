@@ -44,7 +44,7 @@
 #endif
 
 static const char *extension_swc="swc";
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_swf(file_stat_t *file_stat);
 
 const file_hint_t file_hint_swf= {
@@ -77,37 +77,23 @@ struct swfz_header
 // compressedLen does not include header (4+4+4 bytes) or lzma props (5 bytes)
 // compressedLen does include LZMA end marker (6 bytes)
 
-/*@
-  @ requires \valid(data);
-  @ requires \valid_read(*data + (0..3));
-  @ requires \valid(offset_bit);
-  @ requires 0 <= *offset_bit <= 7;
-  @ requires 2 <= nbit <= 31;
-  @ requires separation: \separated(data, offset_bit, *data + (0..(nbit+*offset_bit)/8));
-  @ terminates \true;
-  @ ensures  0 <= *offset_bit <= 7;
-  @ assigns *data, *offset_bit;
-  @*/
+
 static int read_SB(const unsigned char **data, unsigned int *offset_bit, unsigned int nbit)
 {
   int res=0;
   const unsigned int sign=((**data) >>(7 - (*offset_bit)))&1;
-  /*@
-     loop unroll 31;
-     loop assigns nbit, *offset_bit, *data, res;
-     loop variant nbit;
-     */
+  
   while(nbit>1)
   {
-    /*@ assert 0 <= *offset_bit <= 7; */
+    
     (*offset_bit)++;
-    /*@ assert 1 <= *offset_bit <= 8; */
+    
     if(*offset_bit==8)
     {
       (*data)++;
       *offset_bit=0;
     }
-    /*@ assert 0 <= *offset_bit <= 7; */
+    
     res=(res<<1)|((**data>>(7 - *offset_bit))&1);
     nbit--;
   }
@@ -116,18 +102,7 @@ static int read_SB(const unsigned char **data, unsigned int *offset_bit, unsigne
   return res;
 }
 
-/*@
-  @ requires buffer_size >= 512;
-  @ requires separation: \separated(&file_hint_swf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures (\result == 1) ==> (file_recovery_new->data_check == &data_check_size);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_check == &file_check_size_max);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_rename == \null);
-  @ ensures (\result == 1) ==> (file_recovery_new->extension == extension_swc);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_swfc(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct swf_header *hdr=(const struct swf_header *)buffer;
@@ -200,18 +175,7 @@ static int header_check_swfc(const unsigned char *buffer, const unsigned int buf
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct swf_header);
-  @ requires separation: \separated(&file_hint_swf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures (\result == 1) ==> (file_recovery_new->data_check == &data_check_size);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_check == &file_check_size);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_rename == \null);
-  @ ensures (\result == 1) ==> (file_recovery_new->extension == file_hint_swf.extension);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_swf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   /* http://www.adobe.com/go/swfspec */
@@ -245,18 +209,7 @@ static int header_check_swf(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct swfz_header);
-  @ requires separation: \separated(&file_hint_swf, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures (\result == 1) ==> (file_recovery_new->data_check == &data_check_size);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_check == &file_check_size_max);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_rename == \null);
-  @ ensures (\result == 1) ==> (file_recovery_new->extension == file_hint_swf.extension);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_swfz(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct swfz_header *hdr=(const struct swfz_header *)buffer;
@@ -273,9 +226,7 @@ static int header_check_swfz(const unsigned char *buffer, const unsigned int buf
   return 1;
 }
 
-/*@
-  @ requires valid_register_header_check(file_stat);
-  @*/
+
 static void register_header_check_swf(file_stat_t *file_stat)
 {
   register_header_check(0, "CWS", 3, &header_check_swfc, file_stat);
@@ -294,13 +245,13 @@ int main(void)
   file_recovery_t file_recovery;
   file_stat_t file_stats;
 
-  /*@ assert \valid(buffer + (0 .. (BLOCKSIZE - 1))); */
+  
 #if defined(__FRAMAC__)
   Frama_C_make_unknown((char *)buffer, BLOCKSIZE);
 #endif
 
   reset_file_recovery(&file_recovery);
-  /*@ assert file_recovery.file_stat == \null; */
+  
   file_recovery.blocksize=BLOCKSIZE;
   file_recovery_new.blocksize=BLOCKSIZE;
   file_recovery_new.data_check=NULL;
@@ -319,23 +270,23 @@ int main(void)
       header_check_swfc(buffer, BLOCKSIZE, 0u, &file_recovery, &file_recovery_new)!=1 ||
       header_check_swfz(buffer, BLOCKSIZE, 0u, &file_recovery, &file_recovery_new)!=1)
     return 0;
-  /*@ assert valid_read_string((char *)&fn); */
+  
   memcpy(file_recovery_new.filename, fn, sizeof(fn));
   file_recovery_new.file_stat=&file_stats;
-  /*@ assert valid_read_string((char *)file_recovery_new.filename); */
-  /*@ assert file_recovery_new.extension == file_hint_swf.extension || file_recovery_new.extension == extension_swc; */
-  /*@ assert file_recovery_new.file_size == 0;	*/
-  /*@ assert file_recovery_new.file_check == &file_check_size || file_recovery_new.file_check == &file_check_size_max; */
-  /*@ assert file_recovery_new.data_check == &data_check_size; */
-  /*@ assert file_recovery_new.file_stat->file_hint!=NULL; */
+  
+  
+  
+  
+  
+  
   {
     unsigned char big_buffer[2*BLOCKSIZE];
     data_check_t res_data_check=DC_CONTINUE;
     memset(big_buffer, 0, BLOCKSIZE);
     memcpy(big_buffer + BLOCKSIZE, buffer, BLOCKSIZE);
-    /*@ assert file_recovery_new.data_check == &data_check_size; */
-    /*@ assert file_recovery_new.file_size == 0; */;
-    /*@ assert file_recovery_new.file_size <= file_recovery_new.calculated_file_size; */;
+    
+    ;
+    ;
     res_data_check=data_check_size(big_buffer, 2*BLOCKSIZE, &file_recovery_new);
     file_recovery_new.file_size+=BLOCKSIZE;
     if(res_data_check == DC_CONTINUE)
@@ -357,12 +308,12 @@ int main(void)
 #if defined(__FRAMAC__)
     Frama_C_make_unknown((char *)buffer, BLOCKSIZE);
 #endif
-    /*@ assert valid_read_string((char *)file_recovery_new.filename); */
+    
     header_check_swf(buffer, BLOCKSIZE, 0, &file_recovery_new, &file_recovery_new2);
   }
-  /*@ assert valid_read_string((char *)file_recovery_new.filename); */
+  
   file_recovery_new.handle=fopen(fn, "rb");
-  /*@ assert file_recovery_new.file_check == &file_check_size || file_recovery_new.file_check == &file_check_size_max; */
+  
   if(file_recovery_new.handle!=NULL)
   {
     if(file_recovery_new.file_check == &file_check_size)

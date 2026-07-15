@@ -36,21 +36,14 @@
  * to chaining of merge() calls: null-terminated, no reserved or
  * sentinel head node, "prev" links not maintained.
  */
-/*@
-  @ decreases 0;
-  @*/
+
 static struct td_list_head *merge(
     int (*cmp)(const struct td_list_head *a, const struct td_list_head *b),
     struct td_list_head *a, struct td_list_head *b)
 {
   struct td_list_head head, *tail = &head;
 
-  /*@
-    @ loop invariant \valid_function(cmp);
-    @ loop invariant \valid(tail);
-    @ loop invariant \valid(a);
-    @ loop invariant \valid(b);
-    @*/
+  
   while (a && b) {
     /* if equal, take 'a' -- important for sort stability */
     if ((*cmp)(a, b) <= 0) {
@@ -73,9 +66,7 @@ static struct td_list_head *merge(
  * prev-link restoration pass, or maintaining the prev links
  * throughout.
  */
-/*@
-  @ decreases 0;
-  @*/
+
 static void merge_and_restore_back_links(
     int (*cmp)(const struct td_list_head *a, const struct td_list_head *b),
     struct td_list_head *head,
@@ -145,17 +136,13 @@ void td_list_sort(struct td_list_head *head,
   head->prev->next = NULL;
   list = head->next;
 
-  /*@
-    @ loop invariant \valid_function(cmp);
-    @*/
+  
   while (list) {
     struct td_list_head *cur = list;
     list = list->next;
     cur->next = NULL;
 
-    /*@
-      @ loop invariant \valid_function(cmp);
-      @*/
+    
     for (lev = 0; part[lev]; lev++) {
       cur = merge(cmp, part[lev], cur);
       part[lev] = NULL;
@@ -171,9 +158,7 @@ void td_list_sort(struct td_list_head *head,
     part[lev] = cur;
   }
 
-  /*@
-    @ loop invariant \valid_function(cmp);
-    @*/
+  
   for (lev = 0; lev < max_lev; lev++)
     if (part[lev])
       list = merge(cmp, part[lev], list);

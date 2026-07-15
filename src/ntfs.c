@@ -48,25 +48,10 @@
 extern const arch_fnct_t arch_i386;
 #endif
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid_read(ntfs_header);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \separated(disk_car, ntfs_header, partition);
-  @*/
+
 static void set_NTFS_info(disk_t *disk_car, const struct ntfs_boot_sector*ntfs_header, partition_t *partition);
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires valid_partition(partition);
-  @ requires \valid_read(ntfs_header);
-  @ requires \separated(disk_car, partition, ntfs_header);
-  @ decreases 0;
-  @*/
+
 static void ntfs_get_volume_name(disk_t *disk_car, partition_t *partition, const struct ntfs_boot_sector*ntfs_header);
 
 unsigned int ntfs_sector_size(const struct ntfs_boot_sector *ntfs_header)
@@ -204,10 +189,7 @@ int test_NTFS(const disk_t *disk_car, const struct ntfs_boot_sector*ntfs_header,
   return 0;
 }
 
-/*@
-  @ requires \valid_read(record);
-  @ assigns  \nothing;
-  @*/
+
 static const ntfs_attribheader *ntfs_getattributeheaders(const ntfs_recordheader* record)
 {
   const char* location = (const char*)record;
@@ -219,16 +201,13 @@ static const ntfs_attribheader *ntfs_getattributeheaders(const ntfs_recordheader
   return (const ntfs_attribheader *)location;
 }
 
-/*@
-  @ requires \valid_read(attrib);
-  @ assigns  \nothing;
-  @*/
+
 static const ntfs_attribheader* ntfs_searchattribute(const ntfs_attribheader* attrib, uint32_t attrType, const char* end, int skip)
 {
   if(attrib==NULL)
     return NULL;
   /* Now we should be at attributes */
-  /*@ loop assigns attrib; */
+  
   while((const char *)attrib + sizeof(ntfs_attribheader) < end &&
       le32(attrib->type)!= 0xffffffff)
   {

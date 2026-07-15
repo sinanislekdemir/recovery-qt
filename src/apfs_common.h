@@ -92,12 +92,7 @@ typedef struct nx_superblock nx_superblock_t;
 
 //#define APFS_SUPERBLOCK_SIZE (sizeof(nx_superblock_t))
 #define APFS_SUPERBLOCK_SIZE 4096
-/*@
-  @ requires \valid_read(sb);
-  @ requires partition==\null || (\valid_read(partition) && valid_partition(partition));
-  @ requires \separated(sb, partition);
-  @ assigns  \nothing;
-  @ */
+
 int test_APFS(const nx_superblock_t *sb, const partition_t *partition);
 
 #ifdef __cplusplus

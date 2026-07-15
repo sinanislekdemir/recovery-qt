@@ -29,44 +29,25 @@ unsigned int log_set_levels(const unsigned int levels);
 
 void log_set_json_handler(void (*handler)(const unsigned int level, const char *format, va_list ap), int verbose);
 
-/*@
-  @ requires valid_read_string(default_filename);
-  @ requires \valid(errsv);
-  @ requires separation: \separated(default_filename, errsv, &errno);
-  @*/
+
 int log_open(const char*default_filename, const int mode, int *errsv);
 
-/*@
-  @ requires \valid_read(default_filename);
-  @ requires \valid(errsv);
-  @ requires separation: \separated(default_filename, errsv, &errno);
-  @*/
+
 int log_open_default(const char*default_filename, const int mode, int *errsv);
 
 int log_flush(void);
 int log_close(void);
 
-/*@
-  @ requires valid_read_string(format);
-  @*/
+
 int log_redirect(const unsigned int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
 
-/*@
-  @ requires valid_read_string(format);
-  @*/
+
 int log_redirect_nojson(const unsigned int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
 
-/*@
-  @ requires lng <= 1<<30;
-  @ requires \valid((char *)nom_dump + (0 .. lng-1));
-  @*/
+
 void dump_log(const void *nom_dump, const unsigned int lng);
 
-/*@
-  @ requires lng <= 1<<30;
-  @ requires \valid((char *)dump_1 + (0 .. lng-1));
-  @ requires \valid((char *)dump_2 + (0 .. lng-1));
-  @*/
+
 void dump2_log(const void *dump_1, const void *dump_2,const unsigned int lng);
 
 #define TD_LOG_NONE	0

@@ -33,7 +33,7 @@
 #include "common.h"
 #include "log.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_par2(file_stat_t *file_stat);
 
 const file_hint_t file_hint_par2= {
@@ -49,25 +49,17 @@ static const unsigned char par2_header[8]=  {
   'P' , 'A' , 'R' , '2' , 0x00, 'P' , 'K' , 'T'
 };
 
-/*@
-  @ requires file_recovery->data_check == &data_check_par2;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_par2(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 16);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 16 < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - 16; */
+    
     const uint64_t length=le64((*(const uint64_t *)(&buffer[i+8])));
     if(memcmp(&buffer[i], &par2_header, sizeof(par2_header))!=0)
       return DC_STOP;
@@ -78,21 +70,14 @@ static data_check_t data_check_par2(const unsigned char *buffer, const unsigned 
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires file_recovery->file_rename==&file_rename_par2;
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_par2(file_recovery_t *file_recovery)
 {
   FILE *file;
   uint64_t offset=0;
   if((file=fopen(file_recovery->filename, "rb"))==NULL)
     return;
-  /*@
-    @ loop invariant valid_file_rename_param(file_recovery);
-    @ loop variant PHOTOREC_MAX_FILE_SIZE - offset;
-    @*/
+  
   while(offset <= PHOTOREC_MAX_FILE_SIZE)
   {
     uint64_t length;
@@ -117,7 +102,7 @@ static void file_rename_par2(file_recovery_t *file_recovery)
       fclose(file);
       return;
     }
-    /*@ assert length >= 16; */
+    
     if(memcmp(&buffer[0x30], "PAR 2.0\0FileDesc", 16)==0)
     {
       fclose(file);
@@ -132,12 +117,7 @@ static void file_rename_par2(file_recovery_t *file_recovery)
   return;
 }
 
-/*@
-  @ requires buffer_size >= 16;
-  @ requires separation: \separated(&file_hint_par2, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @*/
+
 static int header_check_par2(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const uint64_t length=le64((*(const uint64_t *)(&buffer[8])));

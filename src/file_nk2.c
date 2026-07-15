@@ -33,9 +33,7 @@
 #include "common.h"
 #include "log.h"
 
-/*@
-  @ requires valid_register_header_check(file_stat);
-  @*/
+
 static void register_header_check_nk2(file_stat_t *file_stat);
 #define NK2_MAX_FILESIZE 100*1024*1024
 
@@ -88,27 +86,17 @@ typedef struct {
 #define PT_ACTIONS	0x00fe
 #define	PT_BINARY	0x0102
 
-/*@
-  @ requires valid_file_check_param(fr);
-  @ ensures  valid_file_check_result(fr);
-  @ assigns *fr->handle, errno, fr->file_size, fr->offset_error;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static void file_check_nk2_aux(file_recovery_t *fr, const unsigned int entries_count)
 {
   unsigned int j;
-  /*@
-    @ loop assigns *fr->handle, errno, fr->file_size, fr->offset_error;
-    @ loop assigns Frama_C_entropy_source;
-    @ loop assigns j;
-    @ loop variant entries_count - j;
-    @*/
+  
   for(j=0; j<entries_count; j++)
   {
     uint64_t size;
     char buf_entryh[sizeof(entryHeader)];
     const entryHeader *entryh=(const entryHeader *)&buf_entryh;
-    /*@ assert \valid_read(entryh); */
+    
     if (fread(&buf_entryh, sizeof(entryHeader), 1, fr->handle)!=1)
     {
       fr->offset_error=fr->file_size;
@@ -131,7 +119,7 @@ static void file_check_nk2_aux(file_recovery_t *fr, const unsigned int entries_c
 	{
 	  char buf_entry_size[sizeof(uint32_t)];
 	  const uint32_t *entry_size=(const uint32_t *)&buf_entry_size;
-	  /*@ assert \valid_read(entry_size); */
+	  
 	  if (fread(&buf_entry_size, sizeof(uint32_t), 1, fr->handle)!=1)
 	  {
 	    fr->offset_error=fr->file_size;
@@ -187,20 +175,14 @@ static void file_check_nk2_aux(file_recovery_t *fr, const unsigned int entries_c
   }
 }
 
-/*@
-  @ requires fr->file_check == &file_check_nk2;
-  @ requires valid_file_check_param(fr);
-  @ ensures  valid_file_check_result(fr);
-  @ assigns *fr->handle, errno, fr->file_size, fr->offset_error, fr->offset_ok;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static void file_check_nk2(file_recovery_t *fr)
 {
   char buf_nk2h[sizeof(nk2Header)];
   const nk2Header *nk2h=(const nk2Header *)&buf_nk2h;
   unsigned int i;
-  /*@ assert \valid(fr); */
-  /*@ assert \valid_read(nk2h); */
+  
+  
   fr->file_size = 0;
   fr->offset_error=0;
   fr->offset_ok=0;
@@ -211,27 +193,22 @@ static void file_check_nk2(file_recovery_t *fr)
   Frama_C_make_unknown(&buf_nk2h, sizeof(nk2Header));
 #endif
   fr->file_size+=sizeof(nk2Header);
-  /*@ assert fr->file_size > 0; */
+  
 #ifdef DEBUG_NK2
   log_info("nk2 item_count=%u\n", (unsigned int)le32(nk2h->items_count));
 #endif
-  /*@
-    @ loop invariant valid_file_check_param(fr);
-    @ loop assigns *fr->handle, errno, fr->file_size, fr->offset_error;
-    @ loop assigns Frama_C_entropy_source;
-    @ loop assigns i;
-    @*/
+  
   for(i=0; i<le32(nk2h->items_count); i++)
   {
     char buf_itemh[sizeof(itemHeader)];
     const itemHeader *itemh=(const itemHeader *)&buf_itemh;
-    /*@ assert \valid_read(itemh); */
+    
     if(fr->file_size >= NK2_MAX_FILESIZE)
     {
       fr->file_size=0;
       return;
     }
-    /*@ assert fr->file_size < NK2_MAX_FILESIZE; */
+    
     if (fread(&buf_itemh, sizeof(itemHeader), 1, fr->handle)!=1)
     {
       fr->offset_error=fr->file_size;
@@ -252,13 +229,7 @@ static void file_check_nk2(file_recovery_t *fr)
   fr->file_size+=12;
 }
 
-/*@
-  @ requires separation: \separated(&file_hint_nk2, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_nk2(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   reset_file_recovery(file_recovery_new);

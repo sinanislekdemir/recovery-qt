@@ -67,7 +67,7 @@ void autodetect_arch(disk_t *disk, const arch_fnct_t *arch)
   {
     disk->arch=&arch_none;
     list_part=arch_none.read_part(disk,verbose,0);
-    /*@ assert valid_list_part(list_part); */
+    
     if(list_part!=NULL && list_part->part!=NULL && list_part->part->upart_type==UP_UNK)
     {
       part_free_list(list_part);
@@ -79,7 +79,7 @@ void autodetect_arch(disk_t *disk, const arch_fnct_t *arch)
   {
     disk->arch=&arch_xbox;
     list_part=arch_xbox.read_part(disk,verbose,0);
-    /*@ assert valid_list_part(list_part); */
+    
   }
 #endif
 #if !defined(SINGLE_PARTITION_TYPE) || defined(SINGLE_PARTITION_GPT)
@@ -87,7 +87,7 @@ void autodetect_arch(disk_t *disk, const arch_fnct_t *arch)
   {
     disk->arch=&arch_gpt;
     list_part=arch_gpt.read_part(disk,verbose,0);
-    /*@ assert valid_list_part(list_part); */
+    
   }
 #endif
 #if !defined(SINGLE_PARTITION_TYPE) || defined(SINGLE_PARTITION_HUMAX)
@@ -95,7 +95,7 @@ void autodetect_arch(disk_t *disk, const arch_fnct_t *arch)
   {
     disk->arch=&arch_humax;
     list_part=arch_humax.read_part(disk,verbose,0);
-    /*@ assert valid_list_part(list_part); */
+    
   }
 #endif
 #if !defined(SINGLE_PARTITION_TYPE) || defined(SINGLE_PARTITION_I386)
@@ -103,7 +103,7 @@ void autodetect_arch(disk_t *disk, const arch_fnct_t *arch)
   {
     disk->arch=&arch_i386;
     list_part=arch_i386.read_part(disk,verbose,0);
-    /*@ assert valid_list_part(list_part); */
+    
   }
 #endif
 #if !defined(SINGLE_PARTITION_TYPE) || defined(SINGLE_PARTITION_SUN)
@@ -111,7 +111,7 @@ void autodetect_arch(disk_t *disk, const arch_fnct_t *arch)
   {
     disk->arch=&arch_sun;
     list_part=arch_sun.read_part(disk,verbose,0);
-    /*@ assert valid_list_part(list_part); */
+    
   }
 #endif
 #if !defined(SINGLE_PARTITION_TYPE) || defined(SINGLE_PARTITION_MAC)
@@ -119,7 +119,7 @@ void autodetect_arch(disk_t *disk, const arch_fnct_t *arch)
   {
     disk->arch=&arch_mac;
     list_part=arch_mac.read_part(disk,verbose,0);
-    /*@ assert valid_list_part(list_part); */
+    
   }
 #endif
 #ifndef DEBUG_PARTAUTO

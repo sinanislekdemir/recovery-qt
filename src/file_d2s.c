@@ -31,7 +31,7 @@
 #include "common.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_d2s(file_stat_t *file_stat);
 
 const file_hint_t file_hint_d2s= {
@@ -51,11 +51,7 @@ struct d2s_header {
 //  char name[0];
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires file_recovery->file_rename==&file_rename_d2s;
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_d2s(file_recovery_t *file_recovery)
 {
   unsigned char buffer[512];
@@ -68,13 +64,7 @@ static void file_rename_d2s(file_recovery_t *file_recovery)
   file_rename(file_recovery, buffer, buffer_size, 0x14, NULL, 1);
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct d2s_header);
-  @ requires separation: \separated(&file_hint_d2s, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_d2s(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct d2s_header *d2s=(const struct d2s_header*)buffer;

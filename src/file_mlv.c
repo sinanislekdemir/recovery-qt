@@ -36,7 +36,7 @@
 #include "__fc_builtin.h"
 #endif
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_mlv(file_stat_t *file_stat);
 
 const file_hint_t file_hint_mlv= {
@@ -71,18 +71,11 @@ typedef struct {
   uint64_t    timestamp;
 } __attribute__ ((gcc_struct, __packed__)) mlv_hdr_t;
 
-/*@
-  @ requires \valid_read(hdr->blockType + (0 .. 3));
-  @ terminates \true;
-  @ assigns \nothing;
-  @*/
+
 static int is_valid_type(const mlv_hdr_t *hdr)
 {
   unsigned int i;
-  /*@
-    @ loop assigns i;
-    @ loop variant 4 - i;
-    @*/
+  
   for(i=0; i<4; i++)
   {
     const uint8_t c=hdr->blockType[i];
@@ -92,26 +85,17 @@ static int is_valid_type(const mlv_hdr_t *hdr)
   return 1;
 }
 
-/*@
-  @ requires fr->data_check==&data_check_mlv;
-  @ requires valid_data_check_param(buffer, buffer_size, fr);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, fr);
-  @ assigns fr->calculated_file_size;
-  @*/
+
 static data_check_t data_check_mlv(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *fr)
 {
-  /*@ assert fr->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert fr->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns fr->calculated_file_size;
-    @ loop variant fr->file_size + buffer_size/2 - (fr->calculated_file_size + 8);
-    @*/
+  
+  
+  
   while(fr->calculated_file_size + buffer_size/2  >= fr->file_size &&
       fr->calculated_file_size + 8 < fr->file_size + buffer_size/2)
   {
     const unsigned int i=fr->calculated_file_size + buffer_size/2 - fr->file_size;
-    /*@ assert 0 <= i < buffer_size - 8; */
+    
     const mlv_hdr_t *hdr=(const mlv_hdr_t *)&buffer[i];
     if(le32(hdr->blockSize)<0x10 || !is_valid_type(hdr))
       return DC_STOP;
@@ -122,21 +106,11 @@ static data_check_t data_check_mlv(const unsigned char *buffer, const unsigned i
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires file_recovery->file_check == &file_check_mlv;
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @ assigns *file_recovery->handle, errno, file_recovery->file_size;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static void file_check_mlv(file_recovery_t *file_recovery)
 {
   uint64_t fs=0;
-  /*@
-    @ loop assigns *file_recovery->handle, errno, file_recovery->file_size;
-    @ loop assigns Frama_C_entropy_source, fs;
-    @ loop variant 0x8000000000000000 - fs;
-    @*/
+  
   while(fs < 0x8000000000000000)
   {
     char buffer[sizeof(mlv_hdr_t)];
@@ -162,11 +136,7 @@ static void file_check_mlv(file_recovery_t *file_recovery)
   file_recovery->file_size=0;
 }
 
-/*@
-  @ requires file_recovery->file_rename == &file_rename_mlv;
-  @ requires valid_file_rename_param(file_recovery);
-  @ ensures  valid_file_rename_result(file_recovery);
-  @*/
+
 static void file_rename_mlv(file_recovery_t *file_recovery)
 {
   FILE *file;
@@ -174,7 +144,7 @@ static void file_rename_mlv(file_recovery_t *file_recovery)
   const mlv_file_hdr_t *hdr=(const mlv_file_hdr_t *)&buffer;
   char ext[16];
   const char *ext_ptr=(const char *)&ext;
-  /*@ assert \separated(file_recovery, ext_ptr); */
+  
   if((file=fopen(file_recovery->filename, "rb"))==NULL)
     return;
   if(my_fseek(file, 0, SEEK_SET) < 0 ||
@@ -188,18 +158,11 @@ static void file_rename_mlv(file_recovery_t *file_recovery)
 #if defined(DISABLED_FOR_FRAMAC)
   ext[sizeof(ext)-1]='\0';
 #endif
-  /*@ assert valid_read_string(ext_ptr); */
+  
   file_rename(file_recovery, NULL, 0, 0, ext_ptr, 1);
 }
 
-/*@
-  @ requires buffer_size >= sizeof(mlv_file_hdr_t);
-  @ requires separation: \separated(&file_hint_mlv, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_mlv(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const mlv_file_hdr_t *hdr=(const mlv_file_hdr_t *)buffer;

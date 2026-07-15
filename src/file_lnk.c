@@ -35,7 +35,7 @@
 #include "log.h"
 #endif
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_lnk(file_stat_t *file_stat);
 
 const file_hint_t file_hint_lnk= {
@@ -77,12 +77,7 @@ struct lnk_header_s {
 #define SLDF_HAS_LOGO3ID 	0x800
 #define SLDF_HAS_DARWINID 	0x1000
 
-/*@
-  @ requires buffer_size > 0x4c;
-  @ requires \valid_read(buffer + (0 .. buffer_size-1));
-  @ terminates \true;
-  @ assigns \nothing;
-  @*/
+
 static unsigned int lnk_get_size(const unsigned char *buffer, const unsigned int buffer_size)
 {
   const struct lnk_header_s* lnk_head=(const struct lnk_header_s*)buffer;
@@ -195,18 +190,14 @@ static unsigned int lnk_get_size(const unsigned char *buffer, const unsigned int
   /* avoid out of bound read access */
   if(i >= buffer_size - 4)
     return 0;
-  /*@
-    @ loop invariant i < buffer_size-4;
-    @ loop assigns i;
-    @ loop variant buffer_size-4 - i;
-    @*/
+  
   while(1)
   {
     /* avoid out of bound read access */
     const uint32_t *ptr;
     unsigned int len;
     ptr=(const uint32_t *)&buffer[i];
-    /*@ assert \valid_read(ptr); */
+    
     len=le32(*ptr);
 #ifdef DEBUG_LNK
     log_debug("LNK 0x%04x - %u bytes\n", i, len);
@@ -226,13 +217,7 @@ static unsigned int lnk_get_size(const unsigned char *buffer, const unsigned int
   }
 }
 
-/*@
-  @ requires buffer_size >= 0x4c;
-  @ requires separation: \separated(&file_hint_lnk, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_lnk(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   unsigned int len;

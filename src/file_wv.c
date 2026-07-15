@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "common.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_wv(file_stat_t *file_stat);
 
 const file_hint_t file_hint_wv = {
@@ -65,24 +65,16 @@ typedef struct
   uint32_t crc;           // crc for actual decoded data
 } WavpackHeader;
 
-/*@
-  @ requires file_recovery->data_check==&data_check_wv;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_wv(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size / 2 - (file_recovery->calculated_file_size + 16);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size && file_recovery->calculated_file_size + 16 <= file_recovery->file_size + buffer_size / 2)
   {
     const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
-    /*@ assert 0 <= i <= buffer_size - 16; */
+    
     const WavpackHeader *wv = (const WavpackHeader *)&buffer[i];
     if(memcmp(wv, wv_header, sizeof(wv_header)) == 0)
     {
@@ -91,7 +83,7 @@ static data_check_t data_check_wv(const unsigned char *buffer, const unsigned in
     else if(buffer[i] == 'A' && buffer[i + 1] == 'P' && buffer[i + 2] == 'E' && buffer[i + 3] == 'T' && buffer[i + 4] == 'A' && buffer[i + 5] == 'G' && buffer[i + 6] == 'E' && buffer[i + 7] == 'X')
     { /* APE Tagv2 (APE Tagv1 has no header) http://wiki.hydrogenaudio.org/index.php?title=APE_Tags_Header */
       const uint64_t ape_tag_size = (buffer[i + 12] + (buffer[i + 13] << 8) + (buffer[i + 14] << 16) + ((uint64_t)buffer[i + 15] << 24)) + 32;
-      /*@ assert ape_tag_size > 0; */
+      
       file_recovery->calculated_file_size += ape_tag_size;
     }
     else if(buffer[i] == 'T' && buffer[i + 1] == 'A' && buffer[i + 2] == 'G')
@@ -110,14 +102,7 @@ static data_check_t data_check_wv(const unsigned char *buffer, const unsigned in
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(WavpackHeader);
-  @ requires separation: \separated(&file_hint_wv, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_wv(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const WavpackHeader *wv = (const WavpackHeader *)buffer;

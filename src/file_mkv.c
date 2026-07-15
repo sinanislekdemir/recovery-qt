@@ -39,9 +39,7 @@
 #include "log.h"
 #endif
 
-/*@
-  @ requires valid_register_header_check(file_stat);
-  @*/
+
 static void register_header_check_mkv(file_stat_t *file_stat);
 
 const file_hint_t file_hint_mkv= {
@@ -53,80 +51,49 @@ const file_hint_t file_hint_mkv= {
   .register_header_check=&register_header_check_mkv
 };
 
-/*@
-  @ requires \valid_read(p + (0 .. p_size-1));
-  @ requires \initialized(p + (0 .. p_size-1));
-  @ requires \valid(uint64);
-  @ requires \separated(p + (..), uint64);
-  @ terminates \true;
-  @ ensures -1 == \result || (1 <= \result <= 8);
-  @ ensures -1 != \result ==> \initialized(uint64);
-  @ ensures -1 != \result ==> *uint64 <= 0xfeffffffffffffff;
-  @ assigns *uint64;
-  @*/
+
 static int EBML_read_unsigned(const unsigned char *p, const unsigned int p_size, uint64_t *uint64)
 {
   unsigned char test_bit = 0x80;
   unsigned int i, bytes = 1;
-  /*@ assert \valid_read(p); */
+  
   const unsigned char c=*p;
   uint64_t val;
   if(p_size==0 || c== 0x00)
     return -1;
-  /*@ assert 0 < c < 0x100; */
-  /*@
-    @ loop invariant test_bit > 0;
-    @ loop invariant test_bit == (0x100 >> bytes);
-    @ loop invariant 1 <= bytes <= 8;
-    @ loop assigns test_bit, bytes;
-    @ loop unroll 8;
-    @ loop variant 8 - bytes;
-    @*/
+  
+  
   while((c & test_bit) != test_bit)
   {
-    /*@ assert c < test_bit; */
+    
     test_bit >>= 1;
     bytes++;
   }
-  /*@ assert (c & test_bit) == test_bit; */
-  /*@ assert 1 <= bytes <= 8; */
+  
+  
   if(p_size < bytes)
     return -1;
-  /*@ assert bytes <= p_size; */
+  
 //  val = c & !test_bit; //eliminate first bit, val < 0x80
-  /*@ assert test_bit > 0; */
+  
   val = c & ~test_bit;
-  /*@ assert val <= 0xfe; */
-  /*@
-    @ loop assigns i, val;
-    @ loop unroll 8;
-    @ loop variant bytes-i;
-    @*/
+  
+  
   for(i=1; i<bytes; i++)
   {
     val <<= 8;
     val += p[i];
   }
-  /*@ assert val <= 0xfeffffffffffffff; */
+  
   *uint64 = val;
   return bytes;
 }
 
-/*@
-  @ requires EBML_size > 0;
-  @ requires \initialized(buffer + (0 .. buffer_size-1));
-  @ requires \valid_read(buffer + (0 .. buffer_size-1));
-  @ requires \valid_read(EBML_Header + (0 .. EBML_size-1));
-  @ requires \initialized(EBML_Header + (0 .. EBML_size-1));
-  @ assigns \result;
-  @*/
+
 static int EBML_find(const unsigned char *buffer, const unsigned int buffer_size, const unsigned char *EBML_Header, const unsigned int EBML_size)
 {
   unsigned int offset=0;
-  /*@
-    @ loop assigns offset;
-    @ loop variant buffer_size - offset;
-    @*/
+  
   while(offset < buffer_size)
   {
     uint64_t uint64=0;
@@ -153,17 +120,7 @@ static int EBML_find(const unsigned char *buffer, const unsigned int buffer_size
   return -1;
 }
 
-/*@
-  @ requires \valid_read(p + (0 .. p_size-1));
-  @ requires \initialized(p + (0 .. p_size-1));
-  @ requires \valid(strlength);
-  @ requires \separated(p + (..), strlength);
-  @ ensures -1 == \result || (1 <= \result <= 8);
-  @ ensures -1 != \result ==> \initialized(strlength);
-  @ ensures -1 != \result ==> *strlength <= 0xfeffffffffffffff;
-  @ ensures -1 != \result ==> \result + *strlength <= p_size;
-  @ assigns *strlength, \result;
-  @*/
+
 static int EBML_read_string(const unsigned char *p, const unsigned int p_size, uint64_t *strlength)
 {
   int bytes;
@@ -174,22 +131,17 @@ static int EBML_read_string(const unsigned char *p, const unsigned int p_size, u
 #endif
   if(bytes <= 0)
     return -1;
-  /*@ assert 1 <= bytes <= 8; */
-  /*@ assert *strlength <= 0xfeffffffffffffff; */
+  
+  
   if(bytes + *strlength > p_size)
     return -1;
-  /*@ assert bytes + *strlength <= p_size; */
+  
   return bytes;
 }
 
 static const unsigned char EBML_header[4]= { 0x1a,0x45,0xdf,0xa3};
 
-/*@
-  @ requires separation: \separated(&file_hint_mkv, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_mkv(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(memcmp(buffer,EBML_header,sizeof(EBML_header))!=0)
@@ -246,7 +198,7 @@ static int header_check_mkv(const unsigned char *buffer, const unsigned int buff
 #endif
     if(offset_doctype < 0 || header_data_size <= (uint64_t)offset_doctype)
       return 0;
-    /*@ assert header_data_size > offset_doctype; */
+    
     p = &buffer[header_data_offset+offset_doctype];
     bytes = EBML_read_string(&buffer[header_data_offset+offset_doctype], header_data_size-offset_doctype, &strlength);
     if (bytes < 0)

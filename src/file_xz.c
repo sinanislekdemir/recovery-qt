@@ -31,7 +31,7 @@
 #include "types.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_xz(file_stat_t *file_stat);
 
 const file_hint_t file_hint_xz = {
@@ -43,25 +43,14 @@ const file_hint_t file_hint_xz = {
   .register_header_check = &register_header_check_xz
 };
 
-/*@
-  @ requires file_recovery->file_check == &file_check_xz;
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @ assigns *file_recovery->handle, errno, file_recovery->file_size;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static void file_check_xz(file_recovery_t *file_recovery)
 {
   const unsigned char xz_footer[2] = { 'Y', 'Z' };
   file_search_footer(file_recovery, xz_footer, sizeof(xz_footer), 0);
 }
 
-/*@
-  @ requires separation: \separated(&file_hint_xz, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_xz(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   reset_file_recovery(file_recovery_new);

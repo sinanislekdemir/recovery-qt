@@ -33,7 +33,7 @@
 #include "common.h"
 #include "log.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_gsm(file_stat_t *file_stat);
 
 const file_hint_t file_hint_gsm= {
@@ -51,26 +51,17 @@ struct block_header
   unsigned char payload[32];
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires file_recovery->data_check==&data_check_gsm;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ terminates \true;
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_gsm(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + sizeof(struct block_header));
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + sizeof(struct block_header) < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - sizeof(struct block_header); */
+    
     const struct block_header *hdr=(const struct block_header *)&buffer[i];
     if(hdr->marker < 0xd0 || hdr->marker > 0xdf)
       return DC_STOP;
@@ -79,30 +70,22 @@ static data_check_t data_check_gsm(const unsigned char *buffer, const unsigned i
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires separation: \separated(&file_hint_gsm, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ terminates \true;
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @*/
+
 static int header_check_gsm(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   unsigned int i=0;
-  /*@ assert file_recovery_new->blocksize <= buffer_size; */
-  /*@
-    @ loop assigns i;
-    @ loop variant file_recovery_new->blocksize - (i+1) * sizeof(struct block_header);
-    @*/
+  
+  
   for(i=0;
       (i+1) * sizeof(struct block_header) <= file_recovery_new->blocksize;
       i++)
   {
-    /*@ assert (i+1) * sizeof(struct block_header) <= file_recovery_new->blocksize; */
-    /*@ assert (i+1) * sizeof(struct block_header) <= buffer_size; */
-    /*@ assert \valid_read(buffer + (0 .. buffer_size-1)); */
-    /*@ assert \valid_read(buffer + (0 .. (i+1) * sizeof(struct block_header)-1)); */
+    
+    
+    
+    
     const struct block_header *hdr=(const struct block_header *)&buffer[i*sizeof(struct block_header)];
-    /*@ assert \valid_read(hdr); */
+    
     if(hdr->marker < 0xd0 || hdr->marker > 0xdf)
       return 0;
   }
@@ -112,7 +95,7 @@ static int header_check_gsm(const unsigned char *buffer, const unsigned int buff
       file_recovery->file_check!=NULL &&
       file_recovery->file_stat->file_hint==&file_hint_gsm)
   {
-    /*@ assert \valid_function(file_recovery->file_check); */
+    
     header_ignored(file_recovery_new);
     return 0;
   }

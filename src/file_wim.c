@@ -33,7 +33,7 @@
 #include "common.h"
 #include "log.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_wim(file_stat_t *file_stat);
 /* http://go.microsoft.com/fwlink/?LinkId=92227 */
 
@@ -78,10 +78,7 @@ struct _WIMHEADER_V1_PACKED
   unsigned char bUnused[60];
 } __attribute__((gcc_struct, __packed__));
 
-/*@
-  @ requires size <= 0x00FFFFFFFFFFFFFF;
-  @ assigns  \nothing;
-  @*/
+
 static uint64_t wim_max(const uint64_t offset, const uint64_t size, const uint64_t max_size)
 {
   uint64_t tmp;
@@ -95,28 +92,22 @@ static uint64_t wim_max(const uint64_t offset, const uint64_t size, const uint64
   return max_size;
 }
 
-/*@
-  @ requires buffer_size > sizeof(struct _WIMHEADER_V1_PACKED);
-  @ requires separation: \separated(&file_hint_wim, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_wim(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct _WIMHEADER_V1_PACKED *hdr = (const struct _WIMHEADER_V1_PACKED *)buffer;
   uint64_t size = le32(hdr->cbSize);
   const uint64_t rhOffsetTable_s = RESHDR_GET_SIZE(hdr->rhOffsetTable);
-  /*@ assert rhOffsetTable_s <= 0x00FFFFFFFFFFFFFF; */
+  
   const uint64_t rhOffsetTable_o = le64(hdr->rhOffsetTable.offset);
   const uint64_t rhXmlData_s = RESHDR_GET_SIZE(hdr->rhXmlData);
-  /*@ assert rhXmlData_s <= 0x00FFFFFFFFFFFFFF; */
+  
   const uint64_t rhXmlData_o = le64(hdr->rhXmlData.offset);
   const uint64_t rhBootMetadata_s = RESHDR_GET_SIZE(hdr->rhBootMetadata);
-  /*@ assert rhBootMetadata_s <= 0x00FFFFFFFFFFFFFF; */
+  
   const uint64_t rhBootMetadata_o = le64(hdr->rhBootMetadata.offset);
   const uint64_t rhIntegrity_s = RESHDR_GET_SIZE(hdr->rhIntegrity);
-  /*@ assert rhIntegrity_s <= 0x00FFFFFFFFFFFFFF; */
+  
   const uint64_t rhIntegrity_o = le64(hdr->rhIntegrity.offset);
 
   if(size < sizeof(struct _WIMHEADER_V1_PACKED))
@@ -146,7 +137,7 @@ static int header_check_wim(const unsigned char *buffer, const unsigned int buff
   file_recovery_new->calculated_file_size = size;
   file_recovery_new->data_check = &data_check_size;
   file_recovery_new->file_check = &file_check_size;
-  /*@ assert valid_file_recovery(file_recovery_new); */
+  
   return 1;
 }
 

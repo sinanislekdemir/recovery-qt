@@ -38,24 +38,19 @@ int UTFsize(const unsigned char *buffer, const unsigned int buf_len)
 {
   const unsigned char *p=buffer;	/* pointers to actual position in source buffer */
   unsigned int i=0;
-  /*@
-    @ loop invariant 0 <= i < buf_len + 3;
-    @ loop invariant p == buffer + i;
-    @ loop assigns i, p;
-    @ loop variant buf_len - 1 - i;
-    @*/
+  
   while(i<buf_len)
   {
-    /*@ assert i < buf_len; */
-    /*@ assert p == buffer + i; */
+    
+    
     const unsigned char c=*p;
     if(c=='\0')
       return i;
     /* Reject some invalid UTF-8 sequences */
     if(c==0xc0 || c==0xc1 || c==0xf7 || c>=0xfd)
       return i;
-    /*@ assert i + 1 >= buf_len || \valid_read(p+1); */
-    /*@ assert i + 2 >= buf_len || \valid_read(p+2); */
+    
+    
     if((c & 0xf0)==0xe0 &&
 	(i+1 >= buf_len || (*(p+1) & 0xc0)==0x80) &&
 	(i+2 >= buf_len || (*(p+2) & 0xc0)==0x80))

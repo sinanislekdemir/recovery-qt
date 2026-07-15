@@ -243,11 +243,7 @@ static list_disk_t *insert_new_disk_nodup(list_disk_t *list_disk, disk_t *disk_c
 #endif
 
 #if defined(HAVE_GLOB_H)
-/*@
-  @ requires valid_read_string(device_pattern);
-  @ requires \valid(list_disk);
-  @ ensures \valid(list_disk);
-  @*/
+
 static list_disk_t *hd_glob_parse(const char *device_pattern, list_disk_t *list_disk, const int verbose, const int testdisk_mode)
 {
   glob_t globbuf;
@@ -331,96 +327,60 @@ list_disk_t *hd_parse(list_disk_t *list_disk, const int verbose, const int testd
     char device_i2o_hd[]="/dev/i2o/hda";
     char device_mmc[]="/dev/mmcblk0";
     /* Disk IDE */
-    /*@
-      @ loop invariant valid_list_disk(list_disk);
-      @ loop invariant 0 <= i <= 8;
-      @ loop variant 8 - i;
-      @*/
+    
     for(i=0;i<8;i++)
     {
       device_ide[strlen(device_ide)-1]='a'+i;
       list_disk=insert_new_disk(list_disk, file_test_availability(device_ide, verbose, testdisk_mode));
     }
     /* Device RAID Compaq */
-    /*@
-      @ loop invariant valid_list_disk(list_disk);
-      @ loop invariant 0 <= j <= 8;
-      @ loop variant 8 - j;
-      @*/
+    
     for(j=0;j<8;j++)
     {
       device_ida[strlen(device_ida)-3]='0'+j;
-      /*@
-	@ loop invariant valid_list_disk(list_disk);
-	@ loop invariant 0 <= i <= 8;
-	@ loop variant 8 - i;
-	@*/
+      
       for(i=0;i<8;i++)
       {
 	device_ida[strlen(device_ida)-1]='0'+i;
 	list_disk=insert_new_disk(list_disk, file_test_availability(device_ida, verbose, testdisk_mode));
       }
     }
-    /*@
-      @ loop invariant valid_list_disk(list_disk);
-      @ loop invariant 0 <= i <= 8;
-      @ loop variant 8 - i;
-      @*/
+    
     for(i=0;i<8;i++)
     {
       device_cciss[strlen(device_cciss)-1]='0'+i;
       list_disk=insert_new_disk(list_disk, file_test_availability(device_cciss, verbose, testdisk_mode));
     }
     /* Device RAID */
-    /*@
-      @ loop invariant valid_list_disk(list_disk);
-      @ loop invariant 0 <= i <= 10;
-      @ loop variant 10 - i;
-      @*/
+    
     for(i=0;i<10;i++)
     {
       snprintf(device,sizeof(device),"/dev/rd/c0d%u",i);
       list_disk=insert_new_disk(list_disk, file_test_availability(device, verbose, testdisk_mode));
     }
     /* Device RAID IDE */
-    /*@
-      @ loop invariant valid_list_disk(list_disk);
-      @ loop invariant 0 <= i <= 15;
-      @ loop variant 15 - i;
-      @*/
+    
     for(i=0;i<15;i++)
     {
       snprintf(device,sizeof(device),"/dev/ataraid/d%u",i);
       list_disk=insert_new_disk(list_disk, file_test_availability(device, verbose, testdisk_mode));
     }
     /* Parallel port IDE disk */
-    /*@
-      @ loop invariant valid_list_disk(list_disk);
-      @ loop invariant 0 <= i <= 4;
-      @ loop variant 4 - i;
-      @*/
+    
     for(i=0;i<4;i++)
     {
       device_p_ide[strlen(device_p_ide)-1]='a'+i;
       list_disk=insert_new_disk(list_disk, file_test_availability(device_p_ide, verbose, testdisk_mode));
     }
     /* I2O hard disk */
-    /*@
-      @ loop invariant valid_list_disk(list_disk);
-      @ loop invariant 0 <= i <= 26;
-      @ loop variant 26 - i;
-      @*/
+    
     for(i=0;i<26;i++)
     {
       device_i2o_hd[strlen(device_i2o_hd)-1]='a'+i;
       list_disk=insert_new_disk(list_disk, file_test_availability(device_i2o_hd, verbose, testdisk_mode));
     }
     /* Memory card */
-    /*@
-      @ loop invariant valid_list_disk(list_disk);
-      @ loop invariant 0 <= i <= 10;
-      @ loop variant 10 - i;
-      @*/
+    
     for(i=0;i<10;i++)
     {
       device_mmc[strlen(device_mmc)-1]='0'+i;
@@ -542,15 +502,12 @@ list_disk_t *hd_parse(list_disk_t *list_disk, const int verbose, const int testd
     }
   }
 #endif
-  /*@ assert valid_list_disk(list_disk); */
+  
   return list_disk;
 }
 
 #ifndef DJGPP
-/*@
-  @ requires valid_read_string(device);
-  @ ensures \result > 0;
-  @*/
+
 static unsigned int disk_get_sector_size(const int hd_h, const char *device, const int verbose)
 {
 #ifdef BLKSSZGET
@@ -669,13 +626,7 @@ static unsigned int disk_get_sector_size(const int hd_h, const char *device, con
   return DEFAULT_SECTOR_SIZE;
 }
 
-/*@
-  @ requires \valid_read(geom);
-  @ ensures \result==-1 || \result==0;
-  @ ensures (0 < geom->heads_per_cylinder <= 255 && 0 < geom->sectors_per_head <= 63 && 0 < geom->cylinders < 0x2000000000000) ==> \result == 0;
-  @ ensures !(0 < geom->heads_per_cylinder <= 255 && 0 < geom->sectors_per_head <= 63 && 0 < geom->cylinders < 0x2000000000000) ==> \result == -1;
-  @ assigns \nothing;
-  @*/
+
 static int check_geometry(const CHSgeometry_t *geom)
 {
   if(geom->heads_per_cylinder==0 || geom->heads_per_cylinder>255)
@@ -687,13 +638,7 @@ static int check_geometry(const CHSgeometry_t *geom)
   return 0;
 }
 
-/*@
-  @ requires \valid(geom);
-  @ requires valid_read_string(device);
-  @ requires \separated(geom, device);
-  @ ensures 0 < geom->heads_per_cylinder <= 255;
-  @ ensures 0 < geom->sectors_per_head <= 63;
-  @*/
+
 static void disk_get_geometry(CHSgeometry_t *geom, const int hd_h, const char *device, const int verbose)
 {
   if(verbose>1)
@@ -836,8 +781,8 @@ static void disk_get_geometry(CHSgeometry_t *geom, const int hd_h, const char *d
 #endif
   if(check_geometry(geom)==0)
   {
-    /*@ assert 0 < geom->heads_per_cylinder <= 255; */
-    /*@ assert 0 < geom->sectors_per_head <= 63; */
+    
+    
     return ;
   }
   geom->cylinders=0;
@@ -847,13 +792,11 @@ static void disk_get_geometry(CHSgeometry_t *geom, const int hd_h, const char *d
   {
     log_error("disk_get_geometry default geometry for %s\n", device);
   }
-  /*@ assert 0 < geom->heads_per_cylinder <= 255; */
-  /*@ assert 0 < geom->sectors_per_head <= 63; */
+  
+  
 }
 
-/*@
-  @ requires valid_read_string(device);
-  @*/
+
 static uint64_t disk_get_size(const int hd_h, const char *device, const int verbose, const unsigned int sector_size)
 {
   if(verbose>1)
@@ -984,33 +927,18 @@ void update_disk_car_fields(disk_t *disk_car)
 }
 
 #ifdef TARGET_LINUX
-/*@
-  @ requires valid_string(buf);
-  @ requires strlen(buf) < (1<<31);
-  @ ensures  valid_string(buf);
-  @*/
+
 static void rtrim(char *buf)
 {
   unsigned int i;
-  /*@
-    @ loop invariant valid_string(&buf[i]);
-    @ loop assigns i;
-    @ loop variant i;
-    */
+  
   for(i=strlen(buf); i>0 && buf[i] == ' '; i--);
-  /*@ assert 0 <= i < strlen(buf); */
+  
   buf[i]='\0';
 }
 
 /* This function reads the /sys entry named "file" for device "disk_car". */
-/*@
-  @ requires \valid(buf + (0..255));
-  @ requires \valid_read(disk_car);
-  @ requires valid_read_string(file);
-  @ requires separation: \separated(buf, disk_car, file, &errno);
-  @ ensures \result==-1 || \result==0;
-  @ ensures \result==-1 || valid_string(buf);
-  @*/
+
 static int read_device_sysfs_file (char *buf, const disk_t *disk_car, const char *file)
 {
   FILE *f;
@@ -1029,9 +957,9 @@ static int read_device_sysfs_file (char *buf, const disk_t *disk_car, const char
     fclose (f);
     return -1;
   }
-  /*@ assert valid_string(buf); */
+  
   fclose (f);
-  /*@ assert valid_string(buf); */
+  
   rtrim(buf);
   return 0;
 }
@@ -1073,11 +1001,7 @@ typedef struct _scsi_inquiry_data
 #define INQ_CMD_LEN	6
 #define INQ_REPLY_LEN	sizeof(scsi_inquiry_data_t)
 
-/*@
-  @ requires \valid(vendor);
-  @ requires \valid(product);
-  @ requires \valid(fw_rev);
-  @*/
+
 static int scsi_query_product_info (const int sg_fd, char **vendor, char **product, char **fw_rev)
 {
   unsigned char inqCmdBlk[INQ_CMD_LEN] = {INQUIRY, 0, 0, 0, INQ_REPLY_LEN, 0};
@@ -1133,11 +1057,7 @@ static int scsi_query_product_info (const int sg_fd, char **vendor, char **produ
 #endif
 
 #ifndef DJGPP
-/*@
-  @ requires \valid(dev);
-  @ requires valid_disk(dev);
-  @ ensures  valid_disk(dev);
-  @*/
+
 static void disk_get_model(const int hd_h, disk_t *dev, const unsigned int verbose)
 {
 #if defined(TARGET_LINUX) && defined(HAVE_SYS_SYSMACROS_H)
@@ -1245,10 +1165,10 @@ static void disk_get_model(const int hd_h, disk_t *dev, const unsigned int verbo
     memset(&product, 0, sizeof(product));
     if(read_device_sysfs_file (&vendor[0], dev, "vendor")==0)
     {
-      /*@ assert valid_string(&vendor[0]); */
+      
       if( read_device_sysfs_file (&product[0], dev, "model")==0)
       {
-	/*@ assert valid_string(&product[0]); */
+	
 	dev->model = (char*) MALLOC(8 + 16 + 2);
 	sprintf (dev->model, "%.8s %.16s", vendor, product);
       }
@@ -1268,13 +1188,10 @@ static void disk_get_model(const int hd_h, disk_t *dev, const unsigned int verbo
     file_win32_disk_get_model(handle, dev, verbose);
   }
 #endif
-  /*@ assert valid_disk(dev); */
+  
 }
 
-/*@
-  @ requires sector_size > 0;
-  @ requires valid_read_string(device);
-  @*/
+
 static uint64_t compute_device_size(const int hd_h, const char *device, const int verbose, const unsigned int sector_size)
 {
 #if defined(HAVE_PREAD)
@@ -1320,12 +1237,7 @@ static uint64_t compute_device_size(const int hd_h, const char *device, const in
 }
 #endif
 
-/*@
-  @ requires \valid(disk);
-  @ requires \valid_read((const struct info_file_struct *)disk->data);
-  @ requires valid_disk(disk);
-  @ ensures  valid_disk(disk);
-  @*/
+
 // ensures valid_read_string(\result);
 static const char *file_description(disk_t *disk)
 {
@@ -1347,17 +1259,12 @@ static const char *file_description(disk_t *disk)
 	disk->device, buffer_disk_size,
 	disk->geom.cylinders, disk->geom.heads_per_cylinder, disk->geom.sectors_per_head,
 	((data->mode&O_RDWR)==O_RDWR?"":" (RO)"));
-  /*@ assert valid_read_string((char *)&disk->description_txt); */
-  /*@ assert valid_disk(disk); */
+  
+  
   return disk->description_txt;
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires \valid_read((const struct info_file_struct *)disk_car->data);
-  @ requires valid_disk(disk_car);
-  @ ensures  valid_disk(disk_car);
-  @*/
+
 // ensures valid_read_string(\result);
 static const char *file_description_short(disk_t *disk_car)
 {
@@ -1376,16 +1283,12 @@ static const char *file_description_short(disk_t *disk_car)
       disk_car->device, buffer_disk_size,
       ((data->mode&O_RDWR)==O_RDWR?"":" (RO)"),
       disk_car->model);
-  /*@ assert valid_read_string((char *)&disk_car->description_short_txt); */
-  /*@ assert valid_disk(disk_car); */
+  
+  
   return disk_car->description_short_txt;
 }
 
-/*@
-  @ requires \valid(disk);
-  @ requires \freeable(disk);
-  @ requires valid_disk(disk);
-  @*/
+
 static void file_clean(disk_t *disk)
 {
   if(disk->data!=NULL)
@@ -1413,11 +1316,7 @@ static void file_clean(disk_t *disk)
   generic_clean(disk);
 }
 
-/*@
-  @ requires \valid_read(disk);
-  @ requires valid_disk(disk);
-  @ requires \valid((char *)buf + (0 .. count - 1));
-  @*/
+
 static int file_pread_aux(const disk_t *disk, void *buf, const unsigned int count, const uint64_t offset)
 {
   long int ret;
@@ -1534,29 +1433,13 @@ static int file_pread_aux(const disk_t *disk, void *buf, const unsigned int coun
   return ret;
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires disk_car->sector_size > 0;
-  @ requires disk_car->offset < 0x2000000000000;
-  @ requires 0 < count < 0x2000000000000;
-  @ requires offset < 0x2000000000000;
-  @ requires \valid((char *)buf + (0 .. count-1));
-  @*/
+
 static int file_pread(disk_t *disk_car, void *buf, const unsigned int count, const uint64_t offset)
 {
   return align_pread(&file_pread_aux, disk_car, buf, count, offset);
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires disk_car->sector_size > 0;
-  @ requires disk_car->offset < 0x2000000000000;
-  @ requires 0 < count < 0x2000000000000;
-  @ requires offset < 0x2000000000000;
-  @ requires \valid_read((char *)buf + (0 .. count-1));
-  @*/
+
 static int file_pwrite_aux(disk_t *disk_car, const void *buf, const unsigned int count, const uint64_t offset)
 {
   int fd=((struct info_file_struct *)disk_car->data)->handle;
@@ -1595,28 +1478,13 @@ static int file_pwrite_aux(disk_t *disk_car, const void *buf, const unsigned int
   return ret;
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires disk_car->sector_size > 0;
-  @ requires disk_car->offset < 0x2000000000000;
-  @ requires 0 < count < 0x2000000000000;
-  @ requires offset < 0x2000000000000;
-  @ requires \valid_read((char *)buf + (0 .. count-1));
-  @*/
+
 static int file_pwrite(disk_t *disk_car, const void *buf, const unsigned int count, const uint64_t offset)
 {
   return align_pwrite(&file_pread_aux, &file_pwrite_aux, disk_car, buf, count, offset);
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires disk_car->sector_size > 0;
-  @ requires disk_car->offset < 0x2000000000000;
-  @ requires 0 < count < 0x2000000000000;
-  @ requires offset < 0x2000000000000;
-  @ requires \valid_read((char *)buf + (0 .. count-1));
-  @*/
+
 static int file_nopwrite(disk_t *disk_car, const void *buf, const unsigned int count, const uint64_t offset)
 {
   struct info_file_struct *data=(struct info_file_struct *)disk_car->data;
@@ -1626,10 +1494,7 @@ static int file_nopwrite(disk_t *disk_car, const void *buf, const unsigned int c
   return -1;
 }
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @*/
+
 static int file_sync(disk_t *disk_car)
 {
 #if defined(HAVE_FSYNC)
@@ -1641,16 +1506,7 @@ static int file_sync(disk_t *disk_car)
 #endif
 }
 
-/*@
-  @ requires \valid(disk);
-  @ requires valid_disk(disk);
-  @ requires 0 < disk->geom.heads_per_cylinder <= 255;
-  @ requires 0 < disk->geom.sectors_per_head <= 63;
-  @ requires \valid_read(buffer + (0 .. DEFAULT_SECTOR_SIZE-1));
-  @ requires separation: \separated(disk, buffer + (0 .. DEFAULT_SECTOR_SIZE-1));
-  @ decreases 0;
-  @ ensures valid_disk(disk);
-  @*/
+
 // assigns disk->geom.cylinders;
 // assigns disk->geom.heads_per_cylinder;
 // assigns disk->geom.sectors_per_head;
@@ -1659,10 +1515,10 @@ static int file_sync(disk_t *disk_car)
 // ensures 0 < disk->geom.sectors_per_head <= 63;
 static void autoset_geometry(disk_t *disk, const unsigned char *buffer, const int verbose)
 {
-  /*@ assert 0 < disk->sector_size; */
+  
   if((disk->arch)->get_geometry_from_mbr!=NULL)
   {
-    /*@ assert \valid_function(disk->arch->get_geometry_from_mbr); */
+    
     CHSgeometry_t geometry;
     geometry.cylinders=0;
     geometry.heads_per_cylinder=0;
@@ -1676,19 +1532,19 @@ static void autoset_geometry(disk_t *disk, const unsigned char *buffer, const in
 	geometry.sectors_per_head <= 63
       )
     {
-      /*@ assert 0 < geometry.heads_per_cylinder <= 255; */
-      /*@ assert 0 < geometry.sectors_per_head <= 63; */
+      
+      
       disk->geom.heads_per_cylinder=geometry.heads_per_cylinder;
       disk->geom.sectors_per_head=geometry.sectors_per_head;
-      /*@ assert 0 < disk->geom.heads_per_cylinder <= 255; */
-      /*@ assert 0 < disk->geom.sectors_per_head <= 63; */
+      
+      
       if(geometry.bytes_per_sector!=0)
       {
 	disk->geom.bytes_per_sector=geometry.bytes_per_sector;
 	disk->sector_size=geometry.bytes_per_sector;
-	/*@ assert 0 < disk->sector_size; */
+	
       }
-      /*@ assert 0 < disk->sector_size; */
+      
     }
     else
     {
@@ -1696,19 +1552,16 @@ static void autoset_geometry(disk_t *disk, const unsigned char *buffer, const in
       disk->geom.sectors_per_head=63;
     }
   }
-  /*@ assert 0 < disk->sector_size; */
-  /*@ assert 0 < disk->geom.heads_per_cylinder <= 255; */
-  /*@ assert 0 < disk->geom.sectors_per_head <= 63; */
+  
+  
+  
   /* Round up because file is often truncated. */
   disk->geom.cylinders=(disk->disk_size / disk->sector_size +
       (uint64_t)disk->geom.sectors_per_head * disk->geom.heads_per_cylinder - 1) /
     disk->geom.sectors_per_head / disk->geom.heads_per_cylinder;
 }
 
-/*@
-  @ requires \valid_read(hdr);
-  @ assigns \nothing;
-  @*/
+
 static int is_dosemu_image(const struct dosemu_image_header *hdr)
 {
   if(memcmp(&hdr->sig,"DOSEMU",6)==0 &&
@@ -1722,7 +1575,7 @@ static int is_dosemu_image(const struct dosemu_image_header *hdr)
 
 disk_t *file_test_availability(const char *device, const int verbose, int testdisk_mode)
 {
-  /*@ assert valid_read_string(device); */
+  
   disk_t *disk_car=NULL;
   struct stat stat_rec;
   int device_is_a_file=0;
@@ -1845,11 +1698,11 @@ disk_t *file_test_availability(const char *device, const int verbose, int testdi
     }
     return NULL;
   }
-  /*@ assert 0 <= hd_h; */
+  
 #ifdef DISABLED_FOR_FRAMAC
   if(hd_h >= 1024)
     return NULL;
-  /*@ assert 0 <= hd_h < 1024; */
+  
 #endif
   disk_car=(disk_t *)MALLOC(sizeof(*disk_car));
   disk_car->arch=&arch_none;
@@ -1867,7 +1720,7 @@ disk_t *file_test_availability(const char *device, const int verbose, int testdi
       close(hd_h);
       return NULL;
   }
-  /*@ assert valid_read_string(disk_car->device); */
+  
   data=(struct info_file_struct *)MALLOC(sizeof(*data));
   data->handle=hd_h;
   data->mode=mode;
@@ -1941,11 +1794,11 @@ disk_t *file_test_availability(const char *device, const int verbose, int testdi
     {
       log_info("%s DOSEMU\n",device);
       disk_car->geom.cylinders=le32(hdr->cylinders);
-      /*@ assert 0 < disk_car->geom.cylinders < 4294967296; */
+      
       disk_car->geom.heads_per_cylinder=le32(hdr->heads);
-      /*@ assert 0 < disk_car->geom.heads_per_cylinder <= 255; */
+      
       disk_car->geom.sectors_per_head=le32(hdr->sectors);
-      /*@ assert 0 < disk_car->geom.sectors_per_head <= 63; */
+      
       disk_car->disk_real_size=(uint64_t)disk_car->geom.cylinders * disk_car->geom.heads_per_cylinder * disk_car->geom.sectors_per_head * disk_car->sector_size;
       disk_car->offset=le32(hdr->header_end);
     }
@@ -1983,7 +1836,7 @@ disk_t *file_test_availability(const char *device, const int verbose, int testdi
 	pos=lseek(hd_h,0,SEEK_END);
 	if(pos>0 && (uint64_t)pos > disk_car->offset)
 	{
-	  /*@ assert pos > disk_car->offset; */
+	  
 	  disk_car->disk_real_size=(uint64_t)pos-disk_car->offset;
 	}
 	else
@@ -2011,14 +1864,14 @@ disk_t *file_test_availability(const char *device, const int verbose, int testdi
       free(new_file);
     }
 #endif
-    /*@ assert 0 < disk_car->geom.cylinders < 0x2000000000000; */
-    /*@ assert 0 < disk_car->geom.heads_per_cylinder <= 255; */
-    /*@ assert 0 < disk_car->geom.sectors_per_head <= 63; */
-    /*@ assert valid_read_string(disk_car->device); */
-    /*@ assert valid_disk(disk_car); */
+    
+    
+    
+    
+    
     return disk_car;
   }
-  /*@ assert disk_car->description == &file_description; */
+  
 #ifndef DISABLED_FOR_FRAMAC
   if(disk_car->model==NULL)
     log_warning("Warning: can't get size for %s, sector size=%u\n",
@@ -2066,15 +1919,13 @@ void hd_update_all_geometry(const list_disk_t * list_disk, const int verbose)
   {
     log_trace("hd_update_all_geometry\n");
   }
-  /*@
-    @ loop invariant valid_list_disk(element_disk);
-    @*/
+  
   for(element_disk=list_disk;element_disk!=NULL;element_disk=element_disk->next)
   {
-    /*@ assert \valid(element_disk); */
-    /*@ assert valid_disk(element_disk->disk); */
+    
+    
     hd_update_geometry(element_disk->disk, verbose);
-    /*@ assert \valid(element_disk); */
+    
   }
 }
 

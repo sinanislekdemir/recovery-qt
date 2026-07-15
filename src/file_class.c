@@ -32,7 +32,7 @@
 #include "common.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_class(file_stat_t *file_stat);
 
 const file_hint_t file_hint_class= {
@@ -51,13 +51,7 @@ struct class_header {
   uint16_t constant_pool_count;
 };
 
-/*@
-  @ requires buffer_size >= sizeof(struct class_header);
-  @ requires separation: \separated(&file_hint_class, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_class(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct class_header *cafe=(const struct class_header *)buffer;

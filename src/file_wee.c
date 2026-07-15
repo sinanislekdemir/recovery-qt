@@ -31,7 +31,7 @@
 #include "types.h"
 #include "filegen.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_wee(file_stat_t *file_stat);
 
 const file_hint_t file_hint_wee = {
@@ -43,13 +43,7 @@ const file_hint_t file_hint_wee = {
   .register_header_check = &register_header_check_wee
 };
 
-/*@
-  @ requires file_recovery->file_check == &file_check_wee;
-  @ requires valid_file_check_param(file_recovery);
-  @ ensures  valid_file_check_result(file_recovery);
-  @ assigns *file_recovery->handle, errno, file_recovery->file_size;
-  @ assigns Frama_C_entropy_source;
-  @*/
+
 static void file_check_wee(file_recovery_t *file_recovery)
 {
   const unsigned char wee_footer[7] = {
@@ -58,13 +52,7 @@ static void file_check_wee(file_recovery_t *file_recovery)
   file_search_footer(file_recovery, wee_footer, sizeof(wee_footer), 17);
 }
 
-/*@
-  @ requires buffer_size >= 0x1b + 0xa;
-  @ requires separation: \separated(&file_hint_wee, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_wee(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   if(buffer[0x1a] != 0xa || memcmp(&buffer[0x1b], "onMetaData", 0x0a) != 0)

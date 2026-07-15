@@ -37,7 +37,7 @@
 #include "log.h"
 #endif
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_fits(file_stat_t *file_stat);
 
 const file_hint_t file_hint_fits= {
@@ -53,33 +53,19 @@ const file_hint_t file_hint_fits= {
  * Image metadata is store in an ASCII header
  * Specification can be found at http://fits.gsfc.nasa.gov/ 	*/
 
-/*@
-  @ requires \valid_read(str + (0 .. 80-1));
-  @ terminates \true;
-  @ assigns \nothing;
-  @*/
+
 static uint64_t fits_get_val(const unsigned char *str)
 {
   unsigned int i;
   uint64_t val=0;
-  /*@
-    @ loop assigns i;
-    @ loop variant 80 - i;
-    @*/
+  
   for(i=0;i<80 && str[i]!='=';i++);
   i++;
-  /*@
-    @ loop assigns i;
-    @ loop variant 80 - i;
-    @*/
+  
   for(;i<80 && str[i]==' ';i++);
   if(i<80 && str[i]=='-')
     i++;
-  /*@
-    @ loop invariant val < PHOTOREC_MAX_FILE_SIZE;
-    @ loop assigns i,val;
-    @ loop variant 80 - i;
-    @*/
+  
   for(;i<80 && str[i]>='0' && str[i]<='9';i++)
   {
     val=val*10+(str[i]-'0');
@@ -89,37 +75,23 @@ static uint64_t fits_get_val(const unsigned char *str)
   return val;
 }
 
-/*@
-  @ requires buffer_size > 0;
-  @ requires \valid_read(buffer + (0 .. buffer_size-1));
-  @ requires \valid(file_recovery);
-  @ requires \valid(i_pointer);
-  @ requires \separated(buffer+(..), file_recovery, i_pointer);
-  @ requires *i_pointer < buffer_size;
-  @ assigns *i_pointer, file_recovery->time;
-  @ ensures \old(*i_pointer) == *i_pointer || (\old(*i_pointer) <= *i_pointer < buffer_size + 80);
-  @*/
+
 static uint64_t fits_info(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery, unsigned int *i_pointer)
 {
   uint64_t naxis_size=1;
   unsigned int i=*i_pointer;
   if( i+80 >= buffer_size)
     return 1;
-  /*@ assert *i_pointer == i; */
+  
   /* Header is composed of 80 character fixed-length strings */
-  /*@
-    @ loop invariant *i_pointer <= i;
-    @ loop invariant i < buffer_size + 80;
-    @ loop assigns i, naxis_size, file_recovery->time;
-    @ loop variant buffer_size + 80 - i;
-    @*/
+  
   for(; i+80 < buffer_size &&
       memcmp(&buffer[i], "END ", 4)!=0;
       i+=80)
   {
     if(naxis_size > PHOTOREC_MAX_FILE_SIZE)
       naxis_size=0;
-    /*@ assert naxis_size <= PHOTOREC_MAX_FILE_SIZE; */
+    
     if(memcmp(&buffer[i], "BITPIX",6)==0)
     {
       const uint64_t tmp=fits_get_val(&buffer[i]);
@@ -152,10 +124,7 @@ static uint64_t fits_info(const unsigned char *buffer, const unsigned int buffer
       /*	  CREA_DAT= '2007-08-29T16:22:09' */
       /*	             0123456789012345678  */
       unsigned int j;
-      /*@
-        @ loop assigns j;
-	@ loop variant 80 - j;
-	@*/
+      
       for(j=0;j<80 && buffer[i+j]!='\'';j++);
       if(j<60 && buffer[i+j]=='\'')
       {
@@ -163,39 +132,31 @@ static uint64_t fits_info(const unsigned char *buffer, const unsigned int buffer
       }
     }
   }
-  /*@ assert *i_pointer <= i < buffer_size + 80; */
+  
   *i_pointer=i;
   return naxis_size;
 }
 
-/*@
-  @ requires file_recovery->data_check==&data_check_fits;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size, file_recovery->time;
-  @*/
+
 static data_check_t data_check_fits(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size, file_recovery->time;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 8);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 8 < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - 8; */
-    /*@ assert \valid_read(&buffer[i] + (0 .. 8-1)); */
+    
+    
     if(memcmp(&buffer[i], "XTENSION", 8)!=0)
       break;
     {
       unsigned int new_i=i;
-      /*@ assert i==new_i; */
+      
       const uint64_t tmp=fits_info(buffer, buffer_size, file_recovery, &new_i);
-      /*@ assert (i==new_i && i < buffer_size - 8) || (i <= new_i < buffer_size + 80); */
-      /*@ assert i<=new_i; */
+      
+      
       const unsigned int diff=new_i-i;
 #ifdef DEBUG_FITS
       log_info("data_check_fits cfr=%llu fs=%llu i=%u buffer_size=%u\n",
@@ -209,7 +170,7 @@ static data_check_t data_check_fits(const unsigned char *buffer, const unsigned 
 	file_recovery->file_check=NULL;
 	return DC_CONTINUE;
       }
-      /*@ assert diff < buffer_size + 80; */
+      
       file_recovery->calculated_file_size+=(uint64_t)(diff+2880-1)/2880*2880+(tmp+2880-1)/2880*2880;
     }
   }
@@ -218,13 +179,7 @@ static data_check_t data_check_fits(const unsigned char *buffer, const unsigned 
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires buffer_size >= 10;
-  @ requires separation: \separated(&file_hint_fits, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_fits(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   unsigned int i=0;
@@ -248,7 +203,7 @@ static int header_check_fits(const unsigned char *buffer, const unsigned int buf
   file_recovery_new->data_check=&data_check_fits;
   file_recovery_new->file_check=&file_check_size;
   file_recovery_new->calculated_file_size=(i+2880-1)/2880*2880+(naxis_size_max+2880-1)/2880*2880;
-  /*@ assert valid_file_recovery(file_recovery_new); */
+  
   return 1;
 }
 

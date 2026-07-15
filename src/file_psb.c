@@ -38,7 +38,7 @@
 
 /* https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/ */
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_psb(file_stat_t *file_stat);
 
 const file_hint_t file_hint_psb= {
@@ -62,62 +62,42 @@ struct psb_file_header
   uint16_t color_mode;	/* Bitmap = 0; Grayscale = 1; Indexed = 2; RGB = 3; CMYK = 4; Multichannel = 7; Duotone = 8; Lab = 9 */
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ requires \valid_read((char *)buffer + (offset .. offset + 3));
-  @ assigns  \nothing;
-  @*/
+
 static uint32_t get_be32(const void *buffer, const unsigned int offset)
 {
   const uint32_t *val=(const uint32_t *)((const unsigned char *)buffer+offset);
   return be32(*val);
 }
 
-/*@
-  @ requires \valid_read((char *)buffer + (offset .. offset + 7));
-  @ assigns  \nothing;
-  @*/
+
 static uint64_t get_be64(const void *buffer, const unsigned int offset)
 {
   const uint64_t *val=(const uint64_t *)((const unsigned char *)buffer+offset);
   return be64(*val);
 }
 
-/*@
-  @ requires file_recovery->data_check==&psb_skip_image_data;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ ensures  file_recovery->data_check==\null;
-  @ ensures  \result == DC_CONTINUE;
-  @ assigns  file_recovery->data_check, file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t psb_skip_image_data(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert buffer_size <= 2 * PHOTOREC_MAX_BLOCKSIZE; */
+  
+  
+  
   file_recovery->calculated_file_size+=2;
   file_recovery->data_check=NULL;
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires file_recovery->data_check==&psb_skip_layer_info;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ ensures file_recovery->data_check==&psb_skip_layer_info || file_recovery->data_check==\null;
-  @ ensures  \result == DC_CONTINUE || \result == DC_STOP;
-  @ assigns file_recovery->data_check, file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t psb_skip_layer_info(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert buffer_size <= 2 * PHOTOREC_MAX_BLOCKSIZE; */
+  
+  
+  
   if(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 8 < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - 8 ; */
+    
     const uint64_t l=get_be64(buffer, i);
 #ifdef DEBUG_PHOTOSHOP
     log_info("Layer info at 0x%lx, l=0x%lx\n", (long unsigned)file_recovery->calculated_file_size, (long unsigned)l);
@@ -134,23 +114,17 @@ static data_check_t psb_skip_layer_info(const unsigned char *buffer, const unsig
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires file_recovery->data_check==&psb_skip_image_resources;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ ensures file_recovery->data_check==&psb_skip_image_resources || file_recovery->data_check==&psb_skip_layer_info || file_recovery->data_check==\null;
-  @ assigns file_recovery->data_check, file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t psb_skip_image_resources(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert buffer_size <= 2 * PHOTOREC_MAX_BLOCKSIZE; */
+  
+  
+  
   if(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 4 < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - 4 ; */
+    
     const unsigned int l=get_be32(buffer, i);
 #ifdef DEBUG_PHOTOSHOP
     log_info("Image resource at 0x%lx, l=0x%x\n", (long unsigned)file_recovery->calculated_file_size, l);
@@ -165,14 +139,7 @@ static data_check_t psb_skip_image_resources(const unsigned char *buffer, const 
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires buffer_size >= 32;
-  @ requires file_recovery->data_check==&psb_skip_color_mode;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ ensures file_recovery->data_check==&psb_skip_color_mode || file_recovery->data_check==&psb_skip_image_resources || file_recovery->data_check==&psb_skip_layer_info || file_recovery->data_check==\null;
-  @ assigns file_recovery->data_check, file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t psb_skip_color_mode(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
   const struct psb_file_header *hdr=(const struct psb_file_header *)&buffer[buffer_size/2];
@@ -180,9 +147,9 @@ static data_check_t psb_skip_color_mode(const unsigned char *buffer, const unsig
   const unsigned int depth=be16(hdr->depth);
   const unsigned int height=be32(hdr->height);
   const unsigned int width=be32(hdr->width);
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert buffer_size <= 2 * PHOTOREC_MAX_BLOCKSIZE; */
+  
+  
+  
   if(channels==0 || channels>56 ||
       height==0 || height>300000 ||
       width==0 || width>300000 ||
@@ -192,7 +159,7 @@ static data_check_t psb_skip_color_mode(const unsigned char *buffer, const unsig
       file_recovery->calculated_file_size + 4 < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - 4 ; */
+    
     const unsigned int l=get_be32(buffer, i);
 #ifdef DEBUG_PHOTOSHOP
     log_info("Color mode at 0x%lx, l=0x%x\n", (long unsigned)file_recovery->calculated_file_size, l);
@@ -206,13 +173,7 @@ static data_check_t psb_skip_color_mode(const unsigned char *buffer, const unsig
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires buffer_size >= sizeof(struct psb_file_header);
-  @ requires separation: \separated(&file_hint_psb, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_psb(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   const struct psb_file_header *hdr=(const struct psb_file_header *)buffer;

@@ -134,45 +134,19 @@ struct msdos_dir_slot {
 };
 
 
-/*@
-  @ requires \valid_read(entry);
-  @ requires \initialized(entry);
-  @ terminates \true;
-  @ assigns \nothing;
-  @ */
+
 unsigned int fat_get_cluster_from_entry(const struct msdos_dir_entry *entry);
 
-/*@
-  @ requires \valid_read(buffer + (0 .. 0x40-1));
-  @ assigns \nothing;
-  @ */
+
 int is_fat_directory(const unsigned char *buffer);
 
-/*@
-  @ requires \valid_read(fat_header);
-  @ requires \initialized(fat_header);
-  @ terminates \true;
-  @ ensures \result <= 65535;
-  @ assigns \nothing;
-  @ */
+
 unsigned int get_dir_entries(const struct fat_boot_sector *fat_header);
 
-/*@
-  @ requires \valid_read(fat_header);
-  @ requires \initialized(fat_header);
-  @ terminates \true;
-  @ ensures \result <= 65535;
-  @ assigns \nothing;
-  @ */
+
 unsigned int fat_sector_size(const struct fat_boot_sector *fat_header);
 
-/*@
-  @ requires \valid_read(fat_header);
-  @ requires \initialized(fat_header);
-  @ terminates \true;
-  @ ensures \result <= 65535;
-  @ assigns \nothing;
-  @ */
+
 unsigned int fat_sectors(const struct fat_boot_sector *fat_header);
 
 #ifdef __cplusplus

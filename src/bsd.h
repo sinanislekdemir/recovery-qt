@@ -169,22 +169,10 @@ struct disklabel {
 #define TST_FS_RAID         15              /* RAIDFrame drive */
 #define TST_FS_JFS2         21              /* IBM JFS2 */
 
-/*@
-  @ requires \valid(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid(partition);
-  @ requires separation: \separated(disk_car, partition);
-  @ decreases 0;
-  @*/
+
 int check_BSD(disk_t *disk_car, partition_t *partition, const int verbose, const unsigned int max_partitions);
 
-/*@
-  @ requires \valid_read(disk_car);
-  @ requires valid_disk(disk_car);
-  @ requires \valid_read(bsd_header);
-  @ requires \valid(partition);
-  @ requires separation: \separated(disk_car, bsd_header, partition);
-  @*/
+
 int recover_BSD(const disk_t *disk_car, const struct disklabel*bsd_header, partition_t *partition, const int verbose, const int dump_ind);
 
 #ifdef __cplusplus

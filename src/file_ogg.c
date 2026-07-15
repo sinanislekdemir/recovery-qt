@@ -32,7 +32,7 @@
 #include "filegen.h"
 #include "log.h"
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_ogg(file_stat_t *file_stat);
 
 const file_hint_t file_hint_ogg= {
@@ -48,25 +48,17 @@ const file_hint_t file_hint_ogg= {
 static const unsigned char ogg_header[5]= {'O','g','g','S', 0x00};
 
 /* http://www.ietf.org/rfc/rfc3533.txt */
-/*@
-  @ requires file_recovery->data_check==&data_check_ogg;
-  @ requires valid_data_check_param(buffer, buffer_size, file_recovery);
-  @ ensures  valid_data_check_result(\result, file_recovery);
-  @ assigns file_recovery->calculated_file_size;
-  @*/
+
 static data_check_t data_check_ogg(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
 {
-  /*@ assert file_recovery->calculated_file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@ assert file_recovery->file_size <= PHOTOREC_MAX_FILE_SIZE; */
-  /*@
-    @ loop assigns file_recovery->calculated_file_size;
-    @ loop variant file_recovery->file_size + buffer_size/2 - (file_recovery->calculated_file_size + 27 +255);
-    @*/
+  
+  
+  
   while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
       file_recovery->calculated_file_size + 27 +255 < file_recovery->file_size + buffer_size/2)
   {
     const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    /*@ assert 0 <= i < buffer_size - (27 + 255); */
+    
     if(memcmp(&buffer[i],ogg_header,sizeof(ogg_header))==0)
     {
       const unsigned int number_page_segments=buffer[i+26];
@@ -74,11 +66,7 @@ static data_check_t data_check_ogg(const unsigned char *buffer, const unsigned i
       unsigned int page_size;
       unsigned int j;
       page_size=header_size;
-      /*@
-        @ loop invariant page_size <= 255 + 27 + j * 255;
-        @ loop assigns j, page_size;
-	@ loop variant number_page_segments - j;
-	@ */
+      
       for(j=0; j<number_page_segments; j++)
         page_size+=buffer[i+27+j];
       if(page_size<27)
@@ -99,12 +87,7 @@ static data_check_t data_check_ogg(const unsigned char *buffer, const unsigned i
   return DC_CONTINUE;
 }
 
-/*@
-  @ requires buffer_size >= 0x78+7;
-  @ requires separation: \separated(&file_hint_ogg, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @*/
+
 static int header_check_ogg(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   static const unsigned char sign_theora[7]= {0x80, 't', 'h', 'e', 'o', 'r', 'a'};

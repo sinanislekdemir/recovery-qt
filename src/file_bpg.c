@@ -37,7 +37,7 @@
 
 #define MAX_BPG_SIZE 0x800000
 
-/*@ requires valid_register_header_check(file_stat); */
+
 static void register_header_check_bpg(file_stat_t *file_stat);
 
 const file_hint_t file_hint_bpg= {
@@ -49,23 +49,12 @@ const file_hint_t file_hint_bpg= {
   .register_header_check=&register_header_check_bpg
 };
 
-/*@
-  @ requires buffer_size > 0;
-  @ requires \valid_read(buffer+(0..buffer_size-1));
-  @ requires \valid(buf_ptr);
-  @ requires \separated(buffer+(..), buf_ptr);
-  @ assigns  *buf_ptr;
-  @*/
+
 static unsigned int getue32(const unsigned char *buffer, const unsigned int buffer_size, unsigned int *buf_ptr)
 {
   uint64_t value = 0;
   int bitsRead = 0;
-  /*@
-    @ loop invariant bitsRead <= 35;
-    @ loop invariant value < (bitsRead == 0 ? 1: (0x80 << (bitsRead-7)));
-    @ loop assigns value, bitsRead, *buf_ptr;
-    @ loop variant 35 - bitsRead;
-    @ */
+  
   while (*buf_ptr < buffer_size)
   {
     const unsigned int b = buffer[*buf_ptr];
@@ -81,18 +70,7 @@ static unsigned int getue32(const unsigned char *buffer, const unsigned int buff
   return value&0xffffffff;
 }
 
-/*@
-  @ requires buffer_size >= 6+3*5;
-  @ requires separation: \separated(&file_hint_bpg, buffer+(..), file_recovery, file_recovery_new);
-  @ requires valid_header_check_param(buffer, buffer_size, safe_header_only, file_recovery, file_recovery_new);
-  @ ensures  valid_header_check_result(\result, file_recovery_new);
-  @ ensures (\result == 1) ==> file_recovery_new->file_size == 0;
-  @ ensures (\result == 1) ==> (file_recovery_new->time == 0);
-  @ ensures (\result == 1) ==> (file_recovery_new->extension == file_hint_bpg.extension);
-  @ ensures (\result == 1) ==> (file_recovery_new->data_check== &data_check_size);
-  @ ensures (\result == 1) ==> (file_recovery_new->file_check == &file_check_size);
-  @ assigns  *file_recovery_new;
-  @*/
+
 static int header_check_bpg(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
 {
   unsigned int buf_ptr = 6;

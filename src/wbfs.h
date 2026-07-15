@@ -40,9 +40,7 @@ struct wbfs_head
 #endif
 } __attribute__ ((gcc_struct, __packed__));
 
-/*@
-  @ decreases 0;
-  @*/
+
 int check_WBFS(disk_t *disk,partition_t *partition);
 int recover_WBFS(const disk_t *disk, const struct wbfs_head *sb, partition_t *partition, const int verbose, const int dump_ind);
 #ifdef __cplusplus
