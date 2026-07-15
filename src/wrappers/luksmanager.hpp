@@ -26,32 +26,41 @@
 #include <QString>
 #include <cstddef>
 #include <cstdint>
-
-class Disk;
+#include "disk.hpp"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 #include "photorec_nc.h"
-#include "luksnc.h"
+#include "luksdec.h"
 #include "luks.h"
 #ifdef __cplusplus
 }
 #endif
 
+/*
+ * LUKSManager performs native (in-process) LUKS1/LUKS2 decryption.
+ *
+ * There is no cryptsetup, losetup, device-mapper or child process involved:
+ * decryptAsync() derives the master key from the passphrase and builds an
+ * in-memory read-only decrypting disk_t wrapper over the base disk. The
+ * result is retrieved as a Disk via decryptedDisk().
+ */
 class LUKSManager : public QObject {
     Q_OBJECT
 public:
     explicit LUKSManager(QObject *parent = nullptr);
 
     static bool isEncrypted(disk_t *disk, partition_t *partition);
-    bool decrypt(const QString &device, uint64_t offset, const QString &passphrase);
-    void decryptAsync(const QString &device, uint64_t offset, const QString &passphrase);
-    bool decryptDisk(Disk &disk, partition_t *partition, const QString &passphrase);
-    void close();
-    void cleanupOrphans();
 
-    QString mapperPath() const;
+    /* Decrypts LUKS at part_offset on base, off the UI thread.
+     * base must outlive the returned decrypted Disk. */
+    void decryptAsync(disk_t *base, uint64_t offset, const QString &passphrase);
+
+    /* Transfers ownership of the last successfully decrypted disk into a Disk.
+     * Returns an invalid Disk if decryption failed or already consumed. */
+    Disk decryptedDisk();
+
     bool isDecrypted() const;
 
 signals:
@@ -59,7 +68,7 @@ signals:
     void decryptFinished(bool ok);
 
 private:
-    char m_mapperName[256];
+    disk_t *m_decryptedDisk;
     bool m_decrypted;
 };
 

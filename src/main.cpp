@@ -32,7 +32,6 @@
 #include "ui/mainwindow.hpp"
 
 extern "C" {
-#include "luksnc.h"
 #include "log.h"
 }
 
@@ -56,7 +55,6 @@ static int checkAndCleanupPrevious()
         if (kill(stored_pid, 0) == 0)
             return stored_pid;
         unlink(LOCKFILE);
-        luks_cleanup_orphans();
         return 0;
     }
     unlink(LOCKFILE);

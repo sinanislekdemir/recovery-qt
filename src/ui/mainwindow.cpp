@@ -257,7 +257,7 @@ partition_t *MainWindow::decryptLUKSAndRedetect()
             decryptOk = ok;
             loop.quit();
         });
-    m_luks->decryptAsync(m_currentDisk.device(),
+    m_luks->decryptAsync(m_currentDisk.raw(),
                          m_partitions[m_selectedPartIdx].partOffset,
                          dlg.password());
     loop.exec();
@@ -267,10 +267,10 @@ partition_t *MainWindow::decryptLUKSAndRedetect()
     if (!decryptOk)
         return nullptr;
 
-    Disk decrypted = Disk::openDecrypted(m_luks->mapperPath());
+    Disk decrypted = m_luks->decryptedDisk();
     if (!decrypted.isValid()) {
         QMessageBox::warning(this, tr("LUKS Error"),
-            tr("Failed to open decrypted device:\n%1").arg(m_luks->mapperPath()));
+            tr("Failed to open decrypted volume."));
         return nullptr;
     }
     m_currentDisk = std::move(decrypted);
@@ -861,7 +861,7 @@ void MainWindow::onContinueSession()
         QEventLoop loop;
         QMetaObject::Connection conn = connect(m_luks, &LUKSManager::decryptFinished,
             &loop, [&](bool success) { ok = success; loop.quit(); });
-        m_luks->decryptAsync(info->devicePath, info->luksOffset, luksDlg.password());
+        m_luks->decryptAsync(sesDisk.raw(), info->luksOffset, luksDlg.password());
         loop.exec();
         disconnect(conn);
         decryptDlg.close();
@@ -873,7 +873,7 @@ void MainWindow::onContinueSession()
             return;
         }
 
-        Disk decrypted = Disk::openDecrypted(m_luks->mapperPath());
+        Disk decrypted = m_luks->decryptedDisk();
         if (!decrypted.isValid()) {
             SessionManager::freeSessionInfo(info);
             return;

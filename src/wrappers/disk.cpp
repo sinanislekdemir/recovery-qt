@@ -59,9 +59,14 @@ Disk Disk::openDevice(const QString& path, int mode)
     return disk;
 }
 
-Disk Disk::openDecrypted(const QString& mapperPath)
+Disk Disk::adopt(disk_t* raw)
 {
-    return openDevice(mapperPath, TESTDISK_O_RDONLY);
+    Disk disk;
+    if (!raw)
+        return Disk();
+    disk.d->disk = raw;
+    disk.d->owned = true;
+    return disk;
 }
 
 bool Disk::isValid() const { return d->disk != nullptr; }

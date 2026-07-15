@@ -39,9 +39,14 @@ extern "C" {
 #endif
 
 struct DiskData {
-    disk_t *disk;
-    list_disk_t *listItem;
-    bool cached;
+    disk_t *disk = nullptr;
+    list_disk_t *listItem = nullptr;
+    bool cached = false;
+    bool owned = false;
+    ~DiskData() {
+        if (owned && disk && disk->clean)
+            disk->clean(disk);
+    }
 };
 
 class Disk {
@@ -56,7 +61,7 @@ public:
 
     static QVector<Disk> enumerateSystem();
     static Disk openDevice(const QString& path, int mode);
-    static Disk openDecrypted(const QString& mapperPath);
+    static Disk adopt(disk_t* raw);
 
     bool isValid() const;
     QString device() const;

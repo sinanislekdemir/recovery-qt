@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(recovery_qt VERSION 7.3.0 LANGUAGES C CXX)
 
-set(CMAKE_C_STANDARD 90)
+set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
@@ -162,6 +162,7 @@ pkg_check_modules(EXT2FS REQUIRED ext2fs)
 pkg_check_modules(COM_ERR REQUIRED com_err)
 pkg_check_modules(UUID REQUIRED uuid)
 pkg_check_modules(ZLIB REQUIRED zlib)
+find_package(OpenSSL REQUIRED)
 
 # ---------------------------
 # C sources (legacy testdisk)
@@ -197,12 +198,22 @@ set(FS_C
 
 set(PHOTOREC_C
     src/ptree.c     src/pscanner.c   src/prestore.c
-    src/luksnc.c    src/pcarver.c    src/pbackup.c
+    src/luksdec.c   src/pcarver.c    src/pbackup.c
     src/psession.c
     src/dir.c       src/dirn.c       src/fat_dir.c
     src/ntfs_dir.c  src/ext2_dir.c   src/exfat_dir.c
     src/rfs_dir.c   src/geometry.c   src/filegen.c
     src/file_list.c src/utfsize.c
+)
+
+# Vendored Argon2 (CC0 / Apache-2.0) for LUKS2 KDF - reference C impl.
+set(ARGON2_C
+    src/vendor/argon2/argon2.c
+    src/vendor/argon2/core.c
+    src/vendor/argon2/encoding.c
+    src/vendor/argon2/ref.c
+    src/vendor/argon2/thread.c
+    src/vendor/argon2/blake2/blake2b.c
 )
 
 file(GLOB FILE_FORMATS_C CONFIGURE_DEPENDS "src/file_*.c")
@@ -214,6 +225,7 @@ set(ALL_C_SOURCES
     ${BASE_C}
     ${FS_C}
     ${PHOTOREC_C}
+    ${ARGON2_C}
     ${FILE_FORMATS_C}
     src/stubs.c
 )
@@ -258,6 +270,7 @@ set_source_files_properties(${ALL_C_SOURCES} PROPERTIES LANGUAGE C)
 target_include_directories(recovery_qt PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/common
+    ${CMAKE_SOURCE_DIR}/src/vendor/argon2
     ${CMAKE_BINARY_DIR}
 )
 
@@ -278,6 +291,7 @@ target_link_libraries(recovery_qt PRIVATE
     ${COM_ERR_LIBRARIES}
     ${UUID_LIBRARIES}
     ${ZLIB_LIBRARIES}
+    OpenSSL::Crypto
     ${CMAKE_DL_LIBS}
 )
 
