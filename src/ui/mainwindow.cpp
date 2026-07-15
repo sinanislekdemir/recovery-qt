@@ -34,6 +34,7 @@
 #include "wrappers/simpleworker.hpp"
 #include "wrappers/luksmanager.hpp"
 #include "wrappers/signatureregistry.hpp"
+#include "wrappers/sessionmanager.hpp"
 #include "common/format_utils.hpp"
 #include "common/theme.hpp"
 #include "photorec_nc.h"
@@ -50,6 +51,7 @@ extern "C" {
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QApplication>
+#include <QDir>
 #include <QStatusBar>
 #include <QTimer>
 #include <QImage>
@@ -67,6 +69,7 @@ MainWindow::MainWindow(QWidget *parent)
       m_carver(nullptr),
       m_restorer(nullptr),
       m_luks(new LUKSManager(this)),
+      m_sessionManager(new SessionManager(this)),
       m_selectedPartIdx(-1),
       m_scanTree(nullptr)
 /*
@@ -140,6 +143,8 @@ void MainWindow::setupUi()
             this, &MainWindow::onDiskSelected);
     connect(m_diskPage, &DiskSelectionWidget::quitRequested,
             this, &QWidget::close);
+    connect(m_diskPage, &DiskSelectionWidget::continueSessionRequested,
+            this, &MainWindow::onContinueSession);
     connect(m_partPage, &PartitionSelectionWidget::scanRequested,
             this, &MainWindow::onScanRequested);
     connect(m_partPage, &PartitionSelectionWidget::carveRequested,
@@ -316,11 +321,33 @@ void MainWindow::runScannerOperation(bool deep)
     qDebug() << "runScannerOperation: deep=" << deep << "part="
              << part->fsname << "offset=" << part->part_offset;
 
+    bool sessionEnabled = false;
+
     if (m_scanTree) {
         tree_free(m_scanTree);
         m_scanTree = nullptr;
     }
     m_scanTree = tree_new();
+
+    if (deep) {
+        QMessageBox::StandardButton reply = QMessageBox::question(this,
+            tr("Session Save"),
+            tr("Enable session saving? This lets you resume if interrupted."),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (reply == QMessageBox::Yes) {
+            QString defaultPath = QDir::homePath() + QString("/recovery_session_%1.ses")
+                .arg((qlonglong)time(NULL));
+            QString sesPath = QFileDialog::getSaveFileName(this,
+                tr("Save Session File"), defaultPath,
+                tr("Session files (*.ses)"));
+            if (!sesPath.isEmpty()) {
+                m_sessionManager->beginSession(sesPath, m_scanTree,
+                    m_currentDisk.raw(), part, SESSION_OP_DEEP_SCAN, QString());
+                m_progressCb->installCheckpointCallback();
+                sessionEnabled = true;
+            }
+        }
+    }
 
     uint64_t partSize = part->part_size;
 
@@ -365,9 +392,16 @@ void MainWindow::runScannerOperation(bool deep)
         });
     }
 
-    connect(m_scanner, &Scanner::finished, this, [&dlg, sConn1, sConn2, deep](int result) {
+    bool sessionActive = sessionEnabled;
+
+    connect(m_scanner, &Scanner::finished, this, [&dlg, sConn1, sConn2, deep, this, &sessionActive](int result) {
         disconnect(sConn1);
         disconnect(sConn2);
+        if (sessionActive) {
+            if (!m_progressCb->isCancelled())
+                m_sessionManager->endSession(result);
+            sessionActive = false;
+        }
         dlg.setFinished(result >= 0,
             result >= 0
                 ? (deep ? tr("Deep scan complete.") : tr("Scan complete."))
@@ -379,6 +413,8 @@ void MainWindow::runScannerOperation(bool deep)
     dlg.exec();
 
     m_progressCb->uninstallAllCallbacks();
+    if (sessionActive)
+        m_sessionManager->cancelSession();
     if (wholeDiskPart)
         free(wholeDiskPart);
     if (m_scanTree && m_scanTree->root)
@@ -445,6 +481,28 @@ void MainWindow::onCarveRequested()
     }
     m_scanTree = tree_new();
 
+    bool sessionEnabled = false;
+    {
+        QMessageBox::StandardButton reply = QMessageBox::question(this,
+            tr("Session Save"),
+            tr("Enable session saving? This lets you resume if interrupted."),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (reply == QMessageBox::Yes) {
+            QString defaultPath = QDir::homePath() + QString("/recovery_session_%1.ses")
+                .arg((qlonglong)time(NULL));
+            QString sesPath = QFileDialog::getSaveFileName(this,
+                tr("Save Session File"), defaultPath,
+                tr("Session files (*.ses)"));
+            if (!sesPath.isEmpty()) {
+                QString extStr = selectedExts.join(',');
+                m_sessionManager->beginSession(sesPath, m_scanTree,
+                    m_currentDisk.raw(), part, SESSION_OP_CARVE, extStr);
+                m_progressCb->installCheckpointCallback();
+                sessionEnabled = true;
+            }
+        }
+    }
+
     ProgressDialog dlg(this);
     dlg.setWindowTitle(tr("Carving Files"));
     dlg.setStatusText(tr("Scanning partition for file signatures..."));
@@ -463,8 +521,15 @@ void MainWindow::onCarveRequested()
         status = QString::asprintf("Scanned %.2f / %.2f GB  ·  %u files recovered", scannedF, totalF, files);
         dlg.updateProgress(pct, status);
     });
-    connect(m_carver, &Carver::finished, this, [&dlg, pcConn](int result) {
+    bool sessionActive = sessionEnabled;
+
+    connect(m_carver, &Carver::finished, this, [&dlg, pcConn, this, &sessionActive](int result) {
         disconnect(pcConn);
+        if (sessionActive) {
+            if (!m_progressCb->isCancelled())
+                m_sessionManager->endSession(result);
+            sessionActive = false;
+        }
         dlg.setFinished(result > 0,
             result > 0 ? QString("Carving complete. %1 files found.").arg(result) : tr("No files recovered."));
     });
@@ -475,6 +540,8 @@ void MainWindow::onCarveRequested()
 
     dlg.exec();
     m_progressCb->uninstallAllCallbacks();
+    if (sessionActive)
+        m_sessionManager->cancelSession();
     if (wholeDiskPart)
         free(wholeDiskPart);
     if (m_scanTree && m_scanTree->root)
@@ -749,6 +816,224 @@ void MainWindow::onAbout()
 {
     AboutDialog dlg(this);
     dlg.exec();
+}
+
+void MainWindow::onContinueSession()
+{
+    QString sesPath = QFileDialog::getOpenFileName(this,
+        tr("Open Session File"), QDir::homePath(),
+        tr("Session files (*.ses);;All Files (*)"));
+    if (sesPath.isEmpty())
+        return;
+
+    SessionInfo *info = SessionManager::loadSession(sesPath);
+    if (!info) {
+        QMessageBox::warning(this, tr("Load Failed"),
+            tr("Could not read the session file:\n%1").arg(sesPath));
+        return;
+    }
+
+    Disk sesDisk = Disk::openDevice(info->devicePath, TESTDISK_O_RDONLY);
+    if (!sesDisk.isValid()) {
+        QMessageBox::warning(this, tr("Disk Not Found"),
+            tr("The original disk '%1' could not be opened.\n"
+               "Please ensure the disk is connected and try again.")
+            .arg(info->devicePath));
+        SessionManager::freeSessionInfo(info);
+        return;
+    }
+
+    if (info->luksDecrypted) {
+        LUKSPasswordDialog luksDlg(this);
+        if (luksDlg.exec() != QDialog::Accepted || luksDlg.password().isEmpty()) {
+            SessionManager::freeSessionInfo(info);
+            return;
+        }
+
+        ProgressDialog decryptDlg(this);
+        decryptDlg.setWindowTitle(tr("LUKS Decryption"));
+        decryptDlg.setStatusText(tr("Decrypting volume..."));
+        decryptDlg.showCancelButton(false);
+        decryptDlg.setIndeterminate(true);
+        decryptDlg.show();
+
+        bool ok = false;
+        QEventLoop loop;
+        QMetaObject::Connection conn = connect(m_luks, &LUKSManager::decryptFinished,
+            &loop, [&](bool success) { ok = success; loop.quit(); });
+        m_luks->decryptAsync(info->devicePath, info->luksOffset, luksDlg.password());
+        loop.exec();
+        disconnect(conn);
+        decryptDlg.close();
+
+        if (!ok) {
+            QMessageBox::warning(this, tr("LUKS Error"),
+                tr("Decryption failed for session volume."));
+            SessionManager::freeSessionInfo(info);
+            return;
+        }
+
+        Disk decrypted = Disk::openDecrypted(m_luks->mapperPath());
+        if (!decrypted.isValid()) {
+            SessionManager::freeSessionInfo(info);
+            return;
+        }
+        sesDisk = std::move(decrypted);
+    }
+
+    m_currentDisk = std::move(sesDisk);
+    detectPartitions();
+
+    partition_t *matchingPart = nullptr;
+    QString opName;
+    matchingPart = nullptr;
+    for (int i = 0; i < m_partitions.size(); i++) {
+        if (m_partitions[i].partOffset == info->partOffset &&
+            m_partitions[i].partSize == info->partSize) {
+            matchingPart = m_partList.rawAt(i);
+            break;
+        }
+    }
+
+    if (!matchingPart) {
+        QMessageBox::warning(this, tr("Partition Not Found"),
+            tr("The original partition could not be found on this disk.\n"
+               "The disk layout may have changed since the session was saved."));
+        SessionManager::freeSessionInfo(info);
+        return;
+    }
+
+    if (m_scanTree) {
+        tree_free(m_scanTree);
+        m_scanTree = nullptr;
+    }
+
+    if (info->completed && info->tree) {
+        m_scanTree = info->tree;
+        info->tree = nullptr;
+        SessionManager::freeSessionInfo(info);
+        showBrowser();
+        return;
+    }
+
+    m_scanTree = info->tree ? info->tree : tree_new();
+    if (info->tree)
+        info->tree = nullptr;
+
+    m_sessionManager->setupResume(m_scanTree, m_currentDisk.raw(),
+        info->opType, info);
+
+    if (info->opType == SESSION_OP_CARVE) {
+        opName = tr("Resuming Carve");
+        ProgressDialog dlg(this);
+        dlg.setWindowTitle(opName);
+        dlg.setStatusText(tr("Resuming carving from checkpoint..."));
+        dlg.showCancelButton(true);
+        dlg.showFileName(false);
+
+        connect(&dlg, &ProgressDialog::cancelled,
+            ProgressCallback::instance(), &ProgressCallback::cancel);
+
+        bool sActive = true;
+        QMetaObject::Connection pcConn = connect(
+            ProgressCallback::instance(), &ProgressCallback::carverProgress,
+            this, [&dlg](uint64_t scanned, uint64_t total,
+                unsigned int files, uint64_t recovered) {
+            int pct = (total > 0) ? (int)(scanned * 100 / total) : 0;
+            if (pct > 100) pct = 100;
+            Q_UNUSED(recovered);
+            QString status = QString::asprintf(
+                "Scanned %.2f / %.2f GB  ·  %u files recovered",
+                scanned / (1024.0 * 1024.0 * 1024.0),
+                total / (1024.0 * 1024.0 * 1024.0), files);
+            dlg.updateProgress(pct, status);
+        });
+
+        m_sessionManager->beginSession(sesPath, m_scanTree,
+            m_currentDisk.raw(), matchingPart,
+            SESSION_OP_CARVE, info->extFilter);
+        m_progressCb->installCheckpointCallback();
+
+        connect(m_carver, &Carver::finished, this,
+            [&dlg, pcConn, this, &sActive](int result) {
+            disconnect(pcConn);
+            if (sActive) { if (!m_progressCb->isCancelled()) m_sessionManager->endSession(result); sActive = false; }
+            dlg.setFinished(result > 0,
+                result > 0 ? QString("Carving complete. %1 files found.").arg(result)
+                    : tr("No files recovered."));
+        });
+
+        SignatureRegistry sigs;
+        if (!info->extFilter.isEmpty())
+            sigs.setEnabledExtensions(info->extFilter.split(','));
+
+        m_carver->start(m_scanTree, m_currentDisk.raw(), matchingPart,
+            info->extFilter, false);
+        dlg.exec();
+
+        m_progressCb->uninstallAllCallbacks();
+        if (sActive) m_sessionManager->cancelSession();
+    }
+    else if (info->opType == SESSION_OP_DEEP_SCAN) {
+        ProgressDialog dlg(this);
+        dlg.setWindowTitle(tr("Resuming Deep Scan"));
+        dlg.setStatusText(tr("Resuming deep scan from checkpoint..."));
+        dlg.showFileName(true);
+        dlg.showCancelButton(true);
+        dlg.setIndeterminate(true);
+
+        connect(&dlg, &ProgressDialog::cancelled,
+            ProgressCallback::instance(), &ProgressCallback::cancel);
+
+        bool sActive = true;
+        auto sConn1 = connect(m_scanner, &Scanner::progressUpdated, this,
+            [&dlg](uint64_t deleted, uint64_t total, const QString &path) {
+            dlg.setIndeterminate(true);
+            dlg.setStatusText(QString("%1 deleted / %2 total").arg(deleted).arg(total));
+            if (!path.isEmpty()) dlg.setFileName(path);
+        });
+
+        uint64_t partSize = matchingPart->part_size;
+        auto sConn2 = connect(m_scanner, &Scanner::indxProgressUpdated, this,
+            [&dlg, partSize](const QString &, uint64_t current, uint64_t total,
+                uint64_t found) {
+            unsigned int pct = (total > 0) ? (unsigned int)(current * 100 / total) : 0;
+            if (pct > 100) pct = 100;
+            dlg.setIndeterminate(false);
+            uint64_t scannedBytes = (total > 0) ? (current * partSize / total) : 0;
+            dlg.updateProgress((int)pct,
+                QString::asprintf("%.2f / %.2f GB  ·  %llu found",
+                    scannedBytes / (1024.0 * 1024.0 * 1024.0),
+                    partSize / (1024.0 * 1024.0 * 1024.0),
+                    (unsigned long long)found));
+        });
+
+        m_sessionManager->beginSession(sesPath, m_scanTree,
+            m_currentDisk.raw(), matchingPart,
+            SESSION_OP_DEEP_SCAN, QString());
+        m_progressCb->installCheckpointCallback();
+
+        connect(m_scanner, &Scanner::finished, this,
+            [&dlg, sConn1, sConn2, this, &sActive](int result) {
+            disconnect(sConn1);
+            disconnect(sConn2);
+            if (sActive) { if (!m_progressCb->isCancelled()) m_sessionManager->endSession(result); sActive = false; }
+            dlg.setFinished(result >= 0,
+                result >= 0 ? tr("Deep scan complete.") : tr("No filesystem detected."));
+        });
+
+        m_scanner->start(m_scanTree, m_currentDisk.raw(), matchingPart, 1);
+        dlg.showFileName(true);
+        dlg.exec();
+
+        m_progressCb->uninstallAllCallbacks();
+        if (sActive) m_sessionManager->cancelSession();
+    }
+
+    SessionManager::freeSessionInfo(info);
+
+    if (m_scanTree && m_scanTree->root)
+        showBrowser();
 }
 
 /*

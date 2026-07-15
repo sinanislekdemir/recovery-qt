@@ -44,6 +44,12 @@ typedef void (*restorer_file_fn)(const char *path, int ok);
 
 typedef int (*progress_cancel_fn)(void);
 
+typedef void (*checkpoint_fn)(uint64_t progress1, uint64_t progress2);
+extern checkpoint_fn g_checkpoint_progress;
+
+typedef int (*session_save_cb_fn)(uint64_t progress1, uint64_t progress2);
+extern session_save_cb_fn g_session_save_cb;
+
 extern scanner_progress_fn g_scanner_progress;
 extern scanner_indx_progress_fn g_scanner_indx_progress;
 extern progress_cancel_fn g_scanner_cancel;

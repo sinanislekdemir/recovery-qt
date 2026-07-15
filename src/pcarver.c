@@ -53,6 +53,8 @@ extern const file_hint_t file_hint_mp3;
 #define CARVER_TOP_SHOW 6
 #define CARVER_MAX_MATCHES 32
 
+uint64_t g_carver_resume_offset = 0;
+
 static file_stat_t *g_file_stats = NULL;
 static unsigned int g_carved_count = 0;
 static uint64_t g_carved_size = 0;
@@ -618,7 +620,22 @@ static int carver_scan(scan_tree_t *tree, disk_t *disk,
   if (g_carver_progress)
     g_carver_progress(0, total_bytes, 0, 0);
 
-  for (chunk_pos = 0; chunk_pos < part_sectors;
+  if (g_carver_resume_offset > 0)
+  {
+    chunk_pos = g_carver_resume_offset / sector_size;
+    chunk_pos = (chunk_pos / (CARVER_CHUNK_SIZE / sector_size))
+                * (CARVER_CHUNK_SIZE / sector_size);
+    if (chunk_pos >= part_sectors)
+      chunk_pos = 0;
+    log_info("Carving resume: starting from sector %llu / %llu\n",
+        (unsigned long long)chunk_pos, (unsigned long long)part_sectors);
+  }
+  else
+  {
+    chunk_pos = 0;
+  }
+
+  for (; chunk_pos < part_sectors;
       chunk_pos += CARVER_CHUNK_SIZE / sector_size)
   {
     unsigned int chunk_size;
@@ -853,6 +870,18 @@ static int carver_scan(scan_tree_t *tree, disk_t *disk,
       g_carver_progress(scanned_bytes, total_bytes, g_carved_count,
           g_carved_size);
     }
+    if (g_checkpoint_progress)
+    {
+      uint64_t scanned_bytes;
+      scanned_bytes = chunk_pos * sector_size;
+      g_checkpoint_progress(scanned_bytes, g_carved_count);
+    }
+    if (g_session_save_cb)
+    {
+      uint64_t scanned_bytes;
+      scanned_bytes = chunk_pos * sector_size;
+      g_session_save_cb(scanned_bytes, (uint64_t)g_carved_count);
+    }
     if (g_carver_cancel && g_carver_cancel())
     {
       cancelled = 1;
@@ -922,5 +951,6 @@ int carver_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
   carver_init(ext_filter);
   result = carver_scan(tree, disk, partition, deep_scan);
   carver_deinit();
+  g_carver_resume_offset = 0;
   return result;
 }

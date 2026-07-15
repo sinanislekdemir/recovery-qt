@@ -35,6 +35,7 @@ ProgressCallback* ProgressCallback::s_instance = nullptr;
 ProgressCallback* ProgressCallback::s_carverInstance = nullptr;
 ProgressCallback* ProgressCallback::s_scannerInstance = nullptr;
 ProgressCallback* ProgressCallback::s_restoreInstance = nullptr;
+ProgressCallback* ProgressCallback::s_checkpointInstance = nullptr;
 
 ProgressCallback* ProgressCallback::instance()
 {
@@ -105,6 +106,13 @@ int ProgressCallback::cRestoreCancelled()
     return s_restoreInstance ? s_restoreInstance->isCancelled() : 0;
 }
 
+void ProgressCallback::cCheckpointProgress(uint64_t progress1, uint64_t progress2)
+{
+    emitToInstance(s_checkpointInstance, [=]() {
+        emit s_checkpointInstance->checkpointProgress(progress1, progress2);
+    });
+}
+
 void ProgressCallback::installCarverCallbacks()
 {
     s_carverInstance = this;
@@ -128,6 +136,12 @@ void ProgressCallback::installRestoreCallbacks()
     g_restorer_cancel = cRestoreCancelled;
 }
 
+void ProgressCallback::installCheckpointCallback()
+{
+    s_checkpointInstance = this;
+    g_checkpoint_progress = cCheckpointProgress;
+}
+
 void ProgressCallback::uninstallAllCallbacks()
 {
     g_carver_progress = 0;
@@ -138,7 +152,10 @@ void ProgressCallback::uninstallAllCallbacks()
     g_restorer_progress = 0;
     g_restorer_file = 0;
     g_restorer_cancel = 0;
+    g_checkpoint_progress = 0;
+    g_session_save_cb = 0;
     s_carverInstance = nullptr;
     s_scannerInstance = nullptr;
     s_restoreInstance = nullptr;
+    s_checkpointInstance = nullptr;
 }

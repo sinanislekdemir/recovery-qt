@@ -44,6 +44,7 @@
 #include "photorec_nc.h"
 #include "hdaccess.h"
 #include "progress_cb.h"
+#include "psession.h"
 #if defined(HAVE_LIBNTFS)
 #include <ntfs/volume.h>
 #include <ntfs/attrib.h>
@@ -69,10 +70,19 @@
 static uint64_t g_deleted_count = 0;
 static uint64_t g_total_count = 0;
 
+int g_scanner_resume_phase = 0;
+uint64_t g_scanner_resume_offset = 0;
+
+extern uint64_t g_carver_resume_offset;
+
 static void update_progress(const char *path)
 {
   if (g_scanner_progress)
     g_scanner_progress(g_deleted_count, g_total_count, path);
+  if (g_checkpoint_progress)
+    g_checkpoint_progress(g_total_count, g_deleted_count);
+  if (g_session_save_cb)
+    g_session_save_cb(g_total_count, g_deleted_count);
 }
 
 static void indx_progress_cb(const char *msg, uint64_t current,
@@ -365,7 +375,16 @@ static int scanner_deep_fat(scan_tree_t *tree, disk_t *disk,
   batch_buffer = NULL;
   batch_count = 0;
 
-  for (cluster = 2; cluster < no_of_cluster + 2; cluster++)
+  cluster = 2;
+  if (g_scanner_resume_phase == SESSION_PHASE_FAT_DEEP &&
+      g_scanner_resume_offset > 2 &&
+      g_scanner_resume_offset < no_of_cluster + 2)
+  {
+    cluster = (unsigned long int)g_scanner_resume_offset;
+    log_info("FAT deep scan resume: starting from cluster %lu\n", cluster);
+  }
+
+  for (; cluster < no_of_cluster + 2; cluster++)
   {
     unsigned int next;
     int is_free;
@@ -591,6 +610,10 @@ static int scanner_deep_ext(scan_tree_t *tree, disk_t *disk,
       break;
 
     scanned++;
+    if (g_scanner_resume_phase == SESSION_PHASE_EXT_INODE &&
+        g_scanner_resume_offset > 0 &&
+        ino < (ext2_ino_t)g_scanner_resume_offset)
+      continue;
     if (g_scanner_cancel && g_scanner_cancel())
       break;
     if (scanned % 50000 == 0)
@@ -735,7 +758,7 @@ int scanner_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition, i
     return 1;
 
 #if defined(HAVE_LIBNTFS) || defined(HAVE_LIBNTFS3G)
-  if (is_ntfs)
+  if (is_ntfs && g_scanner_resume_phase <= SESSION_PHASE_MFT_SCAN)
   {
     struct ntfs_dir_struct *ls;
     ls = (struct ntfs_dir_struct *)dir_data.private_dir_data;
@@ -839,7 +862,7 @@ int scanner_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition, i
 #endif
 
 #if defined(HAVE_LIBEXT2FS)
-  if (is_ext2_type(partition))
+  if (is_ext2_type(partition) && g_scanner_resume_phase <= SESSION_PHASE_EXT_INODE)
   {
     struct ext2_dir_struct *ls;
     ls = (struct ext2_dir_struct *)dir_data.private_dir_data;
@@ -860,7 +883,7 @@ int scanner_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition, i
     return 0;
   }
 
-  if (is_fat)
+  if (is_fat && g_scanner_resume_phase <= SESSION_PHASE_FAT_DEEP)
   {
     if (g_scanner_progress)
       g_scanner_progress(g_deleted_count, g_total_count, "FAT deep scan");
@@ -868,7 +891,7 @@ int scanner_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition, i
   }
 
 #if defined(HAVE_LIBNTFS) || defined(HAVE_LIBNTFS3G)
-  if (is_ntfs)
+  if (is_ntfs && g_scanner_resume_phase <= SESSION_PHASE_INDX_DEEP)
   {
     struct ntfs_dir_struct *ls;
     ls = (struct ntfs_dir_struct *)dir_data.private_dir_data;
@@ -881,14 +904,21 @@ int scanner_run(scan_tree_t *tree, disk_t *disk, const partition_t *partition, i
   }
 #endif
 
-  if (!is_fat && !is_ntfs)
+  if (!is_fat && !is_ntfs && g_scanner_resume_phase <= SESSION_PHASE_CARVER)
+  {
+    if (g_scanner_resume_phase == SESSION_PHASE_CARVER)
+      g_carver_resume_offset = g_scanner_resume_offset;
     carver_run(tree, disk, partition, NULL, 0);
+  }
 
   if (g_scanner_progress)
     g_scanner_progress(g_deleted_count, g_total_count, "Scan complete");
 
   if (dir_data.close)
     dir_data.close(&dir_data);
+
+  g_scanner_resume_phase = 0;
+  g_scanner_resume_offset = 0;
 
   return 0;
 }

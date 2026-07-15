@@ -22,6 +22,9 @@
 
 #include "progress_cb.h"
 
+checkpoint_fn g_checkpoint_progress = 0;
+session_save_cb_fn g_session_save_cb = 0;
+
 scanner_progress_fn g_scanner_progress = 0;
 scanner_indx_progress_fn g_scanner_indx_progress = 0;
 progress_cancel_fn g_scanner_cancel = 0;

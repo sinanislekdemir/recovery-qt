@@ -42,6 +42,7 @@ public:
 signals:
     void diskSelected(const Disk &disk);
     void quitRequested();
+    void continueSessionRequested();
 
 private slots:
     void onSelectionChanged();
@@ -58,6 +59,7 @@ private:
     QStandardItemModel *m_model;
     QPushButton *m_refreshBtn;
     QPushButton *m_openImageBtn;
+    QPushButton *m_continueBtn;
     QPushButton *m_proceedBtn;
     QPushButton *m_quitBtn;
     QVector<Disk> m_disks;

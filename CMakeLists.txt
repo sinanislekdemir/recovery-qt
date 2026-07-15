@@ -198,6 +198,7 @@ set(FS_C
 set(PHOTOREC_C
     src/ptree.c     src/pscanner.c   src/prestore.c
     src/luksnc.c    src/pcarver.c    src/pbackup.c
+    src/psession.c
     src/dir.c       src/dirn.c       src/fat_dir.c
     src/ntfs_dir.c  src/ext2_dir.c   src/exfat_dir.c
     src/rfs_dir.c   src/geometry.c   src/filegen.c
@@ -234,6 +235,7 @@ set(CPP_SOURCES
     src/wrappers/restorer.cpp
     src/wrappers/simpleworker.cpp
     src/wrappers/luksmanager.cpp
+    src/wrappers/sessionmanager.cpp
     src/ui/mainwindow.cpp
     src/ui/diskselectionwidget.cpp
     src/ui/partitionselectionwidget.cpp

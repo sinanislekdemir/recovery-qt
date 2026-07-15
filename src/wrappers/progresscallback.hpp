@@ -50,6 +50,7 @@ signals:
     void fileRestored(const QString &path, bool ok);
     void scannerIndxProgress(const QString &msg, uint64_t current,
                              uint64_t total, uint64_t found);
+    void checkpointProgress(uint64_t progress1, uint64_t progress2);
 
 private:
     std::atomic<bool> m_cancelled;
@@ -78,11 +79,15 @@ public:
     void installCarverCallbacks();
     void installScannerCallbacks();
     void installRestoreCallbacks();
+    void installCheckpointCallback();
     void uninstallAllCallbacks();
 
     static ProgressCallback* s_carverInstance;
     static ProgressCallback* s_scannerInstance;
     static ProgressCallback* s_restoreInstance;
+    static ProgressCallback* s_checkpointInstance;
+
+    static void cCheckpointProgress(uint64_t progress1, uint64_t progress2);
 };
 
 #endif // PHOTOREC_PROGRESSCALLBACK_HPP

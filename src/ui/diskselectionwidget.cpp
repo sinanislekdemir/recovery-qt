@@ -34,6 +34,7 @@ DiskSelectionWidget::DiskSelectionWidget(QWidget *parent)
       m_model(nullptr),
       m_refreshBtn(nullptr),
       m_openImageBtn(nullptr),
+      m_continueBtn(nullptr),
       m_proceedBtn(nullptr),
       m_quitBtn(nullptr)
 {
@@ -90,6 +91,18 @@ void DiskSelectionWidget::setupUi()
     );
     btnLayout->addWidget(m_openImageBtn);
 
+    m_continueBtn = new QPushButton(tr("Continue Session"), this);
+    m_continueBtn->setStyleSheet(
+        "QPushButton {"
+        "  background-color: #4C566A;"
+        "  color: #ECEFF4;"
+        "  border: 2px solid #81A1C1;"
+        "  padding: 6px 16px;"
+        "}"
+        "QPushButton:hover { background-color: #5E81AC; }"
+    );
+    btnLayout->addWidget(m_continueBtn);
+
     m_refreshBtn = new QPushButton(tr("Refresh"), this);
     m_proceedBtn = new QPushButton(tr("Next"), this);
     m_quitBtn = new QPushButton(tr("Quit"), this);
@@ -106,6 +119,7 @@ void DiskSelectionWidget::setupUi()
 
     connect(m_refreshBtn, &QPushButton::clicked, this, &DiskSelectionWidget::onRefresh);
     connect(m_openImageBtn, &QPushButton::clicked, this, &DiskSelectionWidget::onOpenImage);
+    connect(m_continueBtn, &QPushButton::clicked, this, &DiskSelectionWidget::continueSessionRequested);
     connect(m_proceedBtn, &QPushButton::clicked, this, &DiskSelectionWidget::onProceed);
     connect(m_quitBtn, &QPushButton::clicked, this, &DiskSelectionWidget::quitRequested);
     connect(m_tableView->selectionModel(), &QItemSelectionModel::selectionChanged,

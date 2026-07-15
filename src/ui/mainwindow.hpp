@@ -41,6 +41,7 @@ class Carver;
 class Restorer;
 class LUKSManager;
 class SimpleWorker;
+class SessionManager;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -60,6 +61,7 @@ private slots:
     void onPreviewRequested(const QModelIndex &idx);
     void onBrowserQuit();
     void onAbout();
+    void onContinueSession();
 
 private:
     void setupUi();
@@ -81,6 +83,7 @@ private:
     Restorer *m_restorer;
     SimpleWorker *m_simpleWorker;
     LUKSManager *m_luks;
+    SessionManager *m_sessionManager;
 
     Disk m_currentDisk;
     QVector<PartitionInfo> m_partitions;

@@ -116,6 +116,10 @@
 #include "askloc.h"
 #include "setdate.h"
 #include "progress_cb.h"
+#include "psession.h"
+
+extern int g_scanner_resume_phase;
+extern uint64_t g_scanner_resume_offset;
 
 struct options {
 	char		*dest;		/* Save file to this directory */
@@ -1699,10 +1703,19 @@ void scanner_deep_ntfs(scan_tree_t *tree, disk_t *disk,
 			b = bmp_buf[j];
 			for (k = 0; k < 8 && cluster < nr_clusters; k++, b >>= 1, cluster++)
 			{
+				int do_scan;
+				do_scan = 1;
+				if (g_scanner_resume_phase == 5 &&
+				    g_scanner_resume_offset > 0 &&
+				    cluster < g_scanner_resume_offset)
+					do_scan = 0;
+
 				if (b & 1)
 				{
 					if (free_count > 0)
 					{
+						if (do_scan)
+						{
 						uint64_t off;
 						unsigned int len;
 						unsigned int c;
@@ -1722,6 +1735,7 @@ void scanner_deep_ntfs(scan_tree_t *tree, disk_t *disk,
 								    nr_clusters);
 							}
 						}
+						}
 						free_count = 0;
 					}
 					continue;
@@ -1733,6 +1747,8 @@ void scanner_deep_ntfs(scan_tree_t *tree, disk_t *disk,
 
 				if (free_count >= max_batch)
 				{
+					if (do_scan)
+					{
 					uint64_t off;
 					unsigned int len;
 					unsigned int c;
@@ -1750,6 +1766,7 @@ void scanner_deep_ntfs(scan_tree_t *tree, disk_t *disk,
 							    vol, sector_size,
 							    nr_clusters);
 						}
+					}
 					}
 					free_count = 0;
 				}
@@ -1770,6 +1787,14 @@ void scanner_deep_ntfs(scan_tree_t *tree, disk_t *disk,
 
 	if (free_count > 0)
 	{
+		int do_scan;
+		do_scan = 1;
+		if (g_scanner_resume_phase == 5 &&
+		    g_scanner_resume_offset > 0 &&
+		    free_start < g_scanner_resume_offset)
+			do_scan = 0;
+		if (do_scan)
+		{
 		uint64_t off;
 		unsigned int len;
 		unsigned int c;
@@ -1785,6 +1810,7 @@ void scanner_deep_ntfs(scan_tree_t *tree, disk_t *disk,
 				    vol, sector_size,
 				    nr_clusters);
 			}
+		}
 		}
 	}
 
