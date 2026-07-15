@@ -11,8 +11,8 @@ set(CMAKE_AUTOMOC ON)
 # ---------------------------------------------------------------------------
 file(WRITE ${CMAKE_BINARY_DIR}/config.h
 [=[
-#ifndef PHOTOREC_NC_CONFIG_H
-#define PHOTOREC_NC_CONFIG_H
+#ifndef RECOVERY_QT_CONFIG_H
+#define RECOVERY_QT_CONFIG_H
 
 #define PACKAGE "recovery-qt"
 #define PACKAGE_BUGREPORT "grenier@cgsecurity.org"
@@ -165,48 +165,79 @@ pkg_check_modules(ZLIB REQUIRED zlib)
 find_package(OpenSSL REQUIRED)
 
 # ---------------------------
-# C sources (legacy testdisk)
+# C sources - Core utilities
 # ---------------------------
-set(SMALLBASE_C
-    src/common.c     src/crc.c         src/ext2_common.c
-    src/fat_common.c src/log.c         src/misc.c
-    src/setdate.c
+set(CORE_UTIL_C
+    src/core/common.c    src/core/crc.c       src/core/log.c
+    src/core/misc.c      src/core/setdate.c
 )
 
-set(BASE_C
-    src/apfs_common.c src/autoset.c    src/fnctdsk.c
-    src/hdaccess.c    src/hdcache.c    src/hidden.c
-    src/hpa_dco.c     src/intrf.c      src/iso.c
-    src/list_sort.c   src/log_part.c   src/parti386.c
-    src/partgpt.c     src/parthumax.c  src/partmac.c
-    src/partnone.c    src/partsun.c    src/partxbox.c
-    src/partauto.c    src/ntfs_io.c    src/ntfs_utl.c
-    src/unicode.c     src/chgtype.c    src/partgptw.c
-    src/ntfs_udl.c    src/next.c       src/suspend_no.c
+# ---------------------------
+# C sources - Disk I/O and partitioning
+# ---------------------------
+set(DISK_C
+    src/disk/hdaccess.c    src/disk/hdcache.c    src/disk/hidden.c
+    src/disk/hpa_dco.c     src/disk/intrf.c      src/disk/iso.c
+    src/disk/list_sort.c   src/disk/log_part.c   src/disk/parti386.c
+    src/disk/partgpt.c     src/disk/parthumax.c  src/disk/partmac.c
+    src/disk/partnone.c    src/disk/partsun.c    src/disk/partxbox.c
+    src/disk/partauto.c    src/disk/partgptw.c   src/disk/fnctdsk.c
+    src/disk/autoset.c     src/disk/chgtype.c    src/disk/unicode.c
+    src/disk/next.c        src/disk/suspend_no.c
 )
 
+# ---------------------------
+# C sources - Filesystem modules
+# ---------------------------
 set(FS_C
-    src/analyse.c src/apfs.c   src/bfs.c    src/bsd.c
-    src/btrfs.c   src/cramfs.c src/exfat.c  src/ext2.c
-    src/fat.c     src/fatx.c   src/f2fs.c   src/jfs.c
-    src/gfs2.c    src/hfs.c    src/hfsp.c   src/hpfs.c
-    src/luks.c    src/lvm.c    src/md.c     src/netware.c
-    src/ntfs.c    src/refs.c   src/rfs.c    src/savehdr.c
-    src/sun.c     src/swap.c   src/sysv.c   src/ufs.c
-    src/vmfs.c    src/wbfs.c   src/xfs.c    src/zfs.c
+    src/fs/analyse.c       src/fs/apfs.c          src/fs/apfs_common.c
+    src/fs/bfs.c           src/fs/bsd.c           src/fs/btrfs.c
+    src/fs/cramfs.c        src/fs/exfat.c         src/fs/ext2.c
+    src/fs/ext2_common.c   src/fs/fat.c           src/fs/fat_common.c
+    src/fs/fatx.c          src/fs/f2fs.c          src/fs/jfs.c
+    src/fs/gfs2.c          src/fs/hfs.c           src/fs/hfsp.c
+    src/fs/hpfs.c          src/fs/luks.c          src/fs/lvm.c
+    src/fs/md.c            src/fs/netware.c       src/fs/ntfs.c
+    src/fs/refs.c          src/fs/rfs.c           src/fs/savehdr.c
+    src/fs/sun.c           src/fs/swap.c          src/fs/sysv.c
+    src/fs/ufs.c           src/fs/vmfs.c          src/fs/wbfs.c
+    src/fs/xfs.c           src/fs/zfs.c
+    src/fs/ntfs_io.c       src/fs/ntfs_utl.c      src/fs/ntfs_udl.c
+    src/fs/luksdec.c
 )
 
-set(PHOTOREC_C
-    src/ptree.c     src/pscanner.c   src/prestore.c
-    src/luksdec.c   src/pcarver.c    src/pbackup.c
-    src/psession.c
-    src/dir.c       src/fat_dir.c
-    src/ntfs_dir.c  src/ext2_dir.c   src/exfat_dir.c
-    src/rfs_dir.c   src/geometry.c   src/filegen.c
-    src/file_list.c src/utfsize.c
+# ---------------------------
+# C sources - Directory drivers
+# ---------------------------
+set(DIR_C
+    src/fs/fat_dir.c       src/fs/ntfs_dir.c      src/fs/ext2_dir.c
+    src/fs/exfat_dir.c     src/fs/rfs_dir.c
 )
 
-# Vendored Argon2 (CC0 / Apache-2.0) for LUKS2 KDF - reference C impl.
+# ---------------------------
+# C sources - Recovery engine
+# ---------------------------
+set(RECOVERY_C
+    src/core/ptree.c       src/core/pscanner.c     src/core/prestore.c
+    src/core/pcarver.c     src/core/pbackup.c      src/core/psession.c
+    src/core/dir.c         src/core/geometry.c     src/core/file_list.c
+    src/core/utfsize.c     src/core/progress_cb.c  src/core/stubs.c
+)
+
+# ---------------------------
+# C sources - File format registry and carvers
+# ---------------------------
+set(FORMAT_REG_C
+    src/formats/filegen.c  src/formats/file_sig.c
+)
+
+file(GLOB FILE_FORMATS_C CONFIGURE_DEPENDS "src/formats/file_*.c")
+list(FILTER FILE_FORMATS_C EXCLUDE REGEX "file_found\\.c$")
+list(FILTER FILE_FORMATS_C EXCLUDE REGEX "file_awk\\.c$")
+
+# ---------------------------
+# Vendored Argon2 (CC0 / Apache-2.0) for LUKS2 KDF
+# ---------------------------
 set(ARGON2_C
     src/vendor/argon2/argon2.c
     src/vendor/argon2/core.c
@@ -216,26 +247,25 @@ set(ARGON2_C
     src/vendor/argon2/blake2/blake2b.c
 )
 
-file(GLOB FILE_FORMATS_C CONFIGURE_DEPENDS "src/file_*.c")
-list(FILTER FILE_FORMATS_C EXCLUDE REGEX "file_found\\.c$")
-list(FILTER FILE_FORMATS_C EXCLUDE REGEX "file_awk\\.c$")
-
+# ---------------------------
+# All C sources
+# ---------------------------
 set(ALL_C_SOURCES
-    ${SMALLBASE_C}
-    ${BASE_C}
+    ${CORE_UTIL_C}
+    ${DISK_C}
     ${FS_C}
-    ${PHOTOREC_C}
-    ${ARGON2_C}
+    ${DIR_C}
+    ${RECOVERY_C}
+    ${FORMAT_REG_C}
     ${FILE_FORMATS_C}
-    src/stubs.c
+    ${ARGON2_C}
 )
 
 # ---------------------------
-# C++ sources (Qt wrappers)
+# C++ sources (Qt wrappers and UI)
 # ---------------------------
 set(CPP_SOURCES
     src/main.cpp
-    src/progress_cb.c
     src/wrappers/disk.cpp
     src/wrappers/partitionlist.cpp
     src/wrappers/signatureregistry.cpp
@@ -260,15 +290,21 @@ set(CPP_SOURCES
 )
 
 # ---------------------------
-# Photorec_nc executable
+# Executable
 # ---------------------------
 add_executable(recovery_qt ${ALL_C_SOURCES} ${CPP_SOURCES})
 set_target_properties(recovery_qt PROPERTIES OUTPUT_NAME "recovery-qt")
 
 set_source_files_properties(${ALL_C_SOURCES} PROPERTIES LANGUAGE C)
 
+# Include all subdirectories so includes like #include "fat.h" still resolve
 target_include_directories(recovery_qt PRIVATE
     ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/include
+    ${CMAKE_SOURCE_DIR}/src/core
+    ${CMAKE_SOURCE_DIR}/src/fs
+    ${CMAKE_SOURCE_DIR}/src/disk
+    ${CMAKE_SOURCE_DIR}/src/formats
     ${CMAKE_SOURCE_DIR}/src/common
     ${CMAKE_SOURCE_DIR}/src/vendor/argon2
     ${CMAKE_BINARY_DIR}
@@ -310,18 +346,11 @@ target_compile_definitions(recovery_qt PRIVATE
 )
 
 # ---------------------------
-# Compile options (C vs C++)
+# Compile options
 # ---------------------------
 target_compile_options(recovery_qt PRIVATE
     -include ${CMAKE_BINARY_DIR}/config.h
-    $<$<COMPILE_LANGUAGE:C>:-O2>
-    $<$<COMPILE_LANGUAGE:C>:-g>
-    $<$<COMPILE_LANGUAGE:C>:-Wall>
-    $<$<COMPILE_LANGUAGE:C>:-Wextra>
-    $<$<COMPILE_LANGUAGE:CXX>:-O2>
-    $<$<COMPILE_LANGUAGE:CXX>:-g>
-    $<$<COMPILE_LANGUAGE:CXX>:-Wall>
-    $<$<COMPILE_LANGUAGE:CXX>:-Wextra>
+    -O2 -g -Wall -Wextra
     $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>
 )
 
