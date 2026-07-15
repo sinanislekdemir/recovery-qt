@@ -1,5 +1,5 @@
 /*
-    File: pcarver.c
+    File: carver.c
 
     Copyright (C) 2024 Christophe GRENIER <grenier@cgsecurity.org>
 
@@ -30,9 +30,9 @@
 #include "intrf.h"
 #include "log.h"
 #include "hdaccess.h"
-#include "photorec_nc.h"
+#include "recovery.h"
 #include "filegen.h"
-#include "progress_cb.h"
+#include "progress.h"
 
 extern file_enable_t array_file_enable[];
 extern file_check_list_t file_check_list;

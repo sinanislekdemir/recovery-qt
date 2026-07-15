@@ -1,5 +1,5 @@
 /*
-    File: prestore.c
+    File: restore.c
 
     Copyright (C) 2024 Christophe GRENIER <grenier@cgsecurity.org>
 
@@ -42,8 +42,8 @@
 #include "ntfs.h"
 #include "log.h"
 #include "hdaccess.h"
-#include "photorec_nc.h"
-#include "progress_cb.h"
+#include "recovery.h"
+#include "progress.h"
 
 /*
  * ============================================================================

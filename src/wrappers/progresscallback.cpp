@@ -26,7 +26,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "progress_cb.h"
+#include "progress.h"
 #ifdef __cplusplus
 }
 #endif

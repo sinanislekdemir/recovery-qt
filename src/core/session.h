@@ -1,5 +1,5 @@
 /*
-    File: psession.h
+    File: session.h
 
     Copyright (C) 2025 Sinan Islekdemir <sinan@islekdemir.com>
 
@@ -18,14 +18,14 @@
     Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
  */
-#ifndef _PSESSION_H
-#define _PSESSION_H
+#ifndef SESSION_H
+#define SESSION_H
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <stdint.h>
-#include "photorec_nc.h"
+#include "recovery.h"
 #include "common.h"
 
 #define SESSION_MAGIC      0x53455352  /* "RSES" little-endian */
@@ -100,4 +100,4 @@ int session_save_checkpoint(uint64_t progress1, uint64_t progress2);
 #ifdef __cplusplus
 } /* closing brace for extern "C" */
 #endif
-#endif /* _PSESSION_H */
+#endif /* SESSION_H */

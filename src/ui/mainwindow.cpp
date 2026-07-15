@@ -37,14 +37,14 @@
 #include "wrappers/sessionmanager.hpp"
 #include "common/format_utils.hpp"
 #include "common/theme.hpp"
-#include "photorec_nc.h"
+#include "recovery.h"
 #include <QDebug>
 #include <QStandardItemModel>
 #include <QMenuBar>
 #include <QEventLoop>
 
 extern "C" {
-#include "pbackup.h"
+#include "backup.h"
 }
 #include <QMenu>
 #include <QAction>

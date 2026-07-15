@@ -30,9 +30,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "psession.h"
+#include "session.h"
 #include "common.h"
-#include "progress_cb.h"
+#include "progress.h"
 #ifdef __cplusplus
 }
 #endif

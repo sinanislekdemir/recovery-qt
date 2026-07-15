@@ -32,7 +32,7 @@ class ProgressCallback;
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "photorec_nc.h"
+#include "recovery.h"
 #include "types.h"
 #ifdef __cplusplus
 }

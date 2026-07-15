@@ -1,5 +1,5 @@
 /*
-    File: pbackup.c
+    File: backup.c
 
     Copyright (C) 2024 Christophe GRENIER <grenier@cgsecurity.org>
 
@@ -42,8 +42,8 @@
 #include "ntfs.h"
 #include "log.h"
 #include "hdaccess.h"
-#include "photorec_nc.h"
-#include "pbackup.h"
+#include "recovery.h"
+#include "backup.h"
 #if defined(HAVE_LIBNTFS)
 #include <ntfs/volume.h>
 #include <ntfs/attrib.h>

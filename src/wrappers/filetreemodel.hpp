@@ -33,7 +33,7 @@ class QStandardItemModel;
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "photorec_nc.h"
+#include "recovery.h"
 #ifdef __cplusplus
 }
 #endif

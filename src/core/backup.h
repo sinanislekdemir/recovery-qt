@@ -1,5 +1,5 @@
 /*
-    File: pbackup.h
+    File: backup.h
 
     Copyright (C) 2024 Christophe GRENIER <grenier@cgsecurity.org>
 
@@ -18,13 +18,13 @@
     Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
  */
-#ifndef _PBACKUP_H
-#define _PBACKUP_H
+#ifndef BACKUP_H
+#define BACKUP_H
 #ifdef __cplusplus
 extern "C" {
 #endif
 #include <stdint.h>
-#include "photorec_nc.h"
+#include "recovery.h"
 
 #define PBACKUP_MAGIC 0x44534B42  /* "DSKB" little-endian */
 #define PBACKUP_VERSION 1

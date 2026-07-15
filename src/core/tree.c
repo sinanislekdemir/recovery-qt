@@ -1,6 +1,6 @@
 /*
 
-    File: ptree.c
+    File: tree.c
 
     Copyright (C) 2024 Christophe GRENIER <grenier@cgsecurity.org>
 
@@ -27,7 +27,7 @@
 #include <string.h>
 #include "types.h"
 #include "common.h"
-#include "photorec_nc.h"
+#include "recovery.h"
 
 static file_node_t *node_alloc(const char *name, int is_dir,
     uint64_t size, uint64_t first_sector, uint64_t num_sectors,

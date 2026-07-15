@@ -1,6 +1,6 @@
 /*
     
-    File: progress_cb.h
+    File: progress.h
 
     Copyright (C) 2025 Sinan Islekdemir <sinan@islekdemir.com>
 
@@ -20,13 +20,13 @@
 
  */
 /*
-    File: progress_cb.h
+    File: progress.h
 
     Callback types and global pointers for progress reporting.
     Set by Qt wrapper layer before calling C scanner/carver/restorer.
  */
-#ifndef _PROGRESS_CB_H
-#define _PROGRESS_CB_H
+#ifndef _PROGRESS_H
+#define _PROGRESS_H
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -65,4 +65,4 @@ extern progress_cancel_fn g_restorer_cancel;
 #ifdef __cplusplus
 } /* closing brace for extern "C" */
 #endif
-#endif /* _PROGRESS_CB_H */
+#endif /* _PROGRESS_H */

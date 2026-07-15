@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 #include "dir_common.h"
-#include "photorec_nc.h"
+#include "recovery.h"
 
 
 int ntfs_undelete_part(disk_t *disk_car, const partition_t *partition, const int verbose, char **current_cmd);

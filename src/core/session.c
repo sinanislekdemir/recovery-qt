@@ -1,5 +1,5 @@
 /*
-    File: psession.c
+    File: session.c
 
     Copyright (C) 2025 Sinan Islekdemir <sinan@islekdemir.com>
 
@@ -29,8 +29,8 @@
 #include "types.h"
 #include "common.h"
 #include "log.h"
-#include "photorec_nc.h"
-#include "psession.h"
+#include "recovery.h"
+#include "session.h"
 
 #define SESSION_MAX_PATH 4096
 #define SESSION_MAX_MODEL 256

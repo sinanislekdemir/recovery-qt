@@ -1,6 +1,6 @@
 /*
 
-    File: pscanner.c
+    File: scanner.c
 
     Copyright (C) 2024 Christophe GRENIER <grenier@cgsecurity.org>
 
@@ -40,10 +40,10 @@
 #include "fat.h"
 #include "ntfs.h"
 #include "log.h"
-#include "photorec_nc.h"
+#include "recovery.h"
 #include "hdaccess.h"
-#include "progress_cb.h"
-#include "psession.h"
+#include "progress.h"
+#include "session.h"
 #if defined(HAVE_LIBNTFS)
 #include <ntfs/volume.h>
 #include <ntfs/attrib.h>

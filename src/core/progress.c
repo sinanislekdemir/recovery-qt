@@ -1,6 +1,6 @@
 /*
     
-    File: progress_cb.c
+    File: progress.c
 
     Copyright (C) 2025 Sinan Islekdemir <sinan@islekdemir.com>
 
@@ -20,7 +20,7 @@
 
  */
 
-#include "progress_cb.h"
+#include "progress.h"
 
 checkpoint_fn g_checkpoint_progress = 0;
 session_save_cb_fn g_session_save_cb = 0;

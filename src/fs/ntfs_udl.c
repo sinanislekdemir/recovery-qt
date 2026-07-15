@@ -77,7 +77,7 @@
 #include "log_part.h"
 #include "ntfs_udl.h"
 #include "intrf.h"
-#include "photorec_nc.h"
+#include "recovery.h"
 extern char *get_default_location(void);
 
 #ifdef HAVE_LIBNTFS
@@ -114,8 +114,8 @@ extern char *get_default_location(void);
 #include "ntfs_dir.h"
 #include "ntfs_utl.h"
 #include "setdate.h"
-#include "progress_cb.h"
-#include "psession.h"
+#include "progress.h"
+#include "session.h"
 
 extern int g_scanner_resume_phase;
 extern uint64_t g_scanner_resume_offset;

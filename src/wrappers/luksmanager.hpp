@@ -31,7 +31,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "photorec_nc.h"
+#include "recovery.h"
 #include "luksdec.h"
 #include "luks.h"
 #ifdef __cplusplus

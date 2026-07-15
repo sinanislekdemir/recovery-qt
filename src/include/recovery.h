@@ -1,6 +1,6 @@
 /*
 
-    File: photorec_nc.h
+    File: recovery.h
 
     Copyright (C) 2024 Christophe GRENIER <grenier@cgsecurity.org>
 
@@ -19,8 +19,8 @@
     Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
  */
-#ifndef _PHOTOREC_NC_H
-#define _PHOTOREC_NC_H
+#ifndef RECOVERY_H
+#define RECOVERY_H
 #ifdef __cplusplus
 extern "C" {
 #endif

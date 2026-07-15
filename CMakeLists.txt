@@ -82,10 +82,10 @@ set(DIR_C
 # C sources - Recovery engine
 # ---------------------------
 set(RECOVERY_C
-    src/core/ptree.c       src/core/pscanner.c     src/core/prestore.c
-    src/core/pcarver.c     src/core/pbackup.c      src/core/psession.c
+    src/core/tree.c       src/core/scanner.c     src/core/restore.c
+    src/core/carver.c     src/core/backup.c      src/core/session.c
     src/core/dir.c         src/core/geometry.c     src/core/file_list.c
-    src/core/utfsize.c     src/core/progress_cb.c  src/core/stubs.c
+    src/core/utfsize.c     src/core/progress.c  src/core/default_location.c
 )
 
 # ---------------------------
