@@ -24,12 +24,22 @@
 #include <QHBoxLayout>
 #include <QFont>
 #include <QFrame>
+#include <QTimer>
+#include <cstdlib>
 
 LUKSPasswordDialog::LUKSPasswordDialog(QWidget *parent)
     : QDialog(parent), m_infoLabel(nullptr), m_passwordEdit(nullptr), m_showPwdBtn(nullptr), m_decryptBtn(nullptr),
       m_cancelBtn(nullptr) {
   setupUi();
   applyTheme();
+  /* Debug hook: when RECOVERY_QT_LUKS_PASS is set, auto-fill the passphrase
+   * and accept the dialog on the next event-loop tick. This avoids an
+   * interactive prompt under wine for automated crash reproduction. */
+  const char *env = std::getenv("RECOVERY_QT_LUKS_PASS");
+  if (env != nullptr && env[0] != '\0') {
+    m_passwordEdit->setText(QString::fromUtf8(env));
+    QTimer::singleShot(0, this, &QDialog::accept);
+  }
 }
 
 void LUKSPasswordDialog::setupUi() {

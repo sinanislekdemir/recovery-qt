@@ -14,6 +14,7 @@ find_package(PkgConfig REQUIRED)
 find_package(Threads REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(Iconv REQUIRED)
 
 pkg_check_modules(NTFS3G REQUIRED libntfs-3g)
 pkg_check_modules(EXT2FS REQUIRED ext2fs)
@@ -24,8 +25,13 @@ pkg_check_modules(UUID REQUIRED uuid)
 # Config header generation
 # ---------------------------
 string(TIMESTAMP BUILD_DATE "%B %Y")
+if(WIN32)
+    set(CONFIG_H_TEMPLATE ${CMAKE_SOURCE_DIR}/win/config.h.cmake.in)
+else()
+    set(CONFIG_H_TEMPLATE ${CMAKE_SOURCE_DIR}/config.h.cmake.in)
+endif()
 configure_file(
-    ${CMAKE_SOURCE_DIR}/config.h.cmake.in
+    ${CONFIG_H_TEMPLATE}
     ${CMAKE_BINARY_DIR}/config.h
 )
 
@@ -113,6 +119,20 @@ set(ARGON2_C
 )
 
 # ---------------------------
+# Windows-specific sources (win/)
+# ---------------------------
+set(WIN_C "")
+set(WIN_RESOURCES "")
+if(WIN32)
+    set(WIN_C
+        win/src/win32.c
+        win/src/hdwin32.c
+        win/src/mingw_compat.c
+    )
+    set(WIN_RESOURCES win/recovery-qt.rc)
+endif()
+
+# ---------------------------
 # All C sources
 # ---------------------------
 set(ALL_C_SOURCES
@@ -124,6 +144,7 @@ set(ALL_C_SOURCES
     ${FORMAT_REG_C}
     ${FILE_FORMATS_C}
     ${ARGON2_C}
+    ${WIN_C}
 )
 
 # ---------------------------
@@ -157,11 +178,18 @@ set(CPP_SOURCES
 # ---------------------------
 # Executable
 # ---------------------------
-add_executable(recovery_qt ${ALL_C_SOURCES} ${CPP_SOURCES})
+add_executable(recovery_qt ${ALL_C_SOURCES} ${CPP_SOURCES} ${WIN_RESOURCES})
 set_target_properties(recovery_qt PROPERTIES
     OUTPUT_NAME "recovery-qt"
     AUTOMOC ON
 )
+
+if(WIN32)
+    # Qt6 defines UNICODE, which redirects CreateFile(A) → CreateFileW among
+    # other Win32 APIs.  recovery-qt's win32 C sources pass char* strings and
+    # must call the ANSI versions; the Qt C++ wrappers do not need W variants.
+    qt_disable_unicode_defines(recovery_qt)
+endif()
 
 set_source_files_properties(${ALL_C_SOURCES} PROPERTIES LANGUAGE C)
 
@@ -177,6 +205,10 @@ target_include_directories(recovery_qt PRIVATE
     ${CMAKE_BINARY_DIR}
 )
 
+if(WIN32)
+    target_include_directories(recovery_qt PRIVATE ${CMAKE_SOURCE_DIR}/win/src)
+endif()
+
 target_include_directories(recovery_qt SYSTEM PRIVATE
     ${NTFS3G_INCLUDE_DIRS}
     ${EXT2FS_INCLUDE_DIRS}
@@ -190,13 +222,20 @@ target_link_libraries(recovery_qt PRIVATE
     Qt6::Widgets
     Threads::Threads
     ZLIB::ZLIB
-    ${NTFS3G_LIBRARIES}
-    ${EXT2FS_LIBRARIES}
-    ${COM_ERR_LIBRARIES}
-    ${UUID_LIBRARIES}
+    ${NTFS3G_LINK_LIBRARIES}
+    ${EXT2FS_LINK_LIBRARIES}
+    ${COM_ERR_LINK_LIBRARIES}
+    ${UUID_LINK_LIBRARIES}
     OpenSSL::Crypto
+    Iconv::Iconv
     ${CMAKE_DL_LIBS}
 )
+
+if(WIN32)
+    set_target_properties(recovery_qt PROPERTIES WIN32_EXECUTABLE ON)
+    target_link_options(recovery_qt PRIVATE -static -static-libgcc -static-libstdc++ -s)
+    target_link_libraries(recovery_qt PRIVATE ws2_32 crypt32)
+endif()
 
 # ---------------------------
 # Compile definitions
@@ -211,6 +250,62 @@ target_compile_definitions(recovery_qt PRIVATE
     _LARGEFILE64_SOURCE
     _FILE_OFFSET_BITS=64
 )
+
+if(WIN32)
+    target_compile_definitions(recovery_qt PRIVATE __USE_MINGW_ANSI_STDIO=1)
+
+    # Headless console harness exercising the C core (scanner, restore,
+    # preview capture, LUKS decrypt) without the GUI. Runs under wine.
+    add_executable(core_test EXCLUDE_FROM_ALL ${ALL_C_SOURCES} win/src/core_test_win.c)
+    set_target_properties(core_test PROPERTIES OUTPUT_NAME "core-test")
+    set_source_files_properties(win/src/core_test_win.c PROPERTIES LANGUAGE C)
+    target_include_directories(core_test PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src/include
+        ${CMAKE_SOURCE_DIR}/src/core
+        ${CMAKE_SOURCE_DIR}/src/fs
+        ${CMAKE_SOURCE_DIR}/src/disk
+        ${CMAKE_SOURCE_DIR}/src/formats
+        ${CMAKE_SOURCE_DIR}/src/common
+        ${CMAKE_SOURCE_DIR}/src/vendor/argon2
+        ${CMAKE_SOURCE_DIR}/win/src
+        ${CMAKE_BINARY_DIR}
+    )
+    target_include_directories(core_test SYSTEM PRIVATE
+        ${NTFS3G_INCLUDE_DIRS}
+        ${EXT2FS_INCLUDE_DIRS}
+        ${COM_ERR_INCLUDE_DIRS}
+        ${UUID_INCLUDE_DIRS}
+        ${ZLIB_INCLUDE_DIRS}
+    )
+    target_link_libraries(core_test PRIVATE
+        Threads::Threads
+        ZLIB::ZLIB
+        ${NTFS3G_LINK_LIBRARIES}
+        ${EXT2FS_LINK_LIBRARIES}
+        ${COM_ERR_LINK_LIBRARIES}
+        ${UUID_LINK_LIBRARIES}
+        OpenSSL::Crypto
+        Iconv::Iconv
+        ws2_32
+        crypt32
+    )
+    target_compile_definitions(core_test PRIVATE
+        HAVE_CONFIG_H
+        TESTDISK_LSB
+        BUILD_UTC="${BUILD_UTC}"
+        _GNU_SOURCE
+        _LARGEFILE_SOURCE
+        _LARGEFILE64_SOURCE
+        _FILE_OFFSET_BITS=64
+        __USE_MINGW_ANSI_STDIO=1
+    )
+    target_compile_options(core_test PRIVATE
+        -include ${CMAKE_BINARY_DIR}/config.h
+        -O2 -g -Wall -Wextra -Wno-unused-parameter -Wno-address-of-packed-member
+    )
+    target_link_options(core_test PRIVATE -static -static-libgcc)
+endif()
 
 # ---------------------------
 # Compile options
@@ -230,37 +325,53 @@ target_compile_options(recovery_qt PRIVATE
 # do not lint it.
 set_source_files_properties(${ARGON2_C} PROPERTIES COMPILE_OPTIONS "-w")
 
+if(WIN32)
+    # Static Qt6Core bundles its own blake2 with the same public symbol names;
+    # rename the vendored argon2 copies to avoid duplicate symbols.
+    set_property(SOURCE ${ARGON2_C} APPEND PROPERTY COMPILE_DEFINITIONS
+        blake2b_init_param=argon2_blake2b_init_param
+        blake2b_init=argon2_blake2b_init
+        blake2b_init_key=argon2_blake2b_init_key
+        blake2b_update=argon2_blake2b_update
+        blake2b_final=argon2_blake2b_final
+        blake2b=argon2_blake2b
+    )
+endif()
+
 # ---------------------------
 # Install
 # ---------------------------
 include(GNUInstallDirs)
 
 install(TARGETS recovery_qt RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES ${CMAKE_SOURCE_DIR}/src/resources/recovery-qt.desktop
-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-install(FILES ${CMAKE_SOURCE_DIR}/logo.png
-        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/256x256/apps
-        RENAME recovery-qt.png)
-install(FILES README.md COPYING
-        DESTINATION ${CMAKE_INSTALL_DOCDIR}
-        OPTIONAL)
 
-# ---------------------------
-# CPack / DEB packaging
-# ---------------------------
-set(CPACK_GENERATOR "DEB")
-set(CPACK_DEBIAN_PACKAGE_NAME "recovery-qt")
-set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
-set(CPACK_PACKAGE_VENDOR "Sinan Islekdemir")
-set(CPACK_PACKAGE_CONTACT "sinan@islekdemir.com")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Data recovery and file carving tool")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Sinan Islekdemir <sinan@islekdemir.com>")
-set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/sinanislekdemir/recovery-qt")
-set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS
-    "libqt6widgets6 (>= 6.2), libqt6core6 (>= 6.2), libntfs-3g89, libext2fs2, zlib1g, libuuid1, policykit-1")
-set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
-set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
-set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/COPYING)
-set(CPACK_RESOURCE_FILE_README ${CMAKE_SOURCE_DIR}/README.md)
-include(CPack)
+if(NOT WIN32)
+    install(FILES ${CMAKE_SOURCE_DIR}/src/resources/recovery-qt.desktop
+            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+    install(FILES ${CMAKE_SOURCE_DIR}/logo.png
+            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/256x256/apps
+            RENAME recovery-qt.png)
+    install(FILES README.md COPYING
+            DESTINATION ${CMAKE_INSTALL_DOCDIR}
+            OPTIONAL)
+
+    # ---------------------------
+    # CPack / DEB packaging
+    # ---------------------------
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_DEBIAN_PACKAGE_NAME "recovery-qt")
+    set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+    set(CPACK_PACKAGE_VENDOR "Sinan Islekdemir")
+    set(CPACK_PACKAGE_CONTACT "sinan@islekdemir.com")
+    set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Data recovery and file carving tool")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Sinan Islekdemir <sinan@islekdemir.com>")
+    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/sinanislekdemir/recovery-qt")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS
+        "libqt6widgets6 (>= 6.2), libqt6core6 (>= 6.2), libntfs-3g89, libext2fs2, zlib1g, libuuid1, policykit-1")
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
+    set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+    set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/COPYING)
+    set(CPACK_RESOURCE_FILE_README ${CMAKE_SOURCE_DIR}/README.md)
+    include(CPack)
+endif()

@@ -31,6 +31,14 @@
 #include <unistd.h>
 #include "types.h"
 #include "common.h"
+
+#ifdef __MINGW32__
+/* Windows has no POSIX ownership; restored files keep the current user. */
+typedef int uid_t;
+typedef int gid_t;
+#define chown(path, uid, gid) 0
+#endif
+
 #include "intrf.h"
 #include "dir_common.h"
 #include "dir.h"

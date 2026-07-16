@@ -706,22 +706,62 @@ void mkdir_local_for_file(const char *filename) {
 static int g_memory_capture = 0;
 static char *g_capture_ptr = NULL;
 static size_t g_capture_len = 0;
+#ifdef __MINGW32__
+/* MinGW has no open_memstream(); back the capture with a temp file that is
+ * read into memory on the first get_capture_buffer() call. */
+static char g_capture_path[4096] = {0};
+
+static void capture_load_from_file(void) {
+  FILE *f;
+  long len;
+  if (g_capture_ptr != NULL || g_capture_path[0] == '\0')
+    return;
+  f = fopen(g_capture_path, "rb");
+  if (f == NULL)
+    return;
+  if (fseek(f, 0, SEEK_END) != 0 || (len = ftell(f)) < 0) {
+    fclose(f);
+    return;
+  }
+  rewind(f);
+  g_capture_ptr = (char *)MALLOC(len + 1);
+  g_capture_len = fread(g_capture_ptr, 1, len, f);
+  g_capture_ptr[g_capture_len] = '\0';
+  fclose(f);
+  remove(g_capture_path);
+  g_capture_path[0] = '\0';
+}
+#endif
 
 void set_memory_capture(void) {
   g_memory_capture = 1;
   g_capture_ptr = NULL;
   g_capture_len = 0;
+#ifdef __MINGW32__
+  g_capture_path[0] = '\0';
+#endif
 }
 
 void clear_memory_capture(void) {
   g_memory_capture = 0;
+#ifdef __MINGW32__
+  /* Preserve the captured bytes: callers invoke get_capture_buffer() after
+   * clearing the capture flag. */
+  capture_load_from_file();
+#endif
 }
 
 char *get_capture_buffer(void) {
+#ifdef __MINGW32__
+  capture_load_from_file();
+#endif
   return g_capture_ptr;
 }
 
 size_t get_capture_size(void) {
+#ifdef __MINGW32__
+  capture_load_from_file();
+#endif
   return g_capture_len;
 }
 
@@ -742,7 +782,17 @@ FILE *fopen_local(char **localfilename, const char *localroot, const char *filen
   if (g_memory_capture) {
     free(dst);
     *localfilename = strdup(filename);
+#ifdef __MINGW32__
+    {
+      const char *tmpdir = getenv("TEMP");
+      if (tmpdir == NULL)
+        tmpdir = ".";
+      snprintf(g_capture_path, sizeof(g_capture_path), "%s\\recovery-qt-capture.tmp", tmpdir);
+      return fopen(g_capture_path, "w+b");
+    }
+#else
     return open_memstream(&g_capture_ptr, &g_capture_len);
+#endif
   }
   strip_fn(dst);
   f_out = fopen(dst, "wb");

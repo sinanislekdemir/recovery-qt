@@ -32,10 +32,9 @@ void Scanner::start(scan_tree_t *tree, disk_t *disk, const partition_t *partitio
   if (!pc)
     return;
 
+  storeConnection(connect(pc, &ProgressCallback::scannerProgress, this, &Scanner::progressUpdated, Qt::AutoConnection));
   storeConnection(
-      connect(pc, &ProgressCallback::scannerProgress, this, &Scanner::progressUpdated, Qt::DirectConnection));
-  storeConnection(
-      connect(pc, &ProgressCallback::scannerIndxProgress, this, &Scanner::indxProgressUpdated, Qt::DirectConnection));
+      connect(pc, &ProgressCallback::scannerIndxProgress, this, &Scanner::indxProgressUpdated, Qt::AutoConnection));
 
   startThread([this, pc, tree, disk, partition, deep]() {
     pc->installScannerCallbacks();

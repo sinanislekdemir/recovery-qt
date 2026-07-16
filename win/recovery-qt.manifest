@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+    File: recovery-qt.manifest
+
+    Copyright (C) 2026 Sinan Islekdemir <sinan@islekdemir.com>
+    GPL-2.0-or-later
+
+    Requests administrator elevation (UAC) so recovery-qt can open physical
+    drives via \\.\PhysicalDriveN. This replaces the pkexec re-launch used on
+    Linux.
+-->
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity
+      version="7.3.0.0"
+      processorArchitecture="amd64"
+      name="islekdemir.recovery-qt"
+      type="win32"/>
+  <description>Data recovery and file carving tool</description>
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="requireAdministrator" uiAccess="false"/>
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <!-- Windows 10 / 11 -->
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>
+    </application>
+  </compatibility>
+</assembly>
