@@ -25,7 +25,6 @@
 extern "C" {
 #endif
 
-
 void autoset_unit(disk_t *disk_car);
 
 #ifdef __cplusplus

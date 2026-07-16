@@ -25,7 +25,6 @@
 extern "C" {
 #endif
 
-
 int is_hpa_or_dco(const disk_t *disk);
 
 #ifdef __cplusplus

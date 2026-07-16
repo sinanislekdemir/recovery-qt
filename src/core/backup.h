@@ -26,34 +26,32 @@ extern "C" {
 #include <stdint.h>
 #include "recovery.h"
 
-#define PBACKUP_MAGIC 0x44534B42  /* "DSKB" little-endian */
+#define PBACKUP_MAGIC 0x44534B42 /* "DSKB" little-endian */
 #define PBACKUP_VERSION 1
 #define PBACKUP_HEADER_SIZE 72
-#define PBACKUP_FILE_FLAG_DIR      0x01
+#define PBACKUP_FILE_FLAG_DIR 0x01
 #define PBACKUP_FILE_FLAG_NO_CLUST 0x02
 #define PBACKUP_MAX_PATH 4096
 
 typedef struct {
-    uint32_t magic;
-    uint32_t version;
-    uint32_t flags;
-    int32_t  fs_type;
-    uint64_t disk_size;
-    uint32_t sector_size;
-    uint64_t part_offset;
-    uint64_t part_size;
-    uint32_t cluster_bytes;
-    uint64_t data_offset;
-    uint64_t created;
-    uint32_t file_count;
-    uint16_t model_len;
-    uint16_t reserved2;
-} __attribute__ ((gcc_struct, __packed__)) pbackup_header_t;
+  uint32_t magic;
+  uint32_t version;
+  uint32_t flags;
+  int32_t fs_type;
+  uint64_t disk_size;
+  uint32_t sector_size;
+  uint64_t part_offset;
+  uint64_t part_size;
+  uint32_t cluster_bytes;
+  uint64_t data_offset;
+  uint64_t created;
+  uint32_t file_count;
+  uint16_t model_len;
+  uint16_t reserved2;
+} __attribute__((gcc_struct, __packed__)) pbackup_header_t;
 
-int backup_create(disk_t *disk, const partition_t *partition,
-    const char *dest_dir);
-int backup_restore(scan_tree_t *tree, disk_t *disk,
-    const partition_t *partition, const char *path);
+int backup_create(disk_t *disk, const partition_t *partition, const char *dest_dir);
+int backup_restore(scan_tree_t *tree, disk_t *disk, const partition_t *partition, const char *path);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

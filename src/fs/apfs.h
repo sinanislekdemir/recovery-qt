@@ -28,8 +28,8 @@ extern "C" {
 
 int check_APFS(disk_t *disk_car, partition_t *partition);
 
-
-int recover_APFS(const disk_t *disk_car, const nx_superblock_t *sb, partition_t *partition, const int verbose, const int dump_ind);
+int recover_APFS(const disk_t *disk_car, const nx_superblock_t *sb, partition_t *partition, const int verbose,
+                 const int dump_ind);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

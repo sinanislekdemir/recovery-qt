@@ -32,73 +32,60 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_clip(file_stat_t *file_stat);
 
-const file_hint_t file_hint_clip= {
-  .extension="clip",
-  .description="Clip Studio Paint",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_clip
-};
+const file_hint_t file_hint_clip = {.extension = "clip",
+                                    .description = "Clip Studio Paint",
+                                    .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                    .recover = 1,
+                                    .enable_by_default = 1,
+                                    .register_header_check = &register_header_check_clip};
 
-struct clip_header
-{
+struct clip_header {
   char header[8];
   uint64_t size;
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
-struct clip_chunk
-{
-  char chunk[4];	/* CHNK */
+struct clip_chunk {
+  char chunk[4]; /* CHNK */
   char type[4];
   uint64_t length;
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
+static data_check_t data_check_clip(const unsigned char *buffer, const unsigned int buffer_size,
+                                    file_recovery_t *file_recovery) {
+  while (file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size &&
+         file_recovery->calculated_file_size + 16 <= file_recovery->file_size + buffer_size / 2) {
+    const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
 
-static data_check_t data_check_clip(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  
-  
-  
-  while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
-      file_recovery->calculated_file_size + 16 <= file_recovery->file_size + buffer_size/2)
-  {
-    const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    
-    const struct clip_chunk *chunk=(const struct clip_chunk *)&buffer[i];
-    const uint64_t length=be64(chunk->length);
-    if(length >= 0x100000000 ||
-	memcmp(&buffer[i], "CHNK", 4)!=0)
+    const struct clip_chunk *chunk = (const struct clip_chunk *)&buffer[i];
+    const uint64_t length = be64(chunk->length);
+    if (length >= 0x100000000 || memcmp(&buffer[i], "CHNK", 4) != 0)
       return DC_ERROR;
-    file_recovery->calculated_file_size+=(uint64_t)0x10 + length;
-    if(length==0)
+    file_recovery->calculated_file_size += (uint64_t)0x10 + length;
+    if (length == 0)
       return DC_STOP;
   }
   return DC_CONTINUE;
 }
 
-
-
-static int header_check_clip(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct clip_header *hdr=(const struct clip_header *)buffer;
-  const uint64_t size=be64(hdr->size);
-  if(size <= 0x18 || size > 0x100000000)
+static int header_check_clip(const unsigned char *buffer, const unsigned int buffer_size,
+                             const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                             file_recovery_t *file_recovery_new) {
+  const struct clip_header *hdr = (const struct clip_header *)buffer;
+  const uint64_t size = be64(hdr->size);
+  if (size <= 0x18 || size > 0x100000000)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_clip.extension;
-  file_recovery_new->data_check=&data_check_clip;
-  file_recovery_new->file_check=&file_check_size;
-  file_recovery_new->calculated_file_size=0x18;
-  file_recovery_new->min_filesize=size;
+  file_recovery_new->extension = file_hint_clip.extension;
+  file_recovery_new->data_check = &data_check_clip;
+  file_recovery_new->file_check = &file_check_size;
+  file_recovery_new->calculated_file_size = 0x18;
+  file_recovery_new->min_filesize = size;
   return 1;
 }
 
-static void register_header_check_clip(file_stat_t *file_stat)
-{
+static void register_header_check_clip(file_stat_t *file_stat) {
   register_header_check(0, "CSFCHUNK", 8, &header_check_clip, file_stat);
 }
 #endif

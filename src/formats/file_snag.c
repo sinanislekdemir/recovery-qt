@@ -32,39 +32,31 @@
 #include "filegen.h"
 #include "file_doc.h"
 
-
 static void register_header_check_snag(file_stat_t *file_stat);
 
-const file_hint_t file_hint_snag= {
-  .extension="snag",
-  .description="Snagit",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_snag
-};
+const file_hint_t file_hint_snag = {.extension = "snag",
+                                    .description = "Snagit",
+                                    .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                    .recover = 1,
+                                    .enable_by_default = 1,
+                                    .register_header_check = &register_header_check_snag};
 
-
-static void file_check_snag(file_recovery_t *file_recovery)
-{
+static void file_check_snag(file_recovery_t *file_recovery) {
   file_check_doc_aux(file_recovery, 24);
 }
 
-
-static int header_check_snag(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_snag(const unsigned char *buffer, const unsigned int buffer_size,
+                             const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                             file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_snag.extension;
-  file_recovery_new->file_check=&file_check_snag;
-  file_recovery_new->min_filesize=24+512;
+  file_recovery_new->extension = file_hint_snag.extension;
+  file_recovery_new->file_check = &file_check_snag;
+  file_recovery_new->min_filesize = 24 + 512;
   return 1;
 }
 
-static void register_header_check_snag(file_stat_t *file_stat)
-{
-  static const unsigned char snag_header[8]=  {
-    0xcb, 'T' , 'S' , 'C' , 'S' , 'N' , 'A' , 'G'
-  };
+static void register_header_check_snag(file_stat_t *file_stat) {
+  static const unsigned char snag_header[8] = {0xcb, 'T', 'S', 'C', 'S', 'N', 'A', 'G'};
   register_header_check(0, snag_header, sizeof(snag_header), &header_check_snag, file_stat);
 }
 #endif

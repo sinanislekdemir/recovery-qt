@@ -28,7 +28,7 @@ extern "C" {
 #define BTRFS_SUPER_INFO_OFFSET (64 * 1024)
 #define BTRFS_SUPER_INFO_SIZE 4096
 
-#define BTRFS_SUPER_MIRROR_MAX   3
+#define BTRFS_SUPER_MIRROR_MAX 3
 #define BTRFS_SUPER_MIRROR_SHIFT 12
 #define BTRFS_MAGIC "_BHRfS_M"
 
@@ -52,99 +52,98 @@ extern "C" {
 
 #define BTRFS_UUID_SIZE 16
 struct btrfs_dev_item {
-	/* the internal btrfs device id */
-	uint64_t devid;
+  /* the internal btrfs device id */
+  uint64_t devid;
 
-	/* size of the device */
-	uint64_t total_bytes;
+  /* size of the device */
+  uint64_t total_bytes;
 
-	/* bytes used */
-	uint64_t bytes_used;
+  /* bytes used */
+  uint64_t bytes_used;
 
-	/* optimal io alignment for this device */
-	uint32_t io_align;
+  /* optimal io alignment for this device */
+  uint32_t io_align;
 
-	/* optimal io width for this device */
-	uint32_t io_width;
+  /* optimal io width for this device */
+  uint32_t io_width;
 
-	/* minimal io size for this device */
-	uint32_t sector_size;
+  /* minimal io size for this device */
+  uint32_t sector_size;
 
-	/* type and info about this device */
-	uint64_t type;
+  /* type and info about this device */
+  uint64_t type;
 
-	/* expected generation for this device */
-	uint64_t generation;
+  /* expected generation for this device */
+  uint64_t generation;
 
-	/*
+  /*
 	 * starting byte of this partition on the device,
 	 * to allowr for stripe alignment in the future
 	 */
-	uint64_t start_offset;
+  uint64_t start_offset;
 
-	/* grouping information for allocation decisions */
-	uint32_t dev_group;
+  /* grouping information for allocation decisions */
+  uint32_t dev_group;
 
-	/* seek speed 0-100 where 100 is fastest */
-	uint8_t seek_speed;
+  /* seek speed 0-100 where 100 is fastest */
+  uint8_t seek_speed;
 
-	/* bandwidth 0-100 where 100 is fastest */
-	uint8_t bandwidth;
+  /* bandwidth 0-100 where 100 is fastest */
+  uint8_t bandwidth;
 
-	/* btrfs generated uuid for this device */
-	uint8_t uuid[BTRFS_UUID_SIZE];
+  /* btrfs generated uuid for this device */
+  uint8_t uuid[BTRFS_UUID_SIZE];
 
-	/* uuid of FS who owns this device */
-	uint8_t fsid[BTRFS_UUID_SIZE];
-} __attribute__ ((gcc_struct, __packed__));
+  /* uuid of FS who owns this device */
+  uint8_t fsid[BTRFS_UUID_SIZE];
+} __attribute__((gcc_struct, __packed__));
 
 struct btrfs_super_block {
-	uint8_t csum[BTRFS_CSUM_SIZE];
-	/* the first 3 fields must match struct btrfs_header */
-	uint8_t fsid[BTRFS_FSID_SIZE];    /* FS specific uuid */
-	uint64_t bytenr; /* this block number */
-	uint64_t flags;
+  uint8_t csum[BTRFS_CSUM_SIZE];
+  /* the first 3 fields must match struct btrfs_header */
+  uint8_t fsid[BTRFS_FSID_SIZE]; /* FS specific uuid */
+  uint64_t bytenr;               /* this block number */
+  uint64_t flags;
 
-	/* allowed to be different from the btrfs_header from here own down */
-	uint64_t magic;
-	uint64_t generation;
-	uint64_t root;
-	uint64_t chunk_root;
-	uint64_t log_root;
+  /* allowed to be different from the btrfs_header from here own down */
+  uint64_t magic;
+  uint64_t generation;
+  uint64_t root;
+  uint64_t chunk_root;
+  uint64_t log_root;
 
-	/* this will help find the new super based on the log root */
-	uint64_t log_root_transid;
-	uint64_t total_bytes;
-	uint64_t bytes_used;
-	uint64_t root_dir_objectid;
-	uint64_t num_devices;
-	uint32_t sectorsize;
-	uint32_t nodesize;
-	uint32_t leafsize;
-	uint32_t stripesize;
-	uint32_t sys_chunk_array_size;
-	uint64_t chunk_root_generation;
-	uint64_t compat_flags;
-	uint64_t compat_ro_flags;
-	uint64_t incompat_flags;
-	uint16_t csum_type;
-	uint8_t root_level;
-	uint8_t chunk_root_level;
-	uint8_t log_root_level;
-	struct btrfs_dev_item dev_item;
+  /* this will help find the new super based on the log root */
+  uint64_t log_root_transid;
+  uint64_t total_bytes;
+  uint64_t bytes_used;
+  uint64_t root_dir_objectid;
+  uint64_t num_devices;
+  uint32_t sectorsize;
+  uint32_t nodesize;
+  uint32_t leafsize;
+  uint32_t stripesize;
+  uint32_t sys_chunk_array_size;
+  uint64_t chunk_root_generation;
+  uint64_t compat_flags;
+  uint64_t compat_ro_flags;
+  uint64_t incompat_flags;
+  uint16_t csum_type;
+  uint8_t root_level;
+  uint8_t chunk_root_level;
+  uint8_t log_root_level;
+  struct btrfs_dev_item dev_item;
 
-	char label[BTRFS_LABEL_SIZE];
+  char label[BTRFS_LABEL_SIZE];
 
-	/* future expansion */
-	uint64_t reserved[32];
-	uint8_t sys_chunk_array[BTRFS_SYSTEM_CHUNK_ARRAY_SIZE];
-} __attribute__ ((gcc_struct, __packed__));
-
+  /* future expansion */
+  uint64_t reserved[32];
+  uint8_t sys_chunk_array[BTRFS_SYSTEM_CHUNK_ARRAY_SIZE];
+} __attribute__((gcc_struct, __packed__));
 
 int check_btrfs(disk_t *disk_car, partition_t *partition);
 
-
-int recover_btrfs(const disk_t *disk_car, const struct btrfs_super_block *sb,partition_t *partition,const int verbose, const int dump_ind);
+int recover_btrfs(const disk_t *disk_car, const struct btrfs_super_block *sb, partition_t *partition, const int verbose,
+                  const int dump_ind);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

@@ -32,48 +32,41 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_bin(file_stat_t *file_stat);
 
-const file_hint_t file_hint_bin= {
-  .extension="bin",
-  .description="DINO",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_bin
-};
+const file_hint_t file_hint_bin = {.extension = "bin",
+                                   .description = "DINO",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_bin};
 
-struct ticket_header
-{
-  uint16_t magic;	// 01 04
+struct ticket_header {
+  uint16_t magic; // 01 04
   uint32_t size;
-  uint32_t unk;		// 00 07 00 07
-  char	   data_len;	// 9
-  char	   data[9];	// TaTickets
-} __attribute__ ((gcc_struct, __packed__));
+  uint32_t unk;  // 00 07 00 07
+  char data_len; // 9
+  char data[9];  // TaTickets
+} __attribute__((gcc_struct, __packed__));
 
-
-static int header_check_bin(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct ticket_header *hdr=(const struct ticket_header *)buffer;
-  const unsigned int size=le32(hdr->size);
-  if(size < 65)
+static int header_check_bin(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const struct ticket_header *hdr = (const struct ticket_header *)buffer;
+  const unsigned int size = le32(hdr->size);
+  if (size < 65)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension="Ticket.bin";
-  file_recovery_new->calculated_file_size=size;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
-  file_recovery_new->min_filesize=65;
+  file_recovery_new->extension = "Ticket.bin";
+  file_recovery_new->calculated_file_size = size;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
+  file_recovery_new->min_filesize = 65;
   return 1;
 }
 
-static void register_header_check_bin(file_stat_t *file_stat)
-{
-  static const unsigned char bin_header[13]= {
-    0x07, 0x00, 0x07, 0x09, 'T' , 'a' , 'T' ,
-    'i' , 'c' , 'k' , 'e' , 't' , 's' };
+static void register_header_check_bin(file_stat_t *file_stat) {
+  static const unsigned char bin_header[13] = {0x07, 0x00, 0x07, 0x09, 'T', 'a', 'T', 'i', 'c', 'k', 'e', 't', 's'};
   register_header_check(6, bin_header, sizeof(bin_header), &header_check_bin, file_stat);
 }
 #endif

@@ -32,166 +32,141 @@
 #include "filegen.h"
 #include "log.h"
 
-
 static void register_header_check_gif(file_stat_t *file_stat);
-static data_check_t data_check_gif2(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery);
+static data_check_t data_check_gif2(const unsigned char *buffer, const unsigned int buffer_size,
+                                    file_recovery_t *file_recovery);
 
-const file_hint_t file_hint_gif= {
-  .extension="gif",
-  .description="Graphic Interchange Format",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_gif
-};
+const file_hint_t file_hint_gif = {.extension = "gif",
+                                   .description = "Graphic Interchange Format",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_gif};
 
-
-static void file_check_gif(file_recovery_t *file_recovery)
-{
-  const char gif_footer[2]= {0x00, 0x3b};
+static void file_check_gif(file_recovery_t *file_recovery) {
+  const char gif_footer[2] = {0x00, 0x3b};
   char buffer[2];
   /* file_recovery->calculated_file_size is always >= */
-  if(file_recovery->calculated_file_size < 2 ||
-    file_recovery->calculated_file_size >= 0x8000000000000000 ||
-      my_fseek(file_recovery->handle, file_recovery->calculated_file_size-2, SEEK_SET)<0 ||
-      fread(buffer, 2, 1, file_recovery->handle)!=1)
-  {
-    file_recovery->file_size=0;
+  if (file_recovery->calculated_file_size < 2 || file_recovery->calculated_file_size >= 0x8000000000000000 ||
+      my_fseek(file_recovery->handle, file_recovery->calculated_file_size - 2, SEEK_SET) < 0 ||
+      fread(buffer, 2, 1, file_recovery->handle) != 1) {
+    file_recovery->file_size = 0;
     return;
   }
 #ifdef __FRAMAC__
   Frama_C_make_unknown(&buffer, sizeof(buffer));
 #endif
-  if(memcmp(buffer, gif_footer, sizeof(gif_footer))!=0)
-  {
-    file_recovery->file_size=0;
+  if (memcmp(buffer, gif_footer, sizeof(gif_footer)) != 0) {
+    file_recovery->file_size = 0;
     return;
   }
-  file_recovery->file_size=file_recovery->calculated_file_size;
+  file_recovery->file_size = file_recovery->calculated_file_size;
 }
 
+static data_check_t data_check_gif(const unsigned char *buffer, const unsigned int buffer_size,
+                                   file_recovery_t *file_recovery) {
+  if (file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size &&
+      file_recovery->calculated_file_size + 1 < file_recovery->file_size + buffer_size / 2) {
+    const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
 
-static data_check_t data_check_gif(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  
-  
-  if(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
-      file_recovery->calculated_file_size + 1 < file_recovery->file_size + buffer_size/2)
-  {
-    const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    
 #ifdef DEBUG_GIF
     log_info("data_check_gif  calculated_file_size=0x%llx: 0x%02x\n",
-	(long long unsigned)file_recovery->calculated_file_size, buffer[i]);
+             (long long unsigned)file_recovery->calculated_file_size, buffer[i]);
 #endif
-    switch(buffer[i])
-    {
-      case 0x21:
-	/* Plain Text Extension 	21 01 ...		*/
-	/* Graphic Control Extension 	21 f9 04 XX XX XX XX 00 */
-	/* Comment Extension 		21 fe ... 		*/
-	/* Application Extension 	21 ff 			*/
-	file_recovery->calculated_file_size+=2;
-	if(file_recovery->calculated_file_size >= PHOTOREC_MAX_FILE_SIZE)
-	  return DC_STOP;
-	
-	file_recovery->data_check=&data_check_gif2;
-	return data_check_gif2(buffer, buffer_size, file_recovery);
-      case 0x2c:
-	if(i + 20 < buffer_size)
-	{
-	  unsigned int j=10+1;
-	  /* 1	Image Descriptor id=0x2c
+    switch (buffer[i]) {
+    case 0x21:
+      /* Plain Text Extension 	21 01 ...		*/
+      /* Graphic Control Extension 	21 f9 04 XX XX XX XX 00 */
+      /* Comment Extension 		21 fe ... 		*/
+      /* Application Extension 	21 ff 			*/
+      file_recovery->calculated_file_size += 2;
+      if (file_recovery->calculated_file_size >= PHOTOREC_MAX_FILE_SIZE)
+        return DC_STOP;
+
+      file_recovery->data_check = &data_check_gif2;
+      return data_check_gif2(buffer, buffer_size, file_recovery);
+    case 0x2c:
+      if (i + 20 < buffer_size) {
+        unsigned int j = 10 + 1;
+        /* 1	Image Descriptor id=0x2c
 	   * 4: NW corner
 	   * 4: width, heigth,
 	   * 1: is a local color table present ? */
-	  if(((buffer[i+9]>>7)&0x1)>0)
-	  {
-	    /* local color table */
-	    j+=3<<((buffer[i+9]&7)+1);
-	  }
-	  file_recovery->calculated_file_size+=j;
-	  /* 1: Start of image - LZW minimum code size */
-	  /* Table Based Image Data */
-	  if(file_recovery->calculated_file_size >= PHOTOREC_MAX_FILE_SIZE)
-	    return DC_STOP;
-	  file_recovery->data_check=&data_check_gif2;
-	  return data_check_gif2(buffer, buffer_size, file_recovery);
-	}
-	return DC_CONTINUE;
-      case 0x3b:
-	/* Trailer */
-	file_recovery->calculated_file_size++;
-	return DC_STOP;
-      default:
-	return DC_ERROR;
+        if (((buffer[i + 9] >> 7) & 0x1) > 0) {
+          /* local color table */
+          j += 3 << ((buffer[i + 9] & 7) + 1);
+        }
+        file_recovery->calculated_file_size += j;
+        /* 1: Start of image - LZW minimum code size */
+        /* Table Based Image Data */
+        if (file_recovery->calculated_file_size >= PHOTOREC_MAX_FILE_SIZE)
+          return DC_STOP;
+        file_recovery->data_check = &data_check_gif2;
+        return data_check_gif2(buffer, buffer_size, file_recovery);
+      }
+      return DC_CONTINUE;
+    case 0x3b:
+      /* Trailer */
+      file_recovery->calculated_file_size++;
+      return DC_STOP;
+    default:
+      return DC_ERROR;
     }
   }
   return DC_CONTINUE;
 }
 
+static data_check_t data_check_gif2(const unsigned char *buffer, const unsigned int buffer_size,
+                                    file_recovery_t *file_recovery) {
+  while (file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size &&
+         file_recovery->calculated_file_size + 1 < file_recovery->file_size + buffer_size / 2) {
+    const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
 
-static data_check_t data_check_gif2(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  
-  
-  
-  while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
-      file_recovery->calculated_file_size + 1 < file_recovery->file_size + buffer_size/2)
-  {
-    const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    
-    
 #ifdef DEBUG_GIF
-    log_info("data_check_gif2 calculated_file_size=0x%llx\n",
-	(long long unsigned)file_recovery->calculated_file_size);
+    log_info("data_check_gif2 calculated_file_size=0x%llx\n", (long long unsigned)file_recovery->calculated_file_size);
 #endif
-    file_recovery->calculated_file_size+=(uint64_t)1+buffer[i];
-    if(file_recovery->calculated_file_size >= PHOTOREC_MAX_FILE_SIZE)
+    file_recovery->calculated_file_size += (uint64_t)1 + buffer[i];
+    if (file_recovery->calculated_file_size >= PHOTOREC_MAX_FILE_SIZE)
       return DC_STOP;
-    
-    if(buffer[i]==0)
-    {
-      file_recovery->data_check=&data_check_gif;
+
+    if (buffer[i] == 0) {
+      file_recovery->data_check = &data_check_gif;
       return data_check_gif(buffer, buffer_size, file_recovery);
     }
-    
   }
-  
+
   return DC_CONTINUE;
 }
 
-
-static int header_check_gif(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_gif(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   uint64_t offset;
-  offset=6;   /* Header */
-  offset+=7;  /* Logical Screen Descriptor */
-  if((buffer[10]>>7)&0x1)
-  {
+  offset = 6;  /* Header */
+  offset += 7; /* Logical Screen Descriptor */
+  if ((buffer[10] >> 7) & 0x1) {
     /* Global Color Table */
-    offset+=3<<((buffer[10]&7)+1);
+    offset += 3 << ((buffer[10] & 7) + 1);
   }
-  if(offset < buffer_size && buffer[offset]!=0x21 && buffer[offset]!=0x2c)
+  if (offset < buffer_size && buffer[offset] != 0x21 && buffer[offset] != 0x2c)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_gif.extension;
-  file_recovery_new->min_filesize=42;
-  if(file_recovery_new->blocksize < 2)
+  file_recovery_new->extension = file_hint_gif.extension;
+  file_recovery_new->min_filesize = 42;
+  if (file_recovery_new->blocksize < 2)
     return 1;
-  file_recovery_new->calculated_file_size=offset;
-  file_recovery_new->file_check=&file_check_gif;
-  file_recovery_new->data_check=&data_check_gif;
+  file_recovery_new->calculated_file_size = offset;
+  file_recovery_new->file_check = &file_check_gif;
+  file_recovery_new->data_check = &data_check_gif;
   return 1;
 }
 
-static void register_header_check_gif(file_stat_t *file_stat)
-{
-  static const unsigned char gif_header[6]=  { 'G','I','F','8','7','a'};
-  static const unsigned char gif_header2[6]= { 'G','I','F','8','9','a'};
-  register_header_check(0, gif_header,sizeof(gif_header), &header_check_gif, file_stat);
+static void register_header_check_gif(file_stat_t *file_stat) {
+  static const unsigned char gif_header[6] = {'G', 'I', 'F', '8', '7', 'a'};
+  static const unsigned char gif_header2[6] = {'G', 'I', 'F', '8', '9', 'a'};
+  register_header_check(0, gif_header, sizeof(gif_header), &header_check_gif, file_stat);
 #ifndef DISABLED_FOR_FRAMAC
-  register_header_check(0, gif_header2,sizeof(gif_header2), &header_check_gif, file_stat);
+  register_header_check(0, gif_header2, sizeof(gif_header2), &header_check_gif, file_stat);
 #endif
 }
 #endif

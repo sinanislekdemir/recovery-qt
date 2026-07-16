@@ -54,72 +54,63 @@
 #include "common.h"
 #include "log.h"
 
-static long secwest=0;
+static long secwest = 0;
 
 /* coverity[+alloc] */
-void *MALLOC(size_t size)
-{
+void *MALLOC(size_t size) {
   void *res;
-  
+
 #ifdef DISABLED_FOR_FRAMAC
-  assert(size>0);
+  assert(size > 0);
 #endif
   /* Warning, memory leak checker must be posix_memalign/memalign aware, otherwise  *
    * reports may look strange. Aligned memory is required if the buffer is *
    * used for read/write operation with a file opened with O_DIRECT        */
 #if defined(HAVE_POSIX_MEMALIGN)
-  if(size>=512)
-  {
-    if(posix_memalign(&res,4096,size)==0)
-    {
-      memset(res,0,size);
+  if (size >= 512) {
+    if (posix_memalign(&res, 4096, size) == 0) {
+      memset(res, 0, size);
       return res;
     }
   }
 #elif defined(HAVE_MEMALIGN)
-  if(size>=512)
-  {
-    if((res=memalign(4096, size))!=NULL)
-    {
-      memset(res,0,size);
+  if (size >= 512) {
+    if ((res = memalign(4096, size)) != NULL) {
+      memset(res, 0, size);
       return res;
     }
   }
 #endif
 #ifdef DISABLED_FOR_FRAMAC
-  if((res=calloc(1,size))==NULL)
-  {
+  if ((res = calloc(1, size)) == NULL) {
     exit(EXIT_FAILURE);
   }
 #else
-  if((res=malloc(size))==NULL)
-  {
+  if ((res = malloc(size)) == NULL) {
     log_critical("\nCan't allocate %lu bytes of memory.\n", (long unsigned)size);
     log_close();
     exit(EXIT_FAILURE);
   }
-  memset(res,0,size);
+  memset(res, 0, size);
 #endif
-  
+
   return res;
 }
 
 #ifndef HAVE_SNPRINTF
-int snprintf(char *str, size_t size, const char *format, ...)
-{
+int snprintf(char *str, size_t size, const char *format, ...) {
   int res;
   va_list ap;
-  va_start(ap,format);
-  res=vsnprintf(str, size, format, ap);
+  va_start(ap, format);
+  res = vsnprintf(str, size, format, ap);
   va_end(ap);
   return res;
 }
 #endif
 
 #ifndef HAVE_VSNPRINTF
-int vsnprintf(char *str, size_t size, const char *format, va_list ap)
-{
-  return vsprintf(str,format,ap);
+int vsnprintf(char *str, size_t size, const char *format, va_list ap) {
+  return vsprintf(str, format, ap);
 }
 #endif
 
@@ -141,10 +132,8 @@ int vsnprintf(char *str, size_t size, const char *format, va_list ap)
  *
  * @internal
  */
-int strncasecmp(const char * s1, const char * s2, size_t len)
-{
-  while (*s1 && (*s1 == *s2 || tolower(*s1) == tolower(*s2)))
-  {
+int strncasecmp(const char *s1, const char *s2, size_t len) {
+  while (*s1 && (*s1 == *s2 || tolower(*s1) == tolower(*s2))) {
     len--;
     if (len == 0)
       return 0;
@@ -156,23 +145,16 @@ int strncasecmp(const char * s1, const char * s2, size_t len)
 #endif
 
 #ifndef HAVE_STRCASESTR
-char * strcasestr (const char *haystack, const char *needle)
-{
+char *strcasestr(const char *haystack, const char *needle) {
   const char *p, *startn = NULL, *np = NULL;
-  for (p = haystack; *p; p++)
-  {
-    if (np)
-    {
-      if (toupper(*p) == toupper(*np))
-      {
-	if (!*++np)
-	  return startn;
-      }
-      else
-	np = NULL;
-    }
-    else if (toupper(*p) == toupper(*needle))
-    {
+  for (p = haystack; *p; p++) {
+    if (np) {
+      if (toupper(*p) == toupper(*np)) {
+        if (!*++np)
+          return startn;
+      } else
+        np = NULL;
+    } else if (toupper(*p) == toupper(*needle)) {
       np = needle + 1;
       startn = p;
     }
@@ -181,53 +163,47 @@ char * strcasestr (const char *haystack, const char *needle)
 }
 #endif
 
-#if ! defined(HAVE_LOCALTIME_R) && ! defined(__MINGW32__) && !defined(DISABLED_FOR_FRAMAC)
-struct tm *localtime_r(const time_t *timep, struct tm *result)
-{
+#if !defined(HAVE_LOCALTIME_R) && !defined(__MINGW32__) && !defined(DISABLED_FOR_FRAMAC)
+struct tm *localtime_r(const time_t *timep, struct tm *result) {
   return localtime(timep);
 }
 #endif
 
-void set_part_name(partition_t *partition, const char *src, const unsigned int max_size)
-{
+void set_part_name(partition_t *partition, const char *src, const unsigned int max_size) {
   unsigned int i;
-  
-  for(i=0; i<sizeof(partition->fsname)-1 && i<max_size && src[i]!='\0'; i++)
-    partition->fsname[i]=src[i];
-  partition->fsname[i]='\0';
-  
+
+  for (i = 0; i < sizeof(partition->fsname) - 1 && i < max_size && src[i] != '\0'; i++)
+    partition->fsname[i] = src[i];
+  partition->fsname[i] = '\0';
 }
 
-void set_part_name_chomp(partition_t *partition, const char *src, const unsigned int max_size)
-{
+void set_part_name_chomp(partition_t *partition, const char *src, const unsigned int max_size) {
   unsigned int i;
-  
-  for(i=0; i<sizeof(partition->fsname)-1 && i<max_size && src[i]!='\0'; i++)
-    partition->fsname[i]=src[i];
-  
-  while(i>0 && partition->fsname[i-1]==' ')
+
+  for (i = 0; i < sizeof(partition->fsname) - 1 && i < max_size && src[i] != '\0'; i++)
+    partition->fsname[i] = src[i];
+
+  while (i > 0 && partition->fsname[i - 1] == ' ')
     i--;
-  partition->fsname[i]='\0';
-  
+  partition->fsname[i] = '\0';
 }
 
-char* strip_dup(char* str)
-{
+char *strip_dup(char *str) {
   char *end;
   char *tmp;
-  
-  while(isspace(*str))
+
+  while (isspace(*str))
     str++;
-  end=str;
-  
-  for(tmp = str; *tmp != 0; tmp++)
-    if(!isspace(*tmp))
-      end=tmp;
-  
-  if(str == end)
+  end = str;
+
+  for (tmp = str; *tmp != 0; tmp++)
+    if (!isspace(*tmp))
+      end = tmp;
+
+  if (str == end)
     return NULL;
-  *(end+1) = 0;
-  return strdup (str);
+  *(end + 1) = 0;
+  return strdup(str);
 }
 
 /* Convert a MS-DOS time/date pair to a UNIX date (seconds since 1 1 70). */
@@ -241,119 +217,107 @@ char* strip_dup(char* str)
  * time:  5 - 10: min	(0 -  59)
  * time: 11 - 15: hour	(0 -  23)
  */
-#define SECS_PER_MIN	60
-#define SECS_PER_HOUR	(60 * 60)
-#define SECS_PER_DAY	(SECS_PER_HOUR * 24)
+#define SECS_PER_MIN 60
+#define SECS_PER_HOUR (60 * 60)
+#define SECS_PER_DAY (SECS_PER_HOUR * 24)
 /* days between 1.1.70 and 1.1.80 (2 leap days) */
-#define DAYS_DELTA	(365 * 10 + 2)
+#define DAYS_DELTA (365 * 10 + 2)
 /* 120 (2100 - 1980) isn't leap year */
-#define YEAR_2100	120
-#define IS_LEAP_YEAR(y)	(!((y) & 3) && (y) != YEAR_2100)
+#define YEAR_2100 120
+#define IS_LEAP_YEAR(y) (!((y) & 3) && (y) != YEAR_2100)
 
-static unsigned int _date_get_leap_day(const unsigned long int year, const unsigned long int month)
-{
+static unsigned int _date_get_leap_day(const unsigned long int year, const unsigned long int month) {
   unsigned long int leap_day;
-  if (year > YEAR_2100)         /* 2100 isn't leap year */
+  if (year > YEAR_2100) /* 2100 isn't leap year */
   {
-    
     leap_day = (year + 3) / 4;
-    
+
     leap_day--;
-    
-  }
-  else
-  {
-    
+
+  } else {
     leap_day = (year + 3) / 4;
-    
   }
-  
+
   if (IS_LEAP_YEAR(year) && month > 2)
     leap_day++;
-  
+
   return leap_day;
 }
 
-static unsigned long int _date_get_days(const unsigned long int days, const unsigned long int year, const unsigned long int leap_day, const unsigned long int day)
-{
+static unsigned long int _date_get_days(const unsigned long int days, const unsigned long int year,
+                                        const unsigned long int leap_day, const unsigned long int day) {
   return days + year * 365 + leap_day + day + DAYS_DELTA;
 }
 
-static unsigned long int _date_get_seconds(const unsigned long int seconds2)
-{
+static unsigned long int _date_get_seconds(const unsigned long int seconds2) {
   return seconds2 << 1;
 }
 
-static unsigned long int _date_min_to_seconds(const unsigned long int m)
-{
+static unsigned long int _date_min_to_seconds(const unsigned long int m) {
   return m * SECS_PER_MIN;
 }
 
-static unsigned long int _date_hours_to_seconds(const unsigned long int h)
-{
+static unsigned long int _date_hours_to_seconds(const unsigned long int h) {
   return h * SECS_PER_HOUR;
 }
 
-time_t date_dos2unix(const unsigned short f_time, const unsigned short f_date)
-{
-  static const unsigned int days_in_year[] = { 0, 0,31,59,90,120,151,181,212,243,273,304,334,0,0,0 };
+time_t date_dos2unix(const unsigned short f_time, const unsigned short f_date) {
+  static const unsigned int days_in_year[] = {0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 0, 0, 0};
   /* JanFebMarApr May Jun Jul Aug Sep Oct Nov Dec */
 
-  unsigned long int day,leap_day,month,year,days;
+  unsigned long int day, leap_day, month, year, days;
   unsigned long int secs;
-  year  = f_date >> 9;
-  
+  year = f_date >> 9;
+
   month = td_max(1, (f_date >> 5) & 0xf);
-  
-   day   = td_max(1, f_date & 0x1f) - 1;
-  
+
+  day = td_max(1, f_date & 0x1f) - 1;
+
   leap_day = _date_get_leap_day(year, month);
-  
+
   days = days_in_year[month];
-  
+
   days = _date_get_days(days, year, leap_day, day);
-  
-  secs = _date_get_seconds(f_time &0x1f);
-  
+
+  secs = _date_get_seconds(f_time & 0x1f);
+
   secs += _date_min_to_seconds((f_time >> 5) & 0x3f);
-  
+
   secs += _date_hours_to_seconds(f_time >> 11);
-  
+
   secs += days * SECS_PER_DAY;
-  
+
 #if defined(__FRAMAC__)
   return secs;
 #else
-  return secs+secwest;
+  return secs + secwest;
 #endif
 }
 
-void set_secwest(void)
-{
+void set_secwest(void) {
   const time_t t = time(NULL);
 #if defined(__MINGW32__) || defined(DISABLED_FOR_FRAMAC)
-  const struct  tm *tmptr = localtime(&t);
+  const struct tm *tmptr = localtime(&t);
 #else
-  struct  tm tmp;
-  const struct  tm *tmptr = localtime_r(&t,&tmp);
+  struct tm tmp;
+  const struct tm *tmptr = localtime_r(&t, &tmp);
 #endif
 #ifdef HAVE_STRUCT_TM_TM_GMTOFF
-  if(tmptr)
+  if (tmptr)
     secwest = -1 * tmptr->tm_gmtoff;
   else
     secwest = 0;
-#elif defined (DJGPP) || defined(__ANDROID__)
+#elif defined(DJGPP) || defined(__ANDROID__)
   secwest = 0;
 #else
-#if defined (__CYGWIN__)
+#if defined(__CYGWIN__)
   secwest = _timezone;
 #else
   secwest = timezone;
 #endif
 #ifdef __FRAMAC__
-  if(secwest < -48*3600)
-  {
-    secwest=0;
+  if (secwest < -48 * 3600) {
+    secwest = 0;
     return;
   }
 #endif
@@ -373,46 +337,37 @@ void set_secwest(void)
  * Return:  n  A Unix time (number of seconds since 1970)
  */
 #define NTFS_TIME_OFFSET ((int64_t)(369 * 365 + 89) * 24 * 3600 * 10000000)
-time_t td_ntfs2utc (int64_t ntfstime)
-{
-  if(ntfstime < NTFS_TIME_OFFSET)
+time_t td_ntfs2utc(int64_t ntfstime) {
+  if (ntfstime < NTFS_TIME_OFFSET)
     return 0;
   return (ntfstime - NTFS_TIME_OFFSET) / 10000000;
 }
 
-int check_command(char **current_cmd, const char *cmd, const size_t n)
-{
-  const int res=strncmp(*current_cmd, cmd, n);
-  if(res==0)
-  {
-    (*current_cmd)+=n;
-    
+int check_command(char **current_cmd, const char *cmd, const size_t n) {
+  const int res = strncmp(*current_cmd, cmd, n);
+  if (res == 0) {
+    (*current_cmd) += n;
+
     return 0;
   }
-  
+
   return res;
 }
 
-void skip_comma_in_command(char **current_cmd)
-{
-  
-  while(*current_cmd[0]==',')
-  {
+void skip_comma_in_command(char **current_cmd) {
+  while (*current_cmd[0] == ',') {
     (*current_cmd)++;
   }
-  
 }
 
-uint64_t get_int_from_command(char **current_cmd)
-{
-  uint64_t tmp=0;
-  
-  while(*current_cmd[0] >='0' && *current_cmd[0] <= '9')
-  {
+uint64_t get_int_from_command(char **current_cmd) {
+  uint64_t tmp = 0;
+
+  while (*current_cmd[0] >= '0' && *current_cmd[0] <= '9') {
 #ifdef __FRAMAC__
-    const unsigned int v=*current_cmd[0] - '0';
-    
-    if(tmp >= UINT64_MAX / 10)
+    const unsigned int v = *current_cmd[0] - '0';
+
+    if (tmp >= UINT64_MAX / 10)
       return tmp;
     /** assert tmp < UINT64_MAX / 10; */
     tmp *= 10;

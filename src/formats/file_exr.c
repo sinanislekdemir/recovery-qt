@@ -31,32 +31,29 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_exr(file_stat_t *file_stat);
 
-const file_hint_t file_hint_exr= {
-  .extension="exr",
-  .description="OpenEXR",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_exr
-};
+const file_hint_t file_hint_exr = {.extension = "exr",
+                                   .description = "OpenEXR",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_exr};
 
 /* https://www.openexr.com/documentation/openexrfilelayout.pdf */
 
-static int header_check_exr(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_exr(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_exr.extension;
-  file_recovery_new->min_filesize=0x20;
+  file_recovery_new->extension = file_hint_exr.extension;
+  file_recovery_new->min_filesize = 0x20;
   return 1;
 }
 
-static void register_header_check_exr(file_stat_t *file_stat)
-{
+static void register_header_check_exr(file_stat_t *file_stat) {
   /* OpenEXR v2 */
-  static const unsigned char exr_header[5]=  { 'v' , 0x2f, '1' , 0x01, 0x02  };
+  static const unsigned char exr_header[5] = {'v', 0x2f, '1', 0x01, 0x02};
   register_header_check(0, exr_header, sizeof(exr_header), &header_check_exr, file_stat);
 }
 #endif

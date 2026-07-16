@@ -32,82 +32,68 @@
 #include "filegen.h"
 #include "common.h"
 
-
-
 static void register_header_check_ps(file_stat_t *file_stat);
 
-const file_hint_t file_hint_ps= {
-  .extension="ps",
-  .description="PostScript or Encapsulated PostScript document",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_ps
-};
+const file_hint_t file_hint_ps = {.extension = "ps",
+                                  .description = "PostScript or Encapsulated PostScript document",
+                                  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                  .recover = 1,
+                                  .enable_by_default = 1,
+                                  .register_header_check = &register_header_check_ps};
 
-static const unsigned char ps_header[11]= { '%','!','P','S','-','A','d','o','b','e','-'};
+static const unsigned char ps_header[11] = {'%', '!', 'P', 'S', '-', 'A', 'd', 'o', 'b', 'e', '-'};
 
-
-static void file_check_ps(file_recovery_t *file_recovery)
-{
-  const unsigned char ps_footer[5]="%%EOF";
+static void file_check_ps(file_recovery_t *file_recovery) {
+  const unsigned char ps_footer[5] = "%%EOF";
   file_search_footer(file_recovery, ps_footer, sizeof(ps_footer), 1);
 }
 
-
-static data_check_t data_check_ps(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
+static data_check_t data_check_ps(const unsigned char *buffer, const unsigned int buffer_size,
+                                  file_recovery_t *file_recovery) {
   unsigned int i;
-  
-  
-  
-  for(i=(buffer_size/2)-4;i+4<buffer_size;i++)
-  {
-    if(buffer[i]=='%' && buffer[i+1]=='%' && buffer[i+2]=='E' && buffer[i+3]=='O' && buffer[i+4]=='F')
-    {
-      file_recovery->calculated_file_size=file_recovery->file_size+i+5-(buffer_size/2);
+
+  for (i = (buffer_size / 2) - 4; i + 4 < buffer_size; i++) {
+    if (buffer[i] == '%' && buffer[i + 1] == '%' && buffer[i + 2] == 'E' && buffer[i + 3] == 'O' &&
+        buffer[i + 4] == 'F') {
+      file_recovery->calculated_file_size = file_recovery->file_size + i + 5 - (buffer_size / 2);
       return DC_STOP;
     }
   }
-  file_recovery->calculated_file_size=file_recovery->file_size+(buffer_size/2);
+  file_recovery->calculated_file_size = file_recovery->file_size + (buffer_size / 2);
   return DC_CONTINUE;
 }
 
-
-static int header_check_ps(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_ps(const unsigned char *buffer, const unsigned int buffer_size,
+                           const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                           file_recovery_t *file_recovery_new) {
   /* PS or EPSF */
   int i;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->min_filesize=sizeof(ps_header);
-  file_recovery_new->file_check=&file_check_ps;
-  
-  for(i=sizeof(ps_header); i < 20; i++)
-  {
-    switch(buffer[i])
-    {
-      case '\n':
-	file_recovery_new->extension=file_hint_ps.extension;
-	if(file_recovery_new->blocksize > 8)
-	  file_recovery_new->data_check=&data_check_ps;
-	return 1;
-      case 'E':
-	if(i+5 <= buffer_size && memcmp(&buffer[i],"EPSF-",5)==0)
-	{
-	  file_recovery_new->extension="eps";
-	  return 1;
-	}
-	break;
+  file_recovery_new->min_filesize = sizeof(ps_header);
+  file_recovery_new->file_check = &file_check_ps;
+
+  for (i = sizeof(ps_header); i < 20; i++) {
+    switch (buffer[i]) {
+    case '\n':
+      file_recovery_new->extension = file_hint_ps.extension;
+      if (file_recovery_new->blocksize > 8)
+        file_recovery_new->data_check = &data_check_ps;
+      return 1;
+    case 'E':
+      if ((unsigned int)i + 5 <= buffer_size && memcmp(&buffer[i], "EPSF-", 5) == 0) {
+        file_recovery_new->extension = "eps";
+        return 1;
+      }
+      break;
     }
   }
-  file_recovery_new->extension=file_hint_ps.extension;
-  if(file_recovery_new->blocksize > 8)
-    file_recovery_new->data_check=&data_check_ps;
+  file_recovery_new->extension = file_hint_ps.extension;
+  if (file_recovery_new->blocksize > 8)
+    file_recovery_new->data_check = &data_check_ps;
   return 1;
 }
 
-static void register_header_check_ps(file_stat_t *file_stat)
-{
-  register_header_check(0, ps_header,sizeof(ps_header), &header_check_ps, file_stat);
+static void register_header_check_ps(file_stat_t *file_stat) {
+  register_header_check(0, ps_header, sizeof(ps_header), &header_check_ps, file_stat);
 }
 #endif

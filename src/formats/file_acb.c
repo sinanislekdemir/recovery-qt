@@ -31,35 +31,29 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_acb(file_stat_t *file_stat);
 
-const file_hint_t file_hint_acb= {
-  .extension="acb",
-  .description="Adobe Color Book",
-  .max_filesize=100*1024*1024,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_acb
-};
+const file_hint_t file_hint_acb = {.extension = "acb",
+                                   .description = "Adobe Color Book",
+                                   .max_filesize = 100 * 1024 * 1024,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_acb};
 
-
-static int header_check_acb(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_acb(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_acb.extension;
+  file_recovery_new->extension = file_hint_acb.extension;
   return 1;
 }
 
-static void register_header_check_acb(file_stat_t *file_stat)
-{
+static void register_header_check_acb(file_stat_t *file_stat) {
   /* http://magnetiq.com/pages/acb-spec/
    * magic:	8BCB
    * version:	1
    * identifier	0xB.. */
-  static const unsigned char acb_header[7]=  {
-    '8' , 'B' , 'C' , 'B' , 0x00, 0x01, 0x0b
-  };
+  static const unsigned char acb_header[7] = {'8', 'B', 'C', 'B', 0x00, 0x01, 0x0b};
   register_header_check(0, acb_header, sizeof(acb_header), &header_check_acb, file_stat);
 }
 #endif

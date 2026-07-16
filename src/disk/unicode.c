@@ -20,7 +20,6 @@
 
  */
 
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -28,32 +27,27 @@
 #include "common.h"
 #include "unicode.h"
 
-unsigned int UCSle2str(char *to, const uint16_t *from, const unsigned int len)
-{
+unsigned int UCSle2str(char *to, const uint16_t *from, const unsigned int len) {
   unsigned int i;
-  
-  for (i = 0; i < len && le16(from[i])!=0; i++)
-  {
+
+  for (i = 0; i < len && le16(from[i]) != 0; i++) {
     if (le16(from[i]) & 0xff00)
       to[i] = '?';
     else
-      to[i] = (char) (le16(from[i]));
+      to[i] = (char)(le16(from[i]));
   }
-  if(i < len)
+  if (i < len)
     to[i] = '\0';
   return i;
 }
 
-unsigned int str2UCSle(uint16_t *to, const char *from, const unsigned int len)
-{
+unsigned int str2UCSle(uint16_t *to, const char *from, const unsigned int len) {
   unsigned int i;
-  
-  for (i = 0; (i < len) && from[i]; i++)
-  {
+
+  for (i = 0; (i < len) && from[i]; i++) {
     to[i] = le16(from[i]);
   }
-  if(i < len)
+  if (i < len)
     to[i] = '\0';
   return i;
 }
-

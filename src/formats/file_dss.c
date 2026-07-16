@@ -34,17 +34,14 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_dss(file_stat_t *file_stat);
 
-const file_hint_t file_hint_dss = {
-  .extension = "dss",
-  .description = "Digital Speech Standard",
-  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_dss
-};
+const file_hint_t file_hint_dss = {.extension = "dss",
+                                   .description = "Digital Speech Standard",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_dss};
 
 /* 
    Digital Speech Standard (.dss) is a digital speech recording standard
@@ -59,15 +56,15 @@ const file_hint_t file_hint_dss = {
    Filesize is always a multiple of 512
 */
 
-
-static int header_check_dss(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_dss(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   const unsigned char *udate_asc = (const unsigned char *)&buffer[0x26];
   const char *date_asc = (const char *)&buffer[0x26];
   unsigned int i;
-  
-  for(i = 0; i < 24; i++)
-    if(!isdigit(udate_asc[i]))
+
+  for (i = 0; i < 24; i++)
+    if (!isdigit(udate_asc[i]))
       return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_dss.extension;
@@ -77,9 +74,8 @@ static int header_check_dss(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-static void register_header_check_dss(file_stat_t *file_stat)
-{
-  static const unsigned char dss_header[4] = { 0x02, 'd', 's', 's' };
+static void register_header_check_dss(file_stat_t *file_stat) {
+  static const unsigned char dss_header[4] = {0x02, 'd', 's', 's'};
   register_header_check(0, dss_header, sizeof(dss_header), &header_check_dss, file_stat);
 }
 #endif

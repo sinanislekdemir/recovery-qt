@@ -25,15 +25,15 @@
 extern "C" {
 #endif
 
-struct iso_dir_struct
-{
+struct iso_dir_struct {
   unsigned int block_size;
   unsigned int joliet;
   uint32_t root_extent;
   uint32_t root_size;
 };
 
-dir_partition_t dir_partition_iso_init(disk_t *disk, const partition_t *partition, dir_data_t *dir_data, const int verbose);
+dir_partition_t dir_partition_iso_init(disk_t *disk, const partition_t *partition, dir_data_t *dir_data,
+                                       const int verbose);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

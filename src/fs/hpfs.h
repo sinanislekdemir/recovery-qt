@@ -26,11 +26,10 @@
 extern "C" {
 #endif
 
+int recover_HPFS(const disk_t *disk_car, const struct fat_boot_sector *hpfs_header, partition_t *partition,
+                 const int verbose);
 
-int recover_HPFS(const disk_t *disk_car, const struct fat_boot_sector *hpfs_header, partition_t *partition, const int verbose);
-
-
-int check_HPFS(disk_t *disk_car,partition_t *partition, const int verbose);
+int check_HPFS(disk_t *disk_car, partition_t *partition, const int verbose);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

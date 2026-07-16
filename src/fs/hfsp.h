@@ -17,7 +17,7 @@
     with this program; if not, write the Free Software Foundation, Inc., 51
     Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
- */   
+ */
 #ifndef _HFSP_H
 #define _HFSP_H
 #ifdef __cplusplus
@@ -25,14 +25,13 @@ extern "C" {
 #endif
 #include "hfsp_struct.h"
 
-
 int check_HFSP(disk_t *disk_car, partition_t *partition, const int verbose);
 
+int test_HFSP(const disk_t *disk_car, const struct hfsp_vh *vh, const partition_t *partition, const int verbose,
+              const int dump_ind);
 
-int test_HFSP(const disk_t *disk_car, const struct hfsp_vh *vh, const partition_t *partition, const int verbose, const int dump_ind);
-
-
-int recover_HFSP(disk_t *disk_car, const struct hfsp_vh *vh, partition_t *partition, const int verbose, const int dump_ind, const int backup);
+int recover_HFSP(disk_t *disk_car, const struct hfsp_vh *vh, partition_t *partition, const int verbose,
+                 const int dump_ind, const int backup);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

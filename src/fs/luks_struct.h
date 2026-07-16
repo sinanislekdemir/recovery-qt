@@ -26,35 +26,35 @@
 extern "C" {
 #endif
 
-#define LUKS_CIPHERNAME_L	32
-#define LUKS_CIPHERMODE_L	32
-#define LUKS_HASHSPEC_L		32
-#define LUKS_DIGESTSIZE		20
-#define LUKS_SALTSIZE		32
-#define LUKS_NUMKEYS		8
-#define LUKS_MAGIC_L 		6
-#define UUID_STRING_L 		40
+#define LUKS_CIPHERNAME_L 32
+#define LUKS_CIPHERMODE_L 32
+#define LUKS_HASHSPEC_L 32
+#define LUKS_DIGESTSIZE 20
+#define LUKS_SALTSIZE 32
+#define LUKS_NUMKEYS 8
+#define LUKS_MAGIC_L 6
+#define UUID_STRING_L 40
 typedef struct luks_keyslot luks_keyslot_t;
 struct luks_keyslot {
-  uint32_t	active;
-  uint32_t	passwordIterations;
-  uint8_t	passwordSalt[LUKS_SALTSIZE];
-  uint32_t	keyMaterialOffset;
-  uint32_t	stripes;
+  uint32_t active;
+  uint32_t passwordIterations;
+  uint8_t passwordSalt[LUKS_SALTSIZE];
+  uint32_t keyMaterialOffset;
+  uint32_t stripes;
 };
 
 struct luks_phdr {
-  uint8_t	magic[LUKS_MAGIC_L];
-  uint16_t	version;
-  uint8_t	cipherName[LUKS_CIPHERNAME_L];
-  uint8_t	cipherMode[LUKS_CIPHERMODE_L];
-  uint8_t	hashSpec[LUKS_HASHSPEC_L];
-  uint32_t	payloadOffset;
-  uint32_t	keyBytes;
-  uint8_t	mkDigest[LUKS_DIGESTSIZE];
-  uint8_t	mkDigestSalt[LUKS_SALTSIZE];
-  uint32_t	mkDigestIterations;
-  uint8_t	uuid[UUID_STRING_L];
+  uint8_t magic[LUKS_MAGIC_L];
+  uint16_t version;
+  uint8_t cipherName[LUKS_CIPHERNAME_L];
+  uint8_t cipherMode[LUKS_CIPHERMODE_L];
+  uint8_t hashSpec[LUKS_HASHSPEC_L];
+  uint32_t payloadOffset;
+  uint32_t keyBytes;
+  uint8_t mkDigest[LUKS_DIGESTSIZE];
+  uint8_t mkDigestSalt[LUKS_SALTSIZE];
+  uint32_t mkDigestIterations;
+  uint8_t uuid[UUID_STRING_L];
   luks_keyslot_t keyslot[LUKS_NUMKEYS];
 };
 
@@ -62,4 +62,3 @@ struct luks_phdr {
 } /* closing brace for extern "C" */
 #endif
 #endif
-

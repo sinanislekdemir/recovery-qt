@@ -30,14 +30,13 @@ extern "C" {
 
 #define ReFS_BS_SIZE 0x200
 struct ReFS_boot_sector {
-  uint8_t	ignored[3];
-  uint32_t	fsname;
-  uint8_t	mustBeZero[9];
-  uint32_t	identifier;
-  uint16_t	length;
-  uint16_t	checksum;
-} __attribute__ ((gcc_struct, __packed__));
-
+  uint8_t ignored[3];
+  uint32_t fsname;
+  uint8_t mustBeZero[9];
+  uint32_t identifier;
+  uint16_t length;
+  uint16_t checksum;
+} __attribute__((gcc_struct, __packed__));
 
 int check_ReFS(disk_t *disk, partition_t *partition);
 int recover_ReFS(const disk_t *disk, const struct ReFS_boot_sector *refs_header, partition_t *partition);

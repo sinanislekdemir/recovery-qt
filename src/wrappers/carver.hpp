@@ -39,18 +39,16 @@ extern "C" {
 #endif
 
 class Carver : public WorkerBase {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit Carver(QObject *parent = nullptr);
+  explicit Carver(QObject *parent = nullptr);
 
-    void start(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
-               const QString &extFilter, bool deepScan);
+  void start(scan_tree_t *tree, disk_t *disk, const partition_t *partition, const QString &extFilter, bool deepScan);
 
 signals:
-    void progressUpdated(uint64_t scannedBytes, uint64_t totalBytes,
-                         unsigned int fileCount, uint64_t recoveredSize);
-    void finished(int totalFiles);
-    void errorOccurred(const QString &message);
+  void progressUpdated(uint64_t scannedBytes, uint64_t totalBytes, unsigned int fileCount, uint64_t recoveredSize);
+  void finished(int totalFiles);
+  void errorOccurred(const QString &message);
 };
 
 #endif

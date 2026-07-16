@@ -38,39 +38,34 @@
 #include "log.h"
 #endif
 
-
 static void register_header_check_hdf5(file_stat_t *file_stat);
 
-const file_hint_t file_hint_hdf5= {
-  .extension="hdf",
-  .description="Hierarchical Data Format 5",
-  .max_filesize=PHOTOREC_MAX_SIZE_32,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_hdf5
-};
+const file_hint_t file_hint_hdf5 = {.extension = "hdf",
+                                    .description = "Hierarchical Data Format 5",
+                                    .max_filesize = PHOTOREC_MAX_SIZE_32,
+                                    .recover = 1,
+                                    .enable_by_default = 1,
+                                    .register_header_check = &register_header_check_hdf5};
 
-struct hdf5_superblock
-{
+struct hdf5_superblock {
   uint8_t signature[8];
   uint8_t version;
 };
 
+static int header_check_hdf5(const unsigned char *buffer, const unsigned int buffer_size,
+                             const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                             file_recovery_t *file_recovery_new) {
+  const struct hdf5_superblock *sb = (const struct hdf5_superblock *)&buffer[0];
 
-static int header_check_hdf5(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct hdf5_superblock *sb=(const struct hdf5_superblock*)&buffer[0];
-  
-  if(sb->version > 2)
+  if (sb->version > 2)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_hdf5.extension;
+  file_recovery_new->extension = file_hint_hdf5.extension;
   return 1;
 }
 
-static void register_header_check_hdf5(file_stat_t *file_stat)
-{
-  static const unsigned char hdf5_header[8]=  { 0x89, 'H', 'D', 'F', '\r', '\n', 0x1a, '\n'};
+static void register_header_check_hdf5(file_stat_t *file_stat) {
+  static const unsigned char hdf5_header[8] = {0x89, 'H', 'D', 'F', '\r', '\n', 0x1a, '\n'};
   register_header_check(0, hdf5_header, sizeof(hdf5_header), &header_check_hdf5, file_stat);
 }
 #endif

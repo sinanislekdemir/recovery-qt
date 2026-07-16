@@ -30,74 +30,61 @@
 #include "filegen.h"
 #include "log.h"
 
-
 static void register_header_check_ab(file_stat_t *file_stat);
 
-const file_hint_t file_hint_addressbook= {
-  .extension="ab",
-  .description="MAC Address Book",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_ab
-};
+const file_hint_t file_hint_addressbook = {.extension = "ab",
+                                           .description = "MAC Address Book",
+                                           .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                           .recover = 1,
+                                           .enable_by_default = 1,
+                                           .register_header_check = &register_header_check_ab};
 
-struct ab_header
-{
+struct ab_header {
   char magic[4];
   uint32_t size;
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
+static data_check_t data_check_addressbook(const unsigned char *buffer, const unsigned int buffer_size,
+                                           file_recovery_t *file_recovery) {
+  while (file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size &&
+         file_recovery->calculated_file_size + 8 < file_recovery->file_size + buffer_size / 2) {
+    const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
 
-static data_check_t data_check_addressbook(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  
-  
-  
-  while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
-      file_recovery->calculated_file_size + 8 < file_recovery->file_size + buffer_size/2)
-  {
-    const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    
-    const struct ab_header *ab=(const struct ab_header *)&buffer[i];
-    const unsigned int length=be32(ab->size);
+    const struct ab_header *ab = (const struct ab_header *)&buffer[i];
+    const unsigned int length = be32(ab->size);
 #ifdef DEBUG_AB
-    log_debug("data_check_addressbook i=0x%x buffer_size=0x%x calculated_file_size=%lu file_size=%lu\n",
-        i, buffer_size,
-        (long unsigned)file_recovery->calculated_file_size,
-        (long unsigned)file_recovery->file_size);
-    dump_log(buffer+i,8);
+    log_debug("data_check_addressbook i=0x%x buffer_size=0x%x calculated_file_size=%lu file_size=%lu\n", i, buffer_size,
+              (long unsigned)file_recovery->calculated_file_size, (long unsigned)file_recovery->file_size);
+    dump_log(buffer + i, 8);
 #endif
-    if(ab->magic[0]!='L' || ab->magic[1]!='J' || ab->magic[3]!=0x00 || length<8)
+    if (ab->magic[0] != 'L' || ab->magic[1] != 'J' || ab->magic[3] != 0x00 || length < 8)
       return DC_STOP;
-    file_recovery->calculated_file_size+=length;
+    file_recovery->calculated_file_size += length;
   }
   return DC_CONTINUE;
 }
 
-
-static int header_check_addressbook(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct ab_header *ab=(const struct ab_header *)buffer;
-  const unsigned int length=be32(ab->size);
-  if(ab->magic[0]!='L' || ab->magic[1]!='J' || ab->magic[3]!=0x00 || length<8)
+static int header_check_addressbook(const unsigned char *buffer, const unsigned int buffer_size,
+                                    const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                                    file_recovery_t *file_recovery_new) {
+  const struct ab_header *ab = (const struct ab_header *)buffer;
+  const unsigned int length = be32(ab->size);
+  if (ab->magic[0] != 'L' || ab->magic[1] != 'J' || ab->magic[3] != 0x00 || length < 8)
     return 0;
-  if(ab->magic[2]!=0x1a && ab->magic[2]!=0x0a)
+  if (ab->magic[2] != 0x1a && ab->magic[2] != 0x0a)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_addressbook.extension;
-  if(file_recovery_new->blocksize >= 8)
-  {
-    file_recovery_new->calculated_file_size=length;
-    file_recovery_new->data_check=&data_check_addressbook;
-    file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->extension = file_hint_addressbook.extension;
+  if (file_recovery_new->blocksize >= 8) {
+    file_recovery_new->calculated_file_size = length;
+    file_recovery_new->data_check = &data_check_addressbook;
+    file_recovery_new->file_check = &file_check_size;
   }
   return 1;
 }
 
-static void register_header_check_ab(file_stat_t *file_stat)
-{
-  static const unsigned char ab_header[2]={ 'L', 'J' };
-  register_header_check(0, ab_header,sizeof(ab_header), &header_check_addressbook, file_stat);
+static void register_header_check_ab(file_stat_t *file_stat) {
+  static const unsigned char ab_header[2] = {'L', 'J'};
+  register_header_check(0, ab_header, sizeof(ab_header), &header_check_addressbook, file_stat);
 }
 #endif

@@ -27,48 +27,46 @@ extern "C" {
 #endif
 #if !defined(SINGLE_PARTITION_TYPE) || defined(SINGLE_PARTITION_MAC)
 
-#define	BLOCK0_SIGNATURE	0x4552	/* Signature value.         */
+#define BLOCK0_SIGNATURE 0x4552 /* Signature value.         */
 
-#define	DPISTRLEN	32
-#define	DPME_SIGNATURE	0x504D
-#define PBLOCK_SIZE	512
-
+#define DPISTRLEN 32
+#define DPME_SIGNATURE 0x504D
+#define PBLOCK_SIZE 512
 
 // Physical block zero of the disk has this format
 struct Block0 {
-    uint16_t 	sbSig;		/* unique value for SCSI block 0 */
-    uint16_t 	sbBlkSize;	/* block size of device */
-    uint32_t 	sbBlkCount;	/* number of blocks on device */
-    uint16_t 	sbDevType;	/* device type */
-    uint16_t 	sbDevId;	/* device id */
-    uint32_t 	sbData;		/* not used */
-    uint16_t 	sbDrvrCount;	/* driver descriptor count */
-    uint16_t 	sbMap[247];	/* descriptor map */
+  uint16_t sbSig;       /* unique value for SCSI block 0 */
+  uint16_t sbBlkSize;   /* block size of device */
+  uint32_t sbBlkCount;  /* number of blocks on device */
+  uint16_t sbDevType;   /* device type */
+  uint16_t sbDevId;     /* device id */
+  uint32_t sbData;      /* not used */
+  uint16_t sbDrvrCount; /* driver descriptor count */
+  uint16_t sbMap[247];  /* descriptor map */
 };
 typedef struct Block0 mac_Block0;
 
 // Where &sbMap[0] is actually an array DDMap[sbDrvrCount]
 // kludge to get around alignment junk
 struct DDMap {
-    uint32_t 	ddBlock;	/* 1st driver's starting block */
-    uint16_t 	ddSize;		/* size of 1st driver (512-byte blks) */
-    uint16_t 	ddType;		/* system type (1 for Mac+) */
+  uint32_t ddBlock; /* 1st driver's starting block */
+  uint16_t ddSize;  /* size of 1st driver (512-byte blks) */
+  uint16_t ddType;  /* system type (1 for Mac+) */
 };
 typedef struct DDMap mac_DDMap;
 
-
 // Each partition map entry (blocks 1 through n) has this format
 struct dpme {
-    uint16_t     dpme_signature          ;
-    uint16_t     dpme_reserved_1         ;
-    uint32_t     dpme_map_entries        ;
-    uint32_t     dpme_pblock_start       ;
-    uint32_t     dpme_pblocks            ;
-    char    	dpme_name[DPISTRLEN]    ;  /* name of partition */
-    char    	dpme_type[DPISTRLEN]    ;  /* type of partition */
-    uint32_t     dpme_lblock_start       ;
-    uint32_t     dpme_lblocks            ;
-    uint32_t     dpme_flags;
+  uint16_t dpme_signature;
+  uint16_t dpme_reserved_1;
+  uint32_t dpme_map_entries;
+  uint32_t dpme_pblock_start;
+  uint32_t dpme_pblocks;
+  char dpme_name[DPISTRLEN]; /* name of partition */
+  char dpme_type[DPISTRLEN]; /* type of partition */
+  uint32_t dpme_lblock_start;
+  uint32_t dpme_lblocks;
+  uint32_t dpme_flags;
 #if 0
     uint32_t     dpme_reserved_2    : 23 ;  /* Bit 9 through 31.        */
     uint32_t     dpme_os_specific_1 :  1 ;  /* Bit 8.                   */
@@ -81,26 +79,24 @@ struct dpme {
     uint32_t     dpme_allocated     :  1 ;  /* Bit 1.                   */
     uint32_t     dpme_valid         :  1 ;  /* Bit 0.                   */
 #endif
-    uint32_t     dpme_boot_block         ;
-    uint32_t     dpme_boot_bytes         ;
-    uint32_t	 dpme_load_addr          ;
-    uint32_t	 dpme_load_addr_2        ;
-    uint32_t	 dpme_goto_addr          ;
-    uint32_t	 dpme_goto_addr_2        ;
-    uint32_t     dpme_checksum           ;
-    char    	dpme_process_id[16]     ;
-    uint32_t     dpme_boot_args[32]      ;
-    uint32_t     dpme_reserved_3[62]     ;
-} __attribute__ ((gcc_struct, __packed__));
+  uint32_t dpme_boot_block;
+  uint32_t dpme_boot_bytes;
+  uint32_t dpme_load_addr;
+  uint32_t dpme_load_addr_2;
+  uint32_t dpme_goto_addr;
+  uint32_t dpme_goto_addr_2;
+  uint32_t dpme_checksum;
+  char dpme_process_id[16];
+  uint32_t dpme_boot_args[32];
+  uint32_t dpme_reserved_3[62];
+} __attribute__((gcc_struct, __packed__));
 typedef struct dpme mac_DPME;
-
 
 int test_structure_mac(const list_part_t *list_part);
 
-
 // ensures  valid_list_part(\result);
 // ensures  valid_read_string(*current_cmd);
-list_part_t *add_partition_mac_cli(disk_t *disk_car,list_part_t *list_part, char **current_cmd);
+list_part_t *add_partition_mac_cli(disk_t *disk_car, list_part_t *list_part, char **current_cmd);
 
 #endif
 #ifdef __cplusplus

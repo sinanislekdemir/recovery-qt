@@ -1,0 +1,35 @@
+# clang-format configuration for recovery-qt
+# Maintainer: Sinan Islekdemir <sinan@islekdemir.com>
+---
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++20
+
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+ColumnLimit: 120
+
+PointerAlignment: Right
+DerivePointerAlignment: false
+
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+
+BreakBeforeBraces: Attach
+IndentCaseLabels: false
+AlignAfterOpenBracket: Align
+AlignTrailingComments: true
+SpaceBeforeParens: ControlStatements
+
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+
+# Include order in this codebase is semantically significant
+# (config.h, types.h, feature guards); never reorder.
+SortIncludes: Never
+SortUsingDeclarations: false
+
+ReflowComments: false

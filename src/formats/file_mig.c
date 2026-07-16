@@ -35,20 +35,16 @@
 #include "log.h"
 #endif
 
-
 static void register_header_check_mig(file_stat_t *file_stat);
 
-const file_hint_t file_hint_mig= {
-  .extension="mig",
-  .description="Windows Migration Backup",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_mig
-};
+const file_hint_t file_hint_mig = {.extension = "mig",
+                                   .description = "Windows Migration Backup",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_mig};
 
-struct MIG_HDR
-{
+struct MIG_HDR {
   uint32_t magic;
   uint32_t fn_size;
   uint32_t s_size;
@@ -58,66 +54,57 @@ struct MIG_HDR
 #ifndef DISABLED_FOR_FRAMAC
   unsigned char fn[0];
 #endif
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
+static void file_check_mig(file_recovery_t *file_recovery) {
+  uint64_t offset = 0x34;
+  file_recovery->file_size = 0;
 
-static void file_check_mig(file_recovery_t *file_recovery)
-{
-  uint64_t offset=0x34;
-  file_recovery->file_size=0;
-  
-  while(1)
-  {
+  while (1) {
     char buffer[sizeof(struct MIG_HDR)];
-    const struct MIG_HDR *h=(const struct MIG_HDR *)&buffer;
+    const struct MIG_HDR *h = (const struct MIG_HDR *)&buffer;
     size_t res;
-    if(my_fseek(file_recovery->handle, offset, SEEK_SET) < 0)
-    {
+    if (my_fseek(file_recovery->handle, offset, SEEK_SET) < 0) {
 #ifdef DEBUG_MIG
       log_info("0x%lx fseek failed\n", (long unsigned)offset);
 #endif
-      return ;
+      return;
     }
-    res=fread(&buffer, 1, sizeof(buffer), file_recovery->handle);
-    if(res < 8)
-    {
+    res = fread(&buffer, 1, sizeof(buffer), file_recovery->handle);
+    if (res < 8) {
 #ifdef DEBUG_MIG
       log_info("0x%lx not enough data\n", (long unsigned)offset);
 #endif
-      return ;
+      return;
     }
     /* STRM=stream */
-    if(res < sizeof(buffer) || le32(h->magic)!=0x5354524d || offset >= PHOTOREC_MAX_FILE_SIZE)
-    {
+    if (res < sizeof(buffer) || le32(h->magic) != 0x5354524d || offset >= PHOTOREC_MAX_FILE_SIZE) {
 #ifdef DEBUG_MIG
       log_info("0x%lx no magic %x\n", (long unsigned)offset, le32(h->magic));
 #endif
-      file_recovery->file_size=offset+8;
-      return ;
+      file_recovery->file_size = offset + 8;
+      return;
     }
 #ifdef DEBUG_MIG
     log_info("0x%lx magic s_size=0x%u\n", (long unsigned)offset, le32(h->s_size));
 #endif
-    offset+=sizeof(buffer)+le32(h->s_size);
+    offset += sizeof(buffer) + le32(h->s_size);
   }
 }
 
-
-static int header_check_mig(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(memcmp(&buffer[0x34], "MRTS", 4)!=0)
+static int header_check_mig(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (memcmp(&buffer[0x34], "MRTS", 4) != 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_mig.extension;
-  file_recovery_new->file_check=&file_check_mig;
+  file_recovery_new->extension = file_hint_mig.extension;
+  file_recovery_new->file_check = &file_check_mig;
   return 1;
 }
 
-static void register_header_check_mig(file_stat_t *file_stat)
-{
-  static const unsigned char mig_header[8]=  {
-    '1' , 'g' , 'i' , 'M' , 0x02, 0x00, 0x00, 0x00
-  };
+static void register_header_check_mig(file_stat_t *file_stat) {
+  static const unsigned char mig_header[8] = {'1', 'g', 'i', 'M', 0x02, 0x00, 0x00, 0x00};
   register_header_check(0, mig_header, sizeof(mig_header), &header_check_mig, file_stat);
 }
 #endif

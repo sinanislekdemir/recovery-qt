@@ -31,25 +31,24 @@ extern "C" {
 #include "list.h"
 
 #if defined(DJGPP)
-#define PHOTOREC_MAX_FILE_SIZE (((uint64_t)1<<31)-1)
+#define PHOTOREC_MAX_FILE_SIZE (((uint64_t)1 << 31) - 1)
 #else
-#define PHOTOREC_MAX_FILE_SIZE (((uint64_t)1<<41)-1)
+#define PHOTOREC_MAX_FILE_SIZE (((uint64_t)1 << 41) - 1)
 #endif
-#define PHOTOREC_MAX_SIZE_16 (((uint64_t)1<<15)-1)
-#define PHOTOREC_MAX_SIZE_32 (((uint64_t)1<<31)-1)
-#define PHOTOREC_MAX_SIG_OFFSET	65535
+#define PHOTOREC_MAX_SIZE_16 (((uint64_t)1 << 15) - 1)
+#define PHOTOREC_MAX_SIZE_32 (((uint64_t)1 << 31) - 1)
+#define PHOTOREC_MAX_SIG_OFFSET 65535
 #define PHOTOREC_MAX_SIG_SIZE 4095
 /* TODO: Support blocksize up to 32 MB */
-#define PHOTOREC_MAX_BLOCKSIZE 32*1024*1024
+#define PHOTOREC_MAX_BLOCKSIZE 32 * 1024 * 1024
 
-typedef enum { DC_SCAN=0, DC_CONTINUE=1, DC_STOP=2, DC_ERROR=3} data_check_t;
+typedef enum { DC_SCAN = 0, DC_CONTINUE = 1, DC_STOP = 2, DC_ERROR = 3 } data_check_t;
 typedef struct file_hint_struct file_hint_t;
 typedef struct file_stat_struct file_stat_t;
 typedef struct file_recovery_struct file_recovery_t;
 typedef struct file_enable_struct file_enable_t;
 
-struct file_hint_struct
-{
+struct file_hint_struct {
   const char *extension;
   const char *description;
   const uint64_t max_filesize;
@@ -58,8 +57,7 @@ struct file_hint_struct
   void (*register_header_check)(file_stat_t *file_stat);
 };
 
-typedef struct
-{
+typedef struct {
   struct td_list_head list;
   uint64_t start;
   uint64_t end;
@@ -67,21 +65,18 @@ typedef struct
   unsigned int data;
 } alloc_data_t;
 
-struct file_enable_struct
-{
+struct file_enable_struct {
   const file_hint_t *file_hint;
   unsigned int enable;
 };
 
-struct file_stat_struct
-{
+struct file_stat_struct {
   unsigned int not_recovered;
   unsigned int recovered;
   const file_hint_t *file_hint;
 };
 
-struct file_recovery_struct
-{
+struct file_recovery_struct {
   char filename[2048];
   alloc_list_t location;
   file_stat_t *file_stat;
@@ -92,121 +87,102 @@ struct file_recovery_struct
   uint64_t min_filesize;
   uint64_t offset_ok;
   uint64_t offset_error;
-  uint64_t extra;	/* extra bytes between offset_ok and offset_error */
+  uint64_t extra; /* extra bytes between offset_ok and offset_error */
   uint64_t calculated_file_size;
-  data_check_t (*data_check)(const unsigned char*buffer, const unsigned int buffer_size, file_recovery_t *file_recovery);
+  data_check_t (*data_check)(const unsigned char *buffer, const unsigned int buffer_size,
+                             file_recovery_t *file_recovery);
   /* data_check modifies file_recovery->calculated_file_size, it can also update data_check, file_check, offset_error, offset_ok, time, data_check_tmp */
   void (*file_check)(file_recovery_t *file_recovery);
   void (*file_rename)(file_recovery_t *file_recovery);
   uint64_t checkpoint_offset;
-  int checkpoint_status;	/* 0=suspend at offset_checkpoint if offset_checkpoint>0, 1=resume at offset_checkpoint */
+  int checkpoint_status; /* 0=suspend at offset_checkpoint if offset_checkpoint>0, 1=resume at offset_checkpoint */
   unsigned int blocksize;
   unsigned int flags;
   unsigned int data_check_tmp;
 };
 
-typedef struct
-{
+typedef struct {
   struct td_list_head list;
   const void *value;
   unsigned int length;
   unsigned int offset;
-  int (*header_check)(const unsigned char *buffer, const unsigned int buffer_size,
-      const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new);
+  int (*header_check)(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only,
+                      const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new);
   file_stat_t *file_stat;
 } file_check_t;
 
-
-
-typedef struct
-{
+typedef struct {
   file_check_t file_checks[256];
   struct td_list_head list;
   unsigned int offset;
 } file_check_list_t;
 
-#define NL_BARENL       (1 << 0)
-#define NL_CRLF         (1 << 1)
-#define NL_BARECR       (1 << 2)
-
+#define NL_BARENL (1 << 0)
+#define NL_CRLF (1 << 1)
+#define NL_BARECR (1 << 2)
 
 void free_header_check(void);
-
 
 //  TODO ensures  valid_file_check_result(file_recovery);
 void file_allow_nl(file_recovery_t *file_recovery, const unsigned int nl_mode);
 
+uint64_t file_rsearch(FILE *handle, uint64_t offset, const void *footer, const unsigned int footer_length);
 
-uint64_t file_rsearch(FILE *handle, uint64_t offset, const void*footer, const unsigned int footer_length);
+void file_search_footer(file_recovery_t *file_recovery, const void *footer, const unsigned int footer_length,
+                        const unsigned int extra_length);
 
-
-void file_search_footer(file_recovery_t *file_recovery, const void*footer, const unsigned int footer_length, const unsigned int extra_length);
-
-
-data_check_t data_check_size(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery);
-
+data_check_t data_check_size(const unsigned char *buffer, const unsigned int buffer_size,
+                             file_recovery_t *file_recovery);
 
 void file_check_size(file_recovery_t *file_recovery);
 
-
 void file_check_size_min(file_recovery_t *file_recovery);
 
-
 void file_check_size_max(file_recovery_t *file_recovery);
-
 
 //  ensures valid_file_recovery(file_recovery);
 void reset_file_recovery(file_recovery_t *file_recovery);
 
-
 void register_header_check(const unsigned int offset, const void *value, const unsigned int length,
-    int (*header_check)(const unsigned char *buffer, const unsigned int buffer_size,
-      const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new),
-    file_stat_t *file_stat);
+                           int (*header_check)(const unsigned char *buffer, const unsigned int buffer_size,
+                                               const unsigned int safe_header_only,
+                                               const file_recovery_t *file_recovery,
+                                               file_recovery_t *file_recovery_new),
+                           file_stat_t *file_stat);
 
+file_stat_t *init_file_stats(file_enable_t *files_enable);
 
-file_stat_t * init_file_stats(file_enable_t *files_enable);
+const file_hint_t *carver_check_header(const unsigned char *buffer, unsigned int buffer_size, uint64_t offset,
+                                       file_stat_t *in_file_stat, uint64_t current_file_size);
 
-const file_hint_t *carver_check_header(const unsigned char *buffer,
-    unsigned int buffer_size, uint64_t offset,
-    file_stat_t *in_file_stat, uint64_t current_file_size);
+int file_rename(file_recovery_t *file_recovery, const void *buffer, const int buffer_size, const int offset,
+                const char *new_ext, const int force_ext);
 
-
-int file_rename(file_recovery_t *file_recovery, const void *buffer, const int buffer_size, const int offset, const char *new_ext, const int force_ext);
-
-
-int file_rename_unicode(file_recovery_t *file_recovery, const void *buffer, const int buffer_size, const int offset, const char *new_ext, const int force_ext);
-
+int file_rename_unicode(file_recovery_t *file_recovery, const void *buffer, const int buffer_size, const int offset,
+                        const char *new_ext, const int force_ext);
 
 void header_ignored_cond_reset(uint64_t start, uint64_t end);
 
-
 void header_ignored(const file_recovery_t *file_recovery_new);
-
 
 // ensures  valid_file_recovery(file_recovery);
 // ensures  valid_file_recovery(file_recovery_new);
 int header_ignored_adv(const file_recovery_t *file_recovery, const file_recovery_t *file_recovery_new);
 
-
 // assigns *stream \from *stream, indirect:offset, indirect:whence;
 // assigns \result, errno \from indirect:*stream, indirect:offset, indirect:whence;
 int my_fseek(FILE *stream, off_t offset, int whence);
 
-
 time_t get_time_from_YYMMDDHHMMSS(const char *date_asc);
-
 
 time_t get_time_from_YYYY_MM_DD_HH_MM_SS(const unsigned char *date_asc);
 
-
 time_t get_time_from_YYYY_MM_DD_HHMMSS(const char *date_asc);
-
 
 time_t get_time_from_YYYYMMDD_HHMMSS(const char *date_asc);
 
-
-void get_prev_location_smart(const alloc_data_t *list_search_space, alloc_data_t **current_search_space, uint64_t *offset, const uint64_t prev_location);
+void get_prev_location_smart(const alloc_data_t *list_search_space, alloc_data_t **current_search_space,
+                             uint64_t *offset, const uint64_t prev_location);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

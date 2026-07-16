@@ -31,30 +31,26 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_rdc(file_stat_t *file_stat);
 
-const file_hint_t file_hint_rdc= {
-  .extension="rdc",
-  .description="Rollei picture",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_rdc
-};
+const file_hint_t file_hint_rdc = {.extension = "rdc",
+                                   .description = "Rollei picture",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_rdc};
 
-
-static int header_check_rdc(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_rdc(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   /* Rollei */
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_rdc.extension;
+  file_recovery_new->extension = file_hint_rdc.extension;
   return 1;
 }
 
-static void register_header_check_rdc(file_stat_t *file_stat)
-{
-  static const unsigned char rdc_header[9]= {'D','S','C','-','I','m','a','g','e'};
-  register_header_check(0, rdc_header,sizeof(rdc_header), &header_check_rdc, file_stat);
+static void register_header_check_rdc(file_stat_t *file_stat) {
+  static const unsigned char rdc_header[9] = {'D', 'S', 'C', '-', 'I', 'm', 'a', 'g', 'e'};
+  register_header_check(0, rdc_header, sizeof(rdc_header), &header_check_rdc, file_stat);
 }
 #endif

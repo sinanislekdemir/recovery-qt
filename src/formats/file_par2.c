@@ -33,115 +33,93 @@
 #include "common.h"
 #include "log.h"
 
-
 static void register_header_check_par2(file_stat_t *file_stat);
 
-const file_hint_t file_hint_par2= {
-  .extension="par2",
-  .description="parchive",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_par2
-};
+const file_hint_t file_hint_par2 = {.extension = "par2",
+                                    .description = "parchive",
+                                    .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                    .recover = 1,
+                                    .enable_by_default = 1,
+                                    .register_header_check = &register_header_check_par2};
 
-static const unsigned char par2_header[8]=  {
-  'P' , 'A' , 'R' , '2' , 0x00, 'P' , 'K' , 'T'
-};
+static const unsigned char par2_header[8] = {'P', 'A', 'R', '2', 0x00, 'P', 'K', 'T'};
 
+static data_check_t data_check_par2(const unsigned char *buffer, const unsigned int buffer_size,
+                                    file_recovery_t *file_recovery) {
+  while (file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size &&
+         file_recovery->calculated_file_size + 16 < file_recovery->file_size + buffer_size / 2) {
+    const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
 
-static data_check_t data_check_par2(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  
-  
-  
-  while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
-      file_recovery->calculated_file_size + 16 < file_recovery->file_size + buffer_size/2)
-  {
-    const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    
-    const uint64_t length=le64((*(const uint64_t *)(&buffer[i+8])));
-    if(memcmp(&buffer[i], &par2_header, sizeof(par2_header))!=0)
+    const uint64_t length = le64((*(const uint64_t *)(&buffer[i + 8])));
+    if (memcmp(&buffer[i], &par2_header, sizeof(par2_header)) != 0)
       return DC_STOP;
-    if(length % 4 !=0 || length < 16 || length > PHOTOREC_MAX_FILE_SIZE)
+    if (length % 4 != 0 || length < 16 || length > PHOTOREC_MAX_FILE_SIZE)
       return DC_STOP;
-    file_recovery->calculated_file_size+=length;
+    file_recovery->calculated_file_size += length;
   }
   return DC_CONTINUE;
 }
 
-
-static void file_rename_par2(file_recovery_t *file_recovery)
-{
+static void file_rename_par2(file_recovery_t *file_recovery) {
   FILE *file;
-  uint64_t offset=0;
-  if((file=fopen(file_recovery->filename, "rb"))==NULL)
+  uint64_t offset = 0;
+  if ((file = fopen(file_recovery->filename, "rb")) == NULL)
     return;
-  
-  while(offset <= PHOTOREC_MAX_FILE_SIZE)
-  {
+
+  while (offset <= PHOTOREC_MAX_FILE_SIZE) {
     uint64_t length;
     size_t buffer_size;
     unsigned char buffer[4096];
-    const uint64_t *lengthp=(const uint64_t *)&buffer[8];
-    if(my_fseek(file, offset, SEEK_SET)<0)
-    {
+    const uint64_t *lengthp = (const uint64_t *)&buffer[8];
+    if (my_fseek(file, offset, SEEK_SET) < 0) {
       fclose(file);
       return;
     }
-    buffer_size=fread(buffer, 1, sizeof(buffer), file);
-    if(buffer_size<0x78)
-    {
+    buffer_size = fread(buffer, 1, sizeof(buffer), file);
+    if (buffer_size < 0x78) {
       fclose(file);
       return;
     }
-    length=le64(*lengthp);
-    if(length % 4 !=0 || length < 16 || length >= PHOTOREC_MAX_FILE_SIZE ||
-	memcmp(&buffer, &par2_header, sizeof(par2_header))!=0)
-    {
+    length = le64(*lengthp);
+    if (length % 4 != 0 || length < 16 || length >= PHOTOREC_MAX_FILE_SIZE ||
+        memcmp(&buffer, &par2_header, sizeof(par2_header)) != 0) {
       fclose(file);
       return;
     }
-    
-    if(memcmp(&buffer[0x30], "PAR 2.0\0FileDesc", 16)==0)
-    {
+
+    if (memcmp(&buffer[0x30], "PAR 2.0\0FileDesc", 16) == 0) {
       fclose(file);
-      file_rename(file_recovery, buffer,
-	  (length < buffer_size ? length : buffer_size),
-	  0x78, NULL, 1);
-      return ;
+      file_rename(file_recovery, buffer, (length < buffer_size ? length : buffer_size), 0x78, NULL, 1);
+      return;
     }
-    offset+=length;
+    offset += length;
   }
   fclose(file);
   return;
 }
 
-
-static int header_check_par2(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const uint64_t length=le64((*(const uint64_t *)(&buffer[8])));
-  if(length % 4 !=0 || length < 16 || length > PHOTOREC_MAX_FILE_SIZE)
+static int header_check_par2(const unsigned char *buffer, const unsigned int buffer_size,
+                             const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                             file_recovery_t *file_recovery_new) {
+  const uint64_t length = le64((*(const uint64_t *)(&buffer[8])));
+  if (length % 4 != 0 || length < 16 || length > PHOTOREC_MAX_FILE_SIZE)
     return 0;
-  if(file_recovery->file_stat!=NULL &&
-      file_recovery->file_stat->file_hint==&file_hint_par2)
-  {
-    if(header_ignored_adv(file_recovery, file_recovery_new)==0)
+  if (file_recovery->file_stat != NULL && file_recovery->file_stat->file_hint == &file_hint_par2) {
+    if (header_ignored_adv(file_recovery, file_recovery_new) == 0)
       return 0;
   }
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_par2.extension;
-  file_recovery_new->file_rename=&file_rename_par2;
-  file_recovery_new->min_filesize=64+length;
-  if(file_recovery_new->blocksize < 16)
+  file_recovery_new->extension = file_hint_par2.extension;
+  file_recovery_new->file_rename = &file_rename_par2;
+  file_recovery_new->min_filesize = 64 + length;
+  if (file_recovery_new->blocksize < 16)
     return 1;
-  file_recovery_new->data_check=&data_check_par2;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->data_check = &data_check_par2;
+  file_recovery_new->file_check = &file_check_size;
   return 1;
 }
 
-static void register_header_check_par2(file_stat_t *file_stat)
-{
+static void register_header_check_par2(file_stat_t *file_stat) {
   register_header_check(0, par2_header, sizeof(par2_header), &header_check_par2, file_stat);
 }
 #endif

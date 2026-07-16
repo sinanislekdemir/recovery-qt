@@ -31,17 +31,14 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_pfx(file_stat_t *file_stat);
 
-const file_hint_t file_hint_pfx= {
-  .extension="pfx",
-  .description="PKCS#12 keys",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_pfx
-};
+const file_hint_t file_hint_pfx = {.extension = "pfx",
+                                   .description = "PKCS#12 keys",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_pfx};
 
 /* A pfx file are PKCS#12 data encoded following ASN.1 DER
  *
@@ -65,32 +62,26 @@ const file_hint_t file_hint_pfx= {
  *    Here, contentType=data
  */
 
-
-static int header_check_pfx(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(buffer[0]==0x30 && buffer[1]==0x82 &&
-      buffer[4]==0x02 && buffer[5]==0x01 && buffer[6]==0x03 &&
-      buffer[7]==0x30 && buffer[8]==0x82)
-  {
-    const uint64_t size=((buffer[2])<<8) + buffer[3] + 4;
-    if(size < 11 + 11)
+static int header_check_pfx(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (buffer[0] == 0x30 && buffer[1] == 0x82 && buffer[4] == 0x02 && buffer[5] == 0x01 && buffer[6] == 0x03 &&
+      buffer[7] == 0x30 && buffer[8] == 0x82) {
+    const uint64_t size = ((buffer[2]) << 8) + buffer[3] + 4;
+    if (size < 11 + 11)
       return 0;
     reset_file_recovery(file_recovery_new);
-    file_recovery_new->extension=file_hint_pfx.extension;
-    file_recovery_new->calculated_file_size=size;
-    file_recovery_new->data_check=&data_check_size;
-    file_recovery_new->file_check=&file_check_size;
+    file_recovery_new->extension = file_hint_pfx.extension;
+    file_recovery_new->calculated_file_size = size;
+    file_recovery_new->data_check = &data_check_size;
+    file_recovery_new->file_check = &file_check_size;
     return 1;
   }
   return 0;
 }
 
-static void register_header_check_pfx(file_stat_t *file_stat)
-{
-  static const unsigned char pfx_header[11]= {
-    0x06, 0x09,
-    0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x07, 0x01
-  };
-  register_header_check(11, pfx_header,sizeof(pfx_header), &header_check_pfx, file_stat);
+static void register_header_check_pfx(file_stat_t *file_stat) {
+  static const unsigned char pfx_header[11] = {0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x07, 0x01};
+  register_header_check(11, pfx_header, sizeof(pfx_header), &header_check_pfx, file_stat);
 }
 #endif

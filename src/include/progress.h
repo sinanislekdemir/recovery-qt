@@ -36,8 +36,8 @@ extern "C" {
 typedef void (*scanner_progress_fn)(uint64_t deleted_count, uint64_t total_count, const char *current_path);
 typedef void (*scanner_indx_progress_fn)(const char *msg, uint64_t current, uint64_t total, uint64_t found);
 
-typedef void (*carver_progress_fn)(uint64_t scanned_bytes, uint64_t total_bytes,
-    unsigned int file_count, uint64_t recovered_size);
+typedef void (*carver_progress_fn)(uint64_t scanned_bytes, uint64_t total_bytes, unsigned int file_count,
+                                   uint64_t recovered_size);
 typedef void (*carver_format_fn)(const char *ext, unsigned int count, uint64_t size);
 
 typedef void (*restorer_progress_fn)(int pct, const char *current_file, int total, int done);

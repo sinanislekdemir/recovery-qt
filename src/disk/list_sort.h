@@ -23,9 +23,7 @@
 extern "C" {
 #endif
 
-
-void td_list_sort(struct td_list_head *head,
-    int (*cmp)(const struct td_list_head *a, const struct td_list_head *b));
+void td_list_sort(struct td_list_head *head, int (*cmp)(const struct td_list_head *a, const struct td_list_head *b));
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

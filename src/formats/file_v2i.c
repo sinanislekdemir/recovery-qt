@@ -31,24 +31,20 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_v2i(file_stat_t *file_stat);
 
-const file_hint_t file_hint_v2i = {
-  .extension = "v2i",
-  .description = "v2i backup",
-  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_v2i
-};
+const file_hint_t file_hint_v2i = {.extension = "v2i",
+                                   .description = "v2i backup",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_v2i};
 
-
-static int header_check_v2i(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const unsigned char v2i_sign[4] = { 0x13, 0x04, 0x08, 0x00 };
-  if(memcmp(&buffer[0x14], v2i_sign, sizeof(v2i_sign)) == 0)
-  {
+static int header_check_v2i(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const unsigned char v2i_sign[4] = {0x13, 0x04, 0x08, 0x00};
+  if (memcmp(&buffer[0x14], v2i_sign, sizeof(v2i_sign)) == 0) {
     reset_file_recovery(file_recovery_new);
     file_recovery_new->extension = file_hint_v2i.extension;
     return 1;
@@ -56,8 +52,7 @@ static int header_check_v2i(const unsigned char *buffer, const unsigned int buff
   return 0;
 }
 
-static void register_header_check_v2i(file_stat_t *file_stat)
-{
+static void register_header_check_v2i(file_stat_t *file_stat) {
   register_header_check(0, "$CAN", 4, &header_check_v2i, file_stat);
 }
 #endif

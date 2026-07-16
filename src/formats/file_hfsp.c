@@ -33,31 +33,27 @@
 #include "common.h"
 #include "hfsp_struct.h"
 
-
 static void register_header_check_hfsp(file_stat_t *file_stat);
 
-const file_hint_t file_hint_hfsp= {
-  .extension="hfsp",
-  .description="HFS+/HFSX",
-  .max_filesize=2048,
-  .recover=0,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_hfsp
-};
+const file_hint_t file_hint_hfsp = {.extension = "hfsp",
+                                    .description = "HFS+/HFSX",
+                                    .max_filesize = 2048,
+                                    .recover = 0,
+                                    .enable_by_default = 1,
+                                    .register_header_check = &register_header_check_hfsp};
 
-
-static int header_check_hfsp(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct hfsp_vh *vh=(const struct hfsp_vh *)buffer;
-  if (!(be32(vh->blocksize)%512==0 && be32(vh->blocksize)!=0 && be32(vh->free_blocks)<=be32(vh->total_blocks)))
+static int header_check_hfsp(const unsigned char *buffer, const unsigned int buffer_size,
+                             const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                             file_recovery_t *file_recovery_new) {
+  const struct hfsp_vh *vh = (const struct hfsp_vh *)buffer;
+  if (!(be32(vh->blocksize) % 512 == 0 && be32(vh->blocksize) != 0 && be32(vh->free_blocks) <= be32(vh->total_blocks)))
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_hfsp.extension;
+  file_recovery_new->extension = file_hint_hfsp.extension;
   return 1;
 }
 
-static void register_header_check_hfsp(file_stat_t *file_stat)
-{
+static void register_header_check_hfsp(file_stat_t *file_stat) {
   register_header_check(0, "H+\0\4", 4, &header_check_hfsp, file_stat);
 #ifndef DISABLED_FOR_FRAMAC
   register_header_check(0, "HX\0\5", 4, &header_check_hfsp, file_stat);

@@ -25,16 +25,14 @@
 extern "C" {
 #endif
 
-struct info_disk_struct
-{
+struct info_disk_struct {
   unsigned int disk;
-  CHSgeometry_t geo_phys;	/* CHS low level */
+  CHSgeometry_t geo_phys; /* CHS low level */
   int mode_enh;
   int bad_geometry;
 };
 
 disk_t *hd_identify(const int verbose, const unsigned int disk, const int testdisk_mode);
-
 
 const char *disk_description(disk_t *disk_car);
 

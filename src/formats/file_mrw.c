@@ -33,17 +33,14 @@
 #include "filegen.h"
 #include "log.h"
 
-
 static void register_header_check_mrw(file_stat_t *file_stat);
 
-const file_hint_t file_hint_mrw= {
-  .extension="mrw",
-  .description="Minolta Raw picture",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_mrw
-};
+const file_hint_t file_hint_mrw = {.extension = "mrw",
+                                   .description = "Minolta Raw picture",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_mrw};
 
 struct hdr {
   uint32_t fourcc;
@@ -51,7 +48,7 @@ struct hdr {
 #if 0
   char data[0];
 #endif
-}  __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
 struct prd {
   char ver[8];
@@ -63,31 +60,32 @@ struct prd {
     uint16_t y;
     uint16_t x;
   } img;
-  uint8_t datasize;  // bpp, 12 or 16
-  uint8_t pixelsize; // bits used, always 12
+  uint8_t datasize;      // bpp, 12 or 16
+  uint8_t pixelsize;     // bits used, always 12
   uint8_t storagemethod; // 0x52 means not packed
   uint8_t unknown1;
   uint16_t unknown2;
   uint16_t pattern; // 0x0001 RGGB, or 0x0004 GBRG
-}  __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
 /* Minolta */
 
-static int header_check_mrw(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const unsigned char prd_header[4]= { 0x00,'P','R','D'};
-  const struct hdr *mrmhdr = (const struct hdr*)buffer;
-  const struct hdr *prdhdr = (const struct hdr*)&buffer[sizeof(struct hdr)];
+static int header_check_mrw(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const unsigned char prd_header[4] = {0x00, 'P', 'R', 'D'};
+  const struct hdr *mrmhdr = (const struct hdr *)buffer;
+  const struct hdr *prdhdr = (const struct hdr *)&buffer[sizeof(struct hdr)];
   /* Picture Raw Dimensions */
-  const struct prd *prd = (const struct prd*)&buffer[2*sizeof(struct hdr)];
-  if(memcmp(&prdhdr->fourcc, prd_header, sizeof(prd_header))!=0)
+  const struct prd *prd = (const struct prd *)&buffer[2 * sizeof(struct hdr)];
+  if (memcmp(&prdhdr->fourcc, prd_header, sizeof(prd_header)) != 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_mrw.extension;
-  file_recovery_new->calculated_file_size= (uint64_t)be32(mrmhdr->size)+ 8 +
-    ((uint64_t)be16(prd->ccd.x) * be16(prd->ccd.y) * prd->datasize + 8 - 1) / 8;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->extension = file_hint_mrw.extension;
+  file_recovery_new->calculated_file_size =
+      (uint64_t)be32(mrmhdr->size) + 8 + ((uint64_t)be16(prd->ccd.x) * be16(prd->ccd.y) * prd->datasize + 8 - 1) / 8;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
   /*
      log_debug("size=%lu x=%lu y=%lu datasize=%lu\n", be32(mrmhdr->size),
      be16(prd->ccd.x), be16(prd->ccd.y), prd->datasize);
@@ -96,9 +94,8 @@ static int header_check_mrw(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-static void register_header_check_mrw(file_stat_t *file_stat)
-{
-  static const unsigned char mrw_header[4]= { 0x00,'M','R','M'}; /* Minolta Raw */
-  register_header_check(0, mrw_header,sizeof(mrw_header), &header_check_mrw, file_stat);
+static void register_header_check_mrw(file_stat_t *file_stat) {
+  static const unsigned char mrw_header[4] = {0x00, 'M', 'R', 'M'}; /* Minolta Raw */
+  register_header_check(0, mrw_header, sizeof(mrw_header), &header_check_mrw, file_stat);
 }
 #endif

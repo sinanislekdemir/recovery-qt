@@ -32,29 +32,24 @@
 #include "common.h"
 #include "filegen.h"
 
-
-
 static void register_header_check_max(file_stat_t *file_stat);
 
-const file_hint_t file_hint_max= {
-  .extension="max",
-  .description="PaperPort",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_max
-};
+const file_hint_t file_hint_max = {.extension = "max",
+                                   .description = "PaperPort",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_max};
 
-
-static int header_check_max(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_max(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_max.extension;
+  file_recovery_new->extension = file_hint_max.extension;
   return 1;
 }
 
-static void register_header_check_max(file_stat_t *file_stat)
-{
+static void register_header_check_max(file_stat_t *file_stat) {
   register_header_check(0, "ViGFk", 5, &header_check_max, file_stat);
 }
 #endif

@@ -37,70 +37,57 @@
 #include "log.h"
 #include "guid_cpy.h"
 
-
 static void set_ISO_info(const struct iso_primary_descriptor *iso, partition_t *partition);
 
-
-static int test_ISO(const struct iso_primary_descriptor *iso)
-{
-  static const unsigned char iso_header[6]= { 0x01, 'C', 'D', '0', '0', '1'};
-  if(memcmp(iso, iso_header, sizeof(iso_header))!=0)
+static int test_ISO(const struct iso_primary_descriptor *iso) {
+  static const unsigned char iso_header[6] = {0x01, 'C', 'D', '0', '0', '1'};
+  if (memcmp(iso, iso_header, sizeof(iso_header)) != 0)
     return 1;
   return 0;
 }
 
-int check_ISO(disk_t *disk_car, partition_t *partition)
-{
-  unsigned char *buffer=(unsigned char*)MALLOC(ISO_PD_SIZE);
-  
-  if(disk_car->pread(disk_car, buffer, ISO_PD_SIZE, partition->part_offset + 64 * 512) != ISO_PD_SIZE)
-  {
+int check_ISO(disk_t *disk_car, partition_t *partition) {
+  unsigned char *buffer = (unsigned char *)MALLOC(ISO_PD_SIZE);
+
+  if (disk_car->pread(disk_car, buffer, ISO_PD_SIZE, partition->part_offset + 64 * 512) != ISO_PD_SIZE) {
     free(buffer);
     return 1;
   }
-  if(test_ISO((struct iso_primary_descriptor*)buffer)!=0)
-  {
+  if (test_ISO((struct iso_primary_descriptor *)buffer) != 0) {
     free(buffer);
     return 1;
   }
-  set_ISO_info((struct iso_primary_descriptor*)buffer, partition);
+  set_ISO_info((struct iso_primary_descriptor *)buffer, partition);
   free(buffer);
   return 0;
 }
 
-static void set_ISO_info(const struct iso_primary_descriptor *iso, partition_t *partition)
-{
-  const unsigned int volume_space_size_le=le32(iso->volume_space_size_le);
-  const unsigned int volume_space_size_be=be32(iso->volume_space_size_be);
-  const unsigned int logical_block_size_le=le16(iso->logical_block_size_le);
-  const unsigned int logical_block_size_be=be16(iso->logical_block_size_be);
-  partition->upart_type=UP_ISO;
-  set_part_name_chomp(partition, (const char*)iso->volume_id, 32);
-  if(volume_space_size_le==volume_space_size_be && logical_block_size_le==logical_block_size_be)
-  {
-    partition->blocksize=logical_block_size_le;
-    snprintf(partition->info, sizeof(partition->info),
-	"ISO9660 blocksize=%u", partition->blocksize);
-  }
-  else
+static void set_ISO_info(const struct iso_primary_descriptor *iso, partition_t *partition) {
+  const unsigned int volume_space_size_le = le32(iso->volume_space_size_le);
+  const unsigned int volume_space_size_be = be32(iso->volume_space_size_be);
+  const unsigned int logical_block_size_le = le16(iso->logical_block_size_le);
+  const unsigned int logical_block_size_be = be16(iso->logical_block_size_be);
+  partition->upart_type = UP_ISO;
+  set_part_name_chomp(partition, (const char *)iso->volume_id, 32);
+  if (volume_space_size_le == volume_space_size_be && logical_block_size_le == logical_block_size_be) {
+    partition->blocksize = logical_block_size_le;
+    snprintf(partition->info, sizeof(partition->info), "ISO9660 blocksize=%u", partition->blocksize);
+  } else
     snprintf(partition->info, sizeof(partition->info), "ISO");
 }
 
-int recover_ISO(const struct iso_primary_descriptor *iso, partition_t *partition)
-{
-  if(test_ISO(iso)!=0)
+int recover_ISO(const struct iso_primary_descriptor *iso, partition_t *partition) {
+  if (test_ISO(iso) != 0)
     return 1;
   set_ISO_info(iso, partition);
-  
-  
+
   {
-    const unsigned int volume_space_size_le=le32(iso->volume_space_size_le);
-    const unsigned int volume_space_size_be=be32(iso->volume_space_size_be);
-    const unsigned int logical_block_size_le=le16(iso->logical_block_size_le);
-    const unsigned int logical_block_size_be=be16(iso->logical_block_size_be);
-    if(volume_space_size_le==volume_space_size_be && logical_block_size_le==logical_block_size_be)
-    {	/* ISO 9660 */
-      partition->part_size=(uint64_t)volume_space_size_le * logical_block_size_le;
+    const unsigned int volume_space_size_le = le32(iso->volume_space_size_le);
+    const unsigned int volume_space_size_be = be32(iso->volume_space_size_be);
+    const unsigned int logical_block_size_le = le16(iso->logical_block_size_le);
+    const unsigned int logical_block_size_be = be16(iso->logical_block_size_be);
+    if (volume_space_size_le == volume_space_size_be && logical_block_size_le == logical_block_size_be) { /* ISO 9660 */
+      partition->part_size = (uint64_t)volume_space_size_le * logical_block_size_le;
     }
   }
   return 0;

@@ -31,56 +31,46 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_pzh(file_stat_t *file_stat);
 
 /* Presto http://www.soft.es/ */
 
-const file_hint_t file_hint_pzh= {
-  .extension="pzh",
-  .description="Presto",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_pzh
-};
+const file_hint_t file_hint_pzh = {.extension = "pzh",
+                                   .description = "Presto",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_pzh};
 
-static const unsigned char pzh_header[10]=  {
-  0x00, 0x00, 0x01, '8', '.', '0', 0x00, 0x02,
-  0x05, 0x03
-};
+static const unsigned char pzh_header[10] = {0x00, 0x00, 0x01, '8', '.', '0', 0x00, 0x02, 0x05, 0x03};
 
-
-static void file_rename_pzh(file_recovery_t *file_recovery)
-{
+static void file_rename_pzh(file_recovery_t *file_recovery) {
   unsigned char buffer[512];
   FILE *file;
   int buffer_size;
-  if((file=fopen(file_recovery->filename, "rb"))==NULL)
+  if ((file = fopen(file_recovery->filename, "rb")) == NULL)
     return;
-  if(fseek(file, 0x9ce, SEEK_SET)<0)
-  {
+  if (fseek(file, 0x9ce, SEEK_SET) < 0) {
     fclose(file);
-    return ;
+    return;
   }
-  buffer_size=fread(buffer, 1, sizeof(buffer), file);
+  buffer_size = fread(buffer, 1, sizeof(buffer), file);
   fclose(file);
-  if(buffer_size > 0)
+  if (buffer_size > 0)
     file_rename(file_recovery, buffer, buffer_size, 0, "pzh", 0);
 }
 
-
-static int header_check_pzh(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_pzh(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_pzh.extension;
-  file_recovery_new->file_rename=&file_rename_pzh;
-  file_recovery_new->min_filesize=0x9c4 + sizeof(pzh_header);
+  file_recovery_new->extension = file_hint_pzh.extension;
+  file_recovery_new->file_rename = &file_rename_pzh;
+  file_recovery_new->min_filesize = 0x9c4 + sizeof(pzh_header);
   return 1;
 }
 
-static void register_header_check_pzh(file_stat_t *file_stat)
-{
+static void register_header_check_pzh(file_stat_t *file_stat) {
   register_header_check(0x9c4, pzh_header, sizeof(pzh_header), &header_check_pzh, file_stat);
 }
 #endif

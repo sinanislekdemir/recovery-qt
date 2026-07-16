@@ -51,71 +51,64 @@
 #undef HAVE_DUP2
 #endif
 
-static FILE *log_handle=NULL;
-static int f_status=0;
+static FILE *log_handle = NULL;
+static int f_status = 0;
 static void (*json_log_callback)(const unsigned int level, const char *format, va_list ap) = NULL;
 static int json_verbose = 0;
 
 /* static unsigned int log_levels=LOG_LEVEL_DEBUG|LOG_LEVEL_TRACE|LOG_LEVEL_QUIET|LOG_LEVEL_INFO|LOG_LEVEL_VERBOSE|LOG_LEVEL_PROGRESS|LOG_LEVEL_WARNING|LOG_LEVEL_ERROR|LOG_LEVEL_PERROR|LOG_LEVEL_CRITICAL; */
-static unsigned int log_levels=LOG_LEVEL_TRACE|LOG_LEVEL_QUIET|LOG_LEVEL_INFO|LOG_LEVEL_VERBOSE|LOG_LEVEL_PROGRESS|LOG_LEVEL_WARNING|LOG_LEVEL_ERROR|LOG_LEVEL_PERROR|LOG_LEVEL_CRITICAL;
+static unsigned int log_levels = LOG_LEVEL_TRACE | LOG_LEVEL_QUIET | LOG_LEVEL_INFO | LOG_LEVEL_VERBOSE |
+                                 LOG_LEVEL_PROGRESS | LOG_LEVEL_WARNING | LOG_LEVEL_ERROR | LOG_LEVEL_PERROR |
+                                 LOG_LEVEL_CRITICAL;
 
-
-unsigned int log_set_levels(const unsigned int levels)
-{
-  const unsigned int old_levels=log_levels;
-  log_levels=levels;
+unsigned int log_set_levels(const unsigned int levels) {
+  const unsigned int old_levels = log_levels;
+  log_levels = levels;
   return old_levels;
 }
 
-void log_set_json_handler(void (*handler)(const unsigned int level, const char *format, va_list ap), int verbose)
-{
+void log_set_json_handler(void (*handler)(const unsigned int level, const char *format, va_list ap), int verbose) {
   json_log_callback = handler;
   json_verbose = verbose;
 }
 
-
-int log_open(const char*default_filename, const int mode, int *errsv)
-{
-  log_handle=fopen(default_filename,(mode==TD_LOG_CREATE?"w":"a"));
-  *errsv=errno;
+int log_open(const char *default_filename, const int mode, int *errsv) {
+  log_handle = fopen(default_filename, (mode == TD_LOG_CREATE ? "w" : "a"));
+  *errsv = errno;
 #if defined(__CYGWIN__) || defined(__MINGW32__)
-  if(log_handle!=NULL && mode!=TD_LOG_CREATE)
-  {
+  if (log_handle != NULL && mode != TD_LOG_CREATE) {
     /* append doesn't work when running the executable via wine */
-    if(fprintf(log_handle, "\n")<=0 || fflush(log_handle)!=0)
-    {
+    if (fprintf(log_handle, "\n") <= 0 || fflush(log_handle) != 0) {
       fclose(log_handle);
-      log_handle=fopen(default_filename,"w");
-      *errsv=errno;
+      log_handle = fopen(default_filename, "w");
+      *errsv = errno;
     }
   }
 #endif
-  if(log_handle==NULL)
+  if (log_handle == NULL)
     return 0;
 #if defined(HAVE_DUP2)
-  dup2(fileno(log_handle),2);
+  dup2(fileno(log_handle), 2);
 #endif
   return 1;
 }
 
-
 #if defined(__CYGWIN__) || defined(__MINGW32__)
-int log_open_default(const char*default_filename, const int mode, int *errsv)
-{
-  char*filename;
+int log_open_default(const char *default_filename, const int mode, int *errsv) {
+  char *filename;
   char *path;
   int result;
-  if(log_handle != NULL)
+  if (log_handle != NULL)
     return 1;
   path = getenv("USERPROFILE");
   if (path == NULL)
     path = getenv("HOMEPATH");
-  if(path == NULL)
+  if (path == NULL)
     return log_open(default_filename, mode, errsv);
   /* Check to avoid buffer overflow may not be 100% bullet proof */
-  if(strlen(path)+strlen(default_filename)+2 > 4096)
+  if (strlen(path) + strlen(default_filename) + 2 > 4096)
     return log_open(default_filename, mode, errsv);
-  filename=(char*)MALLOC(4096);
+  filename = (char *)MALLOC(4096);
 #ifdef __CYGWIN__
   cygwin_conv_path(CCP_WIN_A_TO_POSIX, path, filename, 4096);
 #else
@@ -123,51 +116,45 @@ int log_open_default(const char*default_filename, const int mode, int *errsv)
 #endif
   strcat(filename, "/");
   strcat(filename, default_filename);
-  result=log_open(filename, mode, errsv);
+  result = log_open(filename, mode, errsv);
   free(filename);
   return result;
 }
 #else
-int log_open_default(const char*default_filename, const int mode, int *errsv)
-{
-  char*filename;
+int log_open_default(const char *default_filename, const int mode, int *errsv) {
+  char *filename;
   char *path;
   int result;
   path = getenv("HOME");
-  if(path == NULL)
+  if (path == NULL)
     return log_open(default_filename, mode, errsv);
-  
-  filename=(char*)MALLOC(strlen(path)+strlen(default_filename)+2);
+
+  filename = (char *)MALLOC(strlen(path) + strlen(default_filename) + 2);
 #if defined(__FRAMAC__)
-  result=0;
+  result = 0;
 #else
   strcpy(filename, path);
   strcat(filename, "/");
   strcat(filename, default_filename);
-  result=log_open(filename, mode, errsv);
+  result = log_open(filename, mode, errsv);
 #endif
   free(filename);
   return result;
 }
 #endif
 
-
-int log_flush(void)
-{
+int log_flush(void) {
   return fflush(log_handle);
 }
-
 
 // assigns *log_handle \from _format[..], ap;
 static int log_handler(const char *_format, va_list ap) __attribute__((format(printf, 1, 0)));
 
-static int log_handler(const char *_format, va_list ap)
-{
+static int log_handler(const char *_format, va_list ap) {
   int res;
-  res=vfprintf(log_handle,_format,ap);
-  if(res<0)
-  {
-    f_status=1;
+  res = vfprintf(log_handle, _format, ap);
+  if (res < 0) {
+    f_status = 1;
   }
   /* flushing the outputs slow down the program, don't flush. Hope it's not a bad idea */
   /*
@@ -180,110 +167,91 @@ static int log_handler(const char *_format, va_list ap)
   return res;
 }
 
-
-int log_close(void)
-{
-  if(log_handle!=NULL)
-  {
-    if(fclose(log_handle))
-      f_status=1;
-    log_handle=NULL;
+int log_close(void) {
+  if (log_handle != NULL) {
+    if (fclose(log_handle))
+      f_status = 1;
+    log_handle = NULL;
   }
   return f_status;
 }
 
-
-int log_redirect(const unsigned int level, const char *format, ...)
-{
-  if((log_levels & level)==0)
+int log_redirect(const unsigned int level, const char *format, ...) {
+  if ((log_levels & level) == 0)
     return 0;
-  if(log_handle==NULL)
+  if (log_handle == NULL)
     return 0;
   {
     int res;
     va_list ap, ap_copy;
     va_start(ap, format);
 
-    if(json_log_callback != NULL)
-    {
+    if (json_log_callback != NULL) {
       va_copy(ap_copy, ap);
       json_log_callback(level, format, ap_copy);
       va_end(ap_copy);
     }
 
-    res=log_handler(format, ap);
+    res = log_handler(format, ap);
     va_end(ap);
     return res;
   }
 }
 
-
-int log_redirect_nojson(const unsigned int level, const char *format, ...)
-{
-  if((log_levels & level)==0)
+int log_redirect_nojson(const unsigned int level, const char *format, ...) {
+  if ((log_levels & level) == 0)
     return 0;
-  if(log_handle==NULL)
+  if (log_handle == NULL)
     return 0;
   {
     int res;
     va_list ap, ap_copy;
     va_start(ap, format);
 
-    if(json_log_callback != NULL && json_verbose)
-    {
+    if (json_log_callback != NULL && json_verbose) {
       va_copy(ap_copy, ap);
       json_log_callback(level, format, ap_copy);
       va_end(ap_copy);
     }
 
-    res=log_handler(format, ap);
+    res = log_handler(format, ap);
     va_end(ap);
     return res;
   }
 }
 
-void dump_log(const void *nom_dump, const unsigned int lng)
-{
+void dump_log(const void *nom_dump, const unsigned int lng) {
 #ifndef DISABLED_FOR_FRAMAC
-  const char *ptr=(const char*)nom_dump;
-  const unsigned int nbr_line=(lng+0x10-1)/0x10;
+  const char *ptr = (const char *)nom_dump;
+  const unsigned int nbr_line = (lng + 0x10 - 1) / 0x10;
   unsigned int i;
-  
+
   /* write dump to log file*/
-  
-  for (i=0; i<nbr_line; i++)
-  {
+
+  for (i = 0; i < nbr_line; i++) {
     unsigned int j;
-    log_info("%04X ",i*0x10);
-    
-    for(j=0; j< 0x10;j++)
-    {
-      const unsigned int o=i*0x10+j;
-      if(o<lng)
-      {
-	
-        
+    log_info("%04X ", i * 0x10);
+
+    for (j = 0; j < 0x10; j++) {
+      const unsigned int o = i * 0x10 + j;
+      if (o < lng) {
         log_info("%02x", ptr[o]);
-      }
-      else
+      } else
         log_info("  ");
-      if(j%4==(4-1))
+      if (j % 4 == (4 - 1))
         log_info(" ");
     }
     log_info("  ");
-    
-    for(j=0; j< 0x10;j++)
-    {
-      const unsigned int o=i*0x10+j;
-      if(o<lng)
-      {
-        const char car=ptr[o];
-        if (car<32 || car >= 127)
+
+    for (j = 0; j < 0x10; j++) {
+      const unsigned int o = i * 0x10 + j;
+      if (o < lng) {
+        const char car = ptr[o];
+        if (car < 32 || car >= 127)
           log_info(".");
         else
-          log_info("%c",  car);
-      }
-      else
+          log_info("%c", car);
+      } else
         log_info("  ");
     }
     log_info("\n");
@@ -291,75 +259,61 @@ void dump_log(const void *nom_dump, const unsigned int lng)
 #endif
 }
 
-void dump2_log(const void *dump_1, const void *dump_2, const unsigned int lng)
-{
+void dump2_log(const void *dump_1, const void *dump_2, const unsigned int lng) {
 #ifndef DISABLED_FOR_FRAMAC
-  const char *ptr1=(const char*)dump_1;
-  const char *ptr2=(const char*)dump_2;
-  const unsigned int nbr_line=(lng+0x08-1)/0x08;
-  unsigned int i,j;
+  const char *ptr1 = (const char *)dump_1;
+  const char *ptr2 = (const char *)dump_2;
+  const unsigned int nbr_line = (lng + 0x08 - 1) / 0x08;
+  unsigned int i, j;
   /* write dump to log file*/
-  
-  for (i=0; i<nbr_line; i++)
-  {
-    log_info("%04X ",i*0x08);
-    
-    for(j=0; j<0x08;j++)
-    {
-      const unsigned int o=i*0x08+j;
-      if(o<lng)
-      {
+
+  for (i = 0; i < nbr_line; i++) {
+    log_info("%04X ", i * 0x08);
+
+    for (j = 0; j < 0x08; j++) {
+      const unsigned int o = i * 0x08 + j;
+      if (o < lng) {
         log_info("%02x", ptr1[o]);
-      }
-      else
+      } else
         log_info("  ");
-      if(j%4==(4-1))
+      if (j % 4 == (4 - 1))
         log_info(" ");
     }
     log_info("  ");
-    
-    for(j=0; j<0x08;j++)
-    {
-      const unsigned int o=i*0x08+j;
-      if(o<lng)
-      {
-        const char car=ptr1[o];
-        if (car<32 || car >= 127)
+
+    for (j = 0; j < 0x08; j++) {
+      const unsigned int o = i * 0x08 + j;
+      if (o < lng) {
+        const char car = ptr1[o];
+        if (car < 32 || car >= 127)
           log_info(".");
         else
-          log_info("%c",  car);
-      }
-      else
+          log_info("%c", car);
+      } else
         log_info(" ");
     }
     log_info("  ");
-    
-    for(j=0; j<0x08;j++)
-    {
-      const unsigned int o=i*0x08+j;
-      if(o<lng)
-      {
+
+    for (j = 0; j < 0x08; j++) {
+      const unsigned int o = i * 0x08 + j;
+      if (o < lng) {
         log_info("%02x", ptr2[o]);
-      }
-      else
+      } else
         log_info("  ");
-      if(j%4==(4-1))
+      if (j % 4 == (4 - 1))
         log_info(" ");
     }
     log_info("  ");
-    
-    for(j=0; j<0x08;j++)
-    {
-      const unsigned int o=i*0x08+j;
-      if(o<lng)
-      {
-        const char car=ptr2[o];
-        if (car<32 || car >= 127)
+
+    for (j = 0; j < 0x08; j++) {
+      const unsigned int o = i * 0x08 + j;
+      if (o < lng) {
+        const char car = ptr2[o];
+        if (car < 32 || car >= 127)
           log_info(".");
         else
-          log_info("%c",  car);
-      }
-      else
+          log_info("%c", car);
+      } else
         log_info(" ");
     }
     log_info("\n");

@@ -33,36 +33,36 @@
 #include "common/theme.hpp"
 
 class DiskSelectionWidget : public QWidget {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit DiskSelectionWidget(QWidget *parent = nullptr);
+  explicit DiskSelectionWidget(QWidget *parent = nullptr);
 
-    void refreshDisks();
+  void refreshDisks();
 
 signals:
-    void diskSelected(const Disk &disk);
-    void quitRequested();
-    void continueSessionRequested();
+  void diskSelected(const Disk &disk);
+  void quitRequested();
+  void continueSessionRequested();
 
 private slots:
-    void onSelectionChanged();
-    void onRefresh();
-    void onProceed();
-    void onOpenImage();
+  void onSelectionChanged();
+  void onRefresh();
+  void onProceed();
+  void onOpenImage();
 
 private:
-    void setupUi();
-    void applyTheme();
+  void setupUi();
+  void applyTheme();
 
-    QLabel *m_titleLabel;
-    QTableView *m_tableView;
-    QStandardItemModel *m_model;
-    QPushButton *m_refreshBtn;
-    QPushButton *m_openImageBtn;
-    QPushButton *m_continueBtn;
-    QPushButton *m_proceedBtn;
-    QPushButton *m_quitBtn;
-    QVector<Disk> m_disks;
+  QLabel *m_titleLabel;
+  QTableView *m_tableView;
+  QStandardItemModel *m_model;
+  QPushButton *m_refreshBtn;
+  QPushButton *m_openImageBtn;
+  QPushButton *m_continueBtn;
+  QPushButton *m_proceedBtn;
+  QPushButton *m_quitBtn;
+  QVector<Disk> m_disks;
 };
 
 #endif // DISKSELECTIONWIDGET_HPP

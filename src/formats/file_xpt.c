@@ -32,22 +32,18 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_xpt(file_stat_t *file_stat);
 
-const file_hint_t file_hint_xpt = {
-  .extension = "xpt",
-  .description = "Mozilla XPCOM Type Library",
-  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_xpt
-};
+const file_hint_t file_hint_xpt = {.extension = "xpt",
+                                   .description = "Mozilla XPCOM Type Library",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_xpt};
 
 /* Read http://www.mozilla.org/scriptable/typelib_file.html
  * for more information about this file format */
-struct TypeLibHeader
-{
+struct TypeLibHeader {
   char magic[16];
   uint8_t major_version;
   uint8_t minor_version;
@@ -55,12 +51,12 @@ struct TypeLibHeader
   uint32_t file_length;
 } __attribute__((gcc_struct, __packed__));
 
-
-static int header_check_xpt(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_xpt(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   const struct TypeLibHeader *xpt = (const struct TypeLibHeader *)buffer;
   const unsigned int file_length = be32(xpt->file_length);
-  if(file_length < 65)
+  if (file_length < 65)
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_xpt.extension;
@@ -71,12 +67,9 @@ static int header_check_xpt(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-static void register_header_check_xpt(file_stat_t *file_stat)
-{
-  static const unsigned char xpt_header[16] = {
-    'X', 'P', 'C', 'O', 'M', '\n', 'T', 'y',
-    'p', 'e', 'L', 'i', 'b', '\r', '\n', 0x1a
-  };
+static void register_header_check_xpt(file_stat_t *file_stat) {
+  static const unsigned char xpt_header[16] = {'X', 'P', 'C', 'O', 'M', '\n', 'T',  'y',
+                                               'p', 'e', 'L', 'i', 'b', '\r', '\n', 0x1a};
   register_header_check(0, xpt_header, sizeof(xpt_header), &header_check_xpt, file_stat);
 }
 #endif

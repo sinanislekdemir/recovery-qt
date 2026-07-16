@@ -32,35 +32,31 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_jsonlz4(file_stat_t *file_stat);
 
-const file_hint_t file_hint_jsonlz4= {
-  .extension="jsonlz4",
-  .description="Mozilla bookmarks",
-  .max_filesize=PHOTOREC_MAX_SIZE_32,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_jsonlz4
-};
+const file_hint_t file_hint_jsonlz4 = {.extension = "jsonlz4",
+                                       .description = "Mozilla bookmarks",
+                                       .max_filesize = PHOTOREC_MAX_SIZE_32,
+                                       .recover = 1,
+                                       .enable_by_default = 1,
+                                       .register_header_check = &register_header_check_jsonlz4};
 
-
-static int header_check_jsonlz4(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const uint32_t *uncompressed_size=(const uint32_t *)&buffer[8];
-  const unsigned int size=le32(*uncompressed_size);
-  if(size==0)
+static int header_check_jsonlz4(const unsigned char *buffer, const unsigned int buffer_size,
+                                const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                                file_recovery_t *file_recovery_new) {
+  const uint32_t *uncompressed_size = (const uint32_t *)&buffer[8];
+  const unsigned int size = le32(*uncompressed_size);
+  if (size == 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_jsonlz4.extension;
-  file_recovery_new->calculated_file_size=size;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size_max;
+  file_recovery_new->extension = file_hint_jsonlz4.extension;
+  file_recovery_new->calculated_file_size = size;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size_max;
   return 1;
 }
 
-static void register_header_check_jsonlz4(file_stat_t *file_stat)
-{
+static void register_header_check_jsonlz4(file_stat_t *file_stat) {
   register_header_check(0, "mozLz40", 8, &header_check_jsonlz4, file_stat);
 }
 #endif

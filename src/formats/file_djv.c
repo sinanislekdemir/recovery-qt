@@ -32,43 +32,38 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_djv(file_stat_t *file_stat);
 
-const file_hint_t file_hint_djv= {
-  .extension="djv",
-  .description="DjVu",
-  .max_filesize=200*1024*1024,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_djv
-};
+const file_hint_t file_hint_djv = {.extension = "djv",
+                                   .description = "DjVu",
+                                   .max_filesize = 200 * 1024 * 1024,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_djv};
 
-struct djv_header
-{
+struct djv_header {
   uint32_t magic;
   uint32_t type;
   uint32_t size;
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
-
-static int header_check_djv(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct djv_header *hdr=(const struct djv_header *)buffer;
-  const uint64_t size=be32(hdr->size);
-  if(size==0 || size +12 > file_hint_djv.max_filesize)
+static int header_check_djv(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const struct djv_header *hdr = (const struct djv_header *)buffer;
+  const uint64_t size = be32(hdr->size);
+  if (size == 0 || size + 12 > file_hint_djv.max_filesize)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_djv.extension;
-  file_recovery_new->calculated_file_size=size+12;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->extension = file_hint_djv.extension;
+  file_recovery_new->calculated_file_size = size + 12;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
   return 1;
 }
 
-static void register_header_check_djv(file_stat_t *file_stat)
-{
-  static const unsigned char djv_header[8]= { 'A','T','&','T','F','O','R','M'};
-  register_header_check(0, djv_header,sizeof(djv_header), &header_check_djv, file_stat);
+static void register_header_check_djv(file_stat_t *file_stat) {
+  static const unsigned char djv_header[8] = {'A', 'T', '&', 'T', 'F', 'O', 'R', 'M'};
+  register_header_check(0, djv_header, sizeof(djv_header), &header_check_djv, file_stat);
 }
 #endif

@@ -1,7 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
- 
+
 #ifdef DISABLED_FOR_FRAMAC
 #undef HAVE_LIBJPEG
 #endif
@@ -14,11 +14,9 @@
 #include <jpeglib.h>
 #include "suspend.h"
 
-void suspend_memory(j_common_ptr cinfo) {
-};
+void suspend_memory(j_common_ptr cinfo) {};
 
-int resume_memory(j_common_ptr cinfo)
-{
+int resume_memory(j_common_ptr cinfo) {
   /* Can't resume */
   return -1;
 };

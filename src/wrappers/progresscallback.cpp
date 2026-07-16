@@ -31,131 +31,111 @@ extern "C" {
 }
 #endif
 
-ProgressCallback* ProgressCallback::s_instance = nullptr;
-ProgressCallback* ProgressCallback::s_carverInstance = nullptr;
-ProgressCallback* ProgressCallback::s_scannerInstance = nullptr;
-ProgressCallback* ProgressCallback::s_restoreInstance = nullptr;
-ProgressCallback* ProgressCallback::s_checkpointInstance = nullptr;
+ProgressCallback *ProgressCallback::s_instance = nullptr;
+ProgressCallback *ProgressCallback::s_carverInstance = nullptr;
+ProgressCallback *ProgressCallback::s_scannerInstance = nullptr;
+ProgressCallback *ProgressCallback::s_restoreInstance = nullptr;
+ProgressCallback *ProgressCallback::s_checkpointInstance = nullptr;
 
-ProgressCallback* ProgressCallback::instance()
-{
-    if (!s_instance)
-        s_instance = new ProgressCallback();
-    return s_instance;
+ProgressCallback *ProgressCallback::instance() {
+  if (!s_instance)
+    s_instance = new ProgressCallback();
+  return s_instance;
 }
 
-ProgressCallback::ProgressCallback(QObject *parent)
-    : QObject(parent), m_cancelled(false) {}
+ProgressCallback::ProgressCallback(QObject *parent) : QObject(parent), m_cancelled(false) {}
 
-void ProgressCallback::reset() { m_cancelled.store(false); }
-void ProgressCallback::cancel() { m_cancelled.store(true); }
-bool ProgressCallback::isCancelled() const { return m_cancelled.load(); }
-
-void ProgressCallback::cScannerProgress(uint64_t deleted, uint64_t total, const char *path)
-{
-    emitToInstance(s_scannerInstance, [=]() {
-        emit s_scannerInstance->scannerProgress(deleted, total,
-            path ? QString::fromUtf8(path) : QString());
-    });
+void ProgressCallback::reset() {
+  m_cancelled.store(false);
+}
+void ProgressCallback::cancel() {
+  m_cancelled.store(true);
+}
+bool ProgressCallback::isCancelled() const {
+  return m_cancelled.load();
 }
 
-void ProgressCallback::cScannerIndxProgress(const char *msg, uint64_t cur, uint64_t tot, uint64_t found)
-{
-    emitToInstance(s_scannerInstance, [=]() {
-        emit s_scannerInstance->scannerIndxProgress(
-            msg ? QString::fromUtf8(msg) : QString(), cur, tot, found);
-    });
+void ProgressCallback::cScannerProgress(uint64_t deleted, uint64_t total, const char *path) {
+  emitToInstance(s_scannerInstance, [=]() {
+    emit s_scannerInstance->scannerProgress(deleted, total, path ? QString::fromUtf8(path) : QString());
+  });
 }
 
-int ProgressCallback::cIsCancelled()
-{
-    return s_scannerInstance ? s_scannerInstance->isCancelled() : 0;
+void ProgressCallback::cScannerIndxProgress(const char *msg, uint64_t cur, uint64_t tot, uint64_t found) {
+  emitToInstance(s_scannerInstance, [=]() {
+    emit s_scannerInstance->scannerIndxProgress(msg ? QString::fromUtf8(msg) : QString(), cur, tot, found);
+  });
 }
 
-void ProgressCallback::cCarverProgress(uint64_t scanned, uint64_t total,
-    unsigned int files, uint64_t recovered)
-{
-    emitToInstance(s_carverInstance, [=]() {
-        emit s_carverInstance->carverProgress(scanned, total, files, recovered);
-    });
+int ProgressCallback::cIsCancelled() {
+  return s_scannerInstance ? s_scannerInstance->isCancelled() : 0;
 }
 
-int ProgressCallback::cCarverCancelled()
-{
-    return s_carverInstance ? s_carverInstance->isCancelled() : 0;
+void ProgressCallback::cCarverProgress(uint64_t scanned, uint64_t total, unsigned int files, uint64_t recovered) {
+  emitToInstance(s_carverInstance, [=]() { emit s_carverInstance->carverProgress(scanned, total, files, recovered); });
 }
 
-void ProgressCallback::cRestoreProgress(int pct, const char *file, int total, int done)
-{
-    emitToInstance(s_restoreInstance, [=]() {
-        emit s_restoreInstance->restoreProgress(pct,
-            file ? QString::fromUtf8(file) : QString(), total, done);
-    });
+int ProgressCallback::cCarverCancelled() {
+  return s_carverInstance ? s_carverInstance->isCancelled() : 0;
 }
 
-void ProgressCallback::cRestoreFile(const char *path, int ok)
-{
-    emitToInstance(s_restoreInstance, [=]() {
-        emit s_restoreInstance->fileRestored(
-            path ? QString::fromUtf8(path) : QString(), ok != 0);
-    });
+void ProgressCallback::cRestoreProgress(int pct, const char *file, int total, int done) {
+  emitToInstance(s_restoreInstance, [=]() {
+    emit s_restoreInstance->restoreProgress(pct, file ? QString::fromUtf8(file) : QString(), total, done);
+  });
 }
 
-int ProgressCallback::cRestoreCancelled()
-{
-    return s_restoreInstance ? s_restoreInstance->isCancelled() : 0;
+void ProgressCallback::cRestoreFile(const char *path, int ok) {
+  emitToInstance(s_restoreInstance,
+                 [=]() { emit s_restoreInstance->fileRestored(path ? QString::fromUtf8(path) : QString(), ok != 0); });
 }
 
-void ProgressCallback::cCheckpointProgress(uint64_t progress1, uint64_t progress2)
-{
-    emitToInstance(s_checkpointInstance, [=]() {
-        emit s_checkpointInstance->checkpointProgress(progress1, progress2);
-    });
+int ProgressCallback::cRestoreCancelled() {
+  return s_restoreInstance ? s_restoreInstance->isCancelled() : 0;
 }
 
-void ProgressCallback::installCarverCallbacks()
-{
-    s_carverInstance = this;
-    g_carver_progress = cCarverProgress;
-    g_carver_cancel = cCarverCancelled;
+void ProgressCallback::cCheckpointProgress(uint64_t progress1, uint64_t progress2) {
+  emitToInstance(s_checkpointInstance, [=]() { emit s_checkpointInstance->checkpointProgress(progress1, progress2); });
 }
 
-void ProgressCallback::installScannerCallbacks()
-{
-    s_scannerInstance = this;
-    g_scanner_progress = cScannerProgress;
-    g_scanner_indx_progress = cScannerIndxProgress;
-    g_scanner_cancel = cIsCancelled;
+void ProgressCallback::installCarverCallbacks() {
+  s_carverInstance = this;
+  g_carver_progress = cCarverProgress;
+  g_carver_cancel = cCarverCancelled;
 }
 
-void ProgressCallback::installRestoreCallbacks()
-{
-    s_restoreInstance = this;
-    g_restorer_progress = cRestoreProgress;
-    g_restorer_file = cRestoreFile;
-    g_restorer_cancel = cRestoreCancelled;
+void ProgressCallback::installScannerCallbacks() {
+  s_scannerInstance = this;
+  g_scanner_progress = cScannerProgress;
+  g_scanner_indx_progress = cScannerIndxProgress;
+  g_scanner_cancel = cIsCancelled;
 }
 
-void ProgressCallback::installCheckpointCallback()
-{
-    s_checkpointInstance = this;
-    g_checkpoint_progress = cCheckpointProgress;
+void ProgressCallback::installRestoreCallbacks() {
+  s_restoreInstance = this;
+  g_restorer_progress = cRestoreProgress;
+  g_restorer_file = cRestoreFile;
+  g_restorer_cancel = cRestoreCancelled;
 }
 
-void ProgressCallback::uninstallAllCallbacks()
-{
-    g_carver_progress = 0;
-    g_carver_cancel = 0;
-    g_scanner_progress = 0;
-    g_scanner_indx_progress = 0;
-    g_scanner_cancel = 0;
-    g_restorer_progress = 0;
-    g_restorer_file = 0;
-    g_restorer_cancel = 0;
-    g_checkpoint_progress = 0;
-    g_session_save_cb = 0;
-    s_carverInstance = nullptr;
-    s_scannerInstance = nullptr;
-    s_restoreInstance = nullptr;
-    s_checkpointInstance = nullptr;
+void ProgressCallback::installCheckpointCallback() {
+  s_checkpointInstance = this;
+  g_checkpoint_progress = cCheckpointProgress;
+}
+
+void ProgressCallback::uninstallAllCallbacks() {
+  g_carver_progress = 0;
+  g_carver_cancel = 0;
+  g_scanner_progress = 0;
+  g_scanner_indx_progress = 0;
+  g_scanner_cancel = 0;
+  g_restorer_progress = 0;
+  g_restorer_file = 0;
+  g_restorer_cancel = 0;
+  g_checkpoint_progress = 0;
+  g_session_save_cb = 0;
+  s_carverInstance = nullptr;
+  s_scannerInstance = nullptr;
+  s_restoreInstance = nullptr;
+  s_checkpointInstance = nullptr;
 }

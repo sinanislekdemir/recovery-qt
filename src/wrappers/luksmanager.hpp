@@ -47,29 +47,29 @@ extern "C" {
  * result is retrieved as a Disk via decryptedDisk().
  */
 class LUKSManager : public QObject {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit LUKSManager(QObject *parent = nullptr);
+  explicit LUKSManager(QObject *parent = nullptr);
 
-    static bool isEncrypted(disk_t *disk, partition_t *partition);
+  static bool isEncrypted(disk_t *disk, partition_t *partition);
 
-    /* Decrypts LUKS at part_offset on base, off the UI thread.
+  /* Decrypts LUKS at part_offset on base, off the UI thread.
      * base must outlive the returned decrypted Disk. */
-    void decryptAsync(disk_t *base, uint64_t offset, const QString &passphrase);
+  void decryptAsync(disk_t *base, uint64_t offset, const QString &passphrase);
 
-    /* Transfers ownership of the last successfully decrypted disk into a Disk.
+  /* Transfers ownership of the last successfully decrypted disk into a Disk.
      * Returns an invalid Disk if decryption failed or already consumed. */
-    Disk decryptedDisk();
+  Disk decryptedDisk();
 
-    bool isDecrypted() const;
+  bool isDecrypted() const;
 
 signals:
-    void errorOccurred(const QString &message);
-    void decryptFinished(bool ok);
+  void errorOccurred(const QString &message);
+  void decryptFinished(bool ok);
 
 private:
-    disk_t *m_decryptedDisk;
-    bool m_decrypted;
+  disk_t *m_decryptedDisk;
+  bool m_decrypted;
 };
 
 #endif // PHOTOREC_LUKSMANAGER_HPP

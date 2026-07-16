@@ -33,23 +33,18 @@
 #include "common.h"
 #include "log.h"
 
-
 static void register_header_check_wim(file_stat_t *file_stat);
 /* http://go.microsoft.com/fwlink/?LinkId=92227 */
 
-const file_hint_t file_hint_wim = {
-  .extension = "wim",
-  .description = "Windows imaging (WIM) image",
-  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_wim
-};
+const file_hint_t file_hint_wim = {.extension = "wim",
+                                   .description = "Windows imaging (WIM) image",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_wim};
 
-struct reshdr_disk_short
-{
-  union
-  {
+struct reshdr_disk_short {
+  union {
     uint64_t flags; /* one byte is a combination of RESHDR_FLAG_XXX */
     uint64_t size;  /* the 7 low-bytes are used to store the size */
   };
@@ -59,8 +54,7 @@ struct reshdr_disk_short
 
 #define RESHDR_GET_SIZE(R) (le64(R.size) & 0x00FFFFFFFFFFFFFF)
 
-struct _WIMHEADER_V1_PACKED
-{
+struct _WIMHEADER_V1_PACKED {
   char ImageTag[8];
   uint32_t cbSize;
   uint32_t dwVersion;
@@ -78,39 +72,37 @@ struct _WIMHEADER_V1_PACKED
   unsigned char bUnused[60];
 } __attribute__((gcc_struct, __packed__));
 
-
-static uint64_t wim_max(const uint64_t offset, const uint64_t size, const uint64_t max_size)
-{
+static uint64_t wim_max(const uint64_t offset, const uint64_t size, const uint64_t max_size) {
   uint64_t tmp;
-  if(size == 0)
+  if (size == 0)
     return max_size;
-  if(offset > PHOTOREC_MAX_FILE_SIZE)
+  if (offset > PHOTOREC_MAX_FILE_SIZE)
     return 0;
   tmp = offset + size;
-  if(tmp > max_size)
+  if (tmp > max_size)
     return tmp;
   return max_size;
 }
 
-
-static int header_check_wim(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_wim(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   const struct _WIMHEADER_V1_PACKED *hdr = (const struct _WIMHEADER_V1_PACKED *)buffer;
   uint64_t size = le32(hdr->cbSize);
   const uint64_t rhOffsetTable_s = RESHDR_GET_SIZE(hdr->rhOffsetTable);
-  
+
   const uint64_t rhOffsetTable_o = le64(hdr->rhOffsetTable.offset);
   const uint64_t rhXmlData_s = RESHDR_GET_SIZE(hdr->rhXmlData);
-  
+
   const uint64_t rhXmlData_o = le64(hdr->rhXmlData.offset);
   const uint64_t rhBootMetadata_s = RESHDR_GET_SIZE(hdr->rhBootMetadata);
-  
+
   const uint64_t rhBootMetadata_o = le64(hdr->rhBootMetadata.offset);
   const uint64_t rhIntegrity_s = RESHDR_GET_SIZE(hdr->rhIntegrity);
-  
+
   const uint64_t rhIntegrity_o = le64(hdr->rhIntegrity.offset);
 
-  if(size < sizeof(struct _WIMHEADER_V1_PACKED))
+  if (size < sizeof(struct _WIMHEADER_V1_PACKED))
     return 0;
 #ifdef DEBUG_WIM
   log_info("cbSize %llu\n", (unsigned long long)size);
@@ -121,28 +113,27 @@ static int header_check_wim(const unsigned char *buffer, const unsigned int buff
   log_info("rhIntegrity %llu %llu\n", (unsigned long long)rhIntegrity_s, (unsigned long long)rhIntegrity_o);
 #endif
   size = wim_max(rhOffsetTable_o, rhOffsetTable_s, size);
-  if(size == 0)
+  if (size == 0)
     return 0;
   size = wim_max(rhXmlData_o, rhXmlData_s, size);
-  if(size == 0)
+  if (size == 0)
     return 0;
   size = wim_max(rhBootMetadata_o, rhBootMetadata_s, size);
-  if(size == 0)
+  if (size == 0)
     return 0;
   size = wim_max(rhIntegrity_o, rhIntegrity_s, size);
-  if(size == 0)
+  if (size == 0)
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_wim.extension;
   file_recovery_new->calculated_file_size = size;
   file_recovery_new->data_check = &data_check_size;
   file_recovery_new->file_check = &file_check_size;
-  
+
   return 1;
 }
 
-static void register_header_check_wim(file_stat_t *file_stat)
-{
+static void register_header_check_wim(file_stat_t *file_stat) {
   register_header_check(0, "MSWIM\0\0\0", 8, &header_check_wim, file_stat);
 }
 #endif

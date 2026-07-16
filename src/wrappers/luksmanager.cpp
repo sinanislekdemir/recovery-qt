@@ -27,57 +27,47 @@
 #include <QDebug>
 #include <QThread>
 
-LUKSManager::LUKSManager(QObject *parent)
-    : QObject(parent)
-    , m_decryptedDisk(nullptr)
-    , m_decrypted(false)
-{
+LUKSManager::LUKSManager(QObject *parent) : QObject(parent), m_decryptedDisk(nullptr), m_decrypted(false) {}
+
+bool LUKSManager::isEncrypted(disk_t *disk, partition_t *partition) {
+  return check_LUKS(disk, partition) != 0;
 }
 
-bool LUKSManager::isEncrypted(disk_t *disk, partition_t *partition)
-{
-    return check_LUKS(disk, partition) != 0;
-}
-
-void LUKSManager::decryptAsync(disk_t *base, uint64_t offset,
-                               const QString &passphrase)
-{
-    QByteArray passBytes = passphrase.toLocal8Bit();
-    QThread *thread = QThread::create([this, base, offset, passBytes]() {
-        m_decrypted = false;
-        if (m_decryptedDisk) {
-            if (m_decryptedDisk->clean)
-                m_decryptedDisk->clean(m_decryptedDisk);
-            m_decryptedDisk = nullptr;
-        }
-
-        disk_t *dec = luksdec_open(base, offset, passBytes.constData());
-        if (dec == nullptr) {
-            emit errorOccurred(tr("Failed to decrypt LUKS volume "
-                "(wrong passphrase or unsupported format)."));
-            emit decryptFinished(false);
-            return;
-        }
-        m_decryptedDisk = dec;
-        m_decrypted = true;
-        emit decryptFinished(true);
-    });
-    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
-    thread->start();
-}
-
-Disk LUKSManager::decryptedDisk()
-{
-    if (!m_decrypted || m_decryptedDisk == nullptr)
-        return Disk();
-
-    disk_t *raw = m_decryptedDisk;
-    m_decryptedDisk = nullptr;
+void LUKSManager::decryptAsync(disk_t *base, uint64_t offset, const QString &passphrase) {
+  QByteArray passBytes = passphrase.toLocal8Bit();
+  QThread *thread = QThread::create([this, base, offset, passBytes]() {
     m_decrypted = false;
-    return Disk::adopt(raw);
+    if (m_decryptedDisk) {
+      if (m_decryptedDisk->clean)
+        m_decryptedDisk->clean(m_decryptedDisk);
+      m_decryptedDisk = nullptr;
+    }
+
+    disk_t *dec = luksdec_open(base, offset, passBytes.constData());
+    if (dec == nullptr) {
+      emit errorOccurred(tr("Failed to decrypt LUKS volume "
+                            "(wrong passphrase or unsupported format)."));
+      emit decryptFinished(false);
+      return;
+    }
+    m_decryptedDisk = dec;
+    m_decrypted = true;
+    emit decryptFinished(true);
+  });
+  connect(thread, &QThread::finished, thread, &QObject::deleteLater);
+  thread->start();
 }
 
-bool LUKSManager::isDecrypted() const
-{
-    return m_decrypted;
+Disk LUKSManager::decryptedDisk() {
+  if (!m_decrypted || m_decryptedDisk == nullptr)
+    return Disk();
+
+  disk_t *raw = m_decryptedDisk;
+  m_decryptedDisk = nullptr;
+  m_decrypted = false;
+  return Disk::adopt(raw);
+}
+
+bool LUKSManager::isDecrypted() const {
+  return m_decrypted;
 }

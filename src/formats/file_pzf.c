@@ -31,43 +31,32 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_pzf(file_stat_t *file_stat);
 
-const file_hint_t file_hint_pzf= {
-  .extension="pzf",
-  .description="GraphPrism 4",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_pzf
-};
+const file_hint_t file_hint_pzf = {.extension = "pzf",
+                                   .description = "GraphPrism 4",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_pzf};
 
-
-static void file_check_pzf(file_recovery_t *file_recovery)
-{
-  const unsigned char pzf_footer[17]= {
-    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01,
-    0x40
-  };
+static void file_check_pzf(file_recovery_t *file_recovery) {
+  const unsigned char pzf_footer[17] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                                        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01, 0x40};
   file_search_footer(file_recovery, pzf_footer, sizeof(pzf_footer), 0);
 }
 
-
-static int header_check_pzf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_pzf(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_pzf.extension;
-  file_recovery_new->file_check=&file_check_pzf;
+  file_recovery_new->extension = file_hint_pzf.extension;
+  file_recovery_new->file_check = &file_check_pzf;
   return 1;
 }
 
-static void register_header_check_pzf(file_stat_t *file_stat)
-{
-  static const unsigned char pzf_header[8]=  {
-    'P' , 'C' , 'F' , 'F' , 'G' , 'R' , 'A' , '4'
-  };
+static void register_header_check_pzf(file_stat_t *file_stat) {
+  static const unsigned char pzf_header[8] = {'P', 'C', 'F', 'F', 'G', 'R', 'A', '4'};
   register_header_check(0, pzf_header, sizeof(pzf_header), &header_check_pzf, file_stat);
 }
 #endif

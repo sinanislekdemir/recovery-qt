@@ -31,29 +31,25 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_shn(file_stat_t *file_stat);
 
-const file_hint_t file_hint_shn= {
-  .extension="shn",
-  .description="Shorten audio file",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_shn
-};
+const file_hint_t file_hint_shn = {.extension = "shn",
+                                   .description = "Shorten audio file",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_shn};
 
-
-static int header_check_shn(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_shn(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_shn.extension;
+  file_recovery_new->extension = file_hint_shn.extension;
   return 1;
 }
 
-static void register_header_check_shn(file_stat_t *file_stat)
-{
-  static const unsigned char shn_header[5]=  { 'a' , 'j' , 'k' , 'g' , 0x02 };
+static void register_header_check_shn(file_stat_t *file_stat) {
+  static const unsigned char shn_header[5] = {'a', 'j', 'k', 'g', 0x02};
   register_header_check(0, shn_header, sizeof(shn_header), &header_check_shn, file_stat);
 }
 #endif

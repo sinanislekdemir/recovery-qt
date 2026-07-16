@@ -32,8 +32,8 @@
 extern "C" {
 #endif
 
-ATTR_RECORD * find_attribute(const ATTR_TYPES type, ntfs_attr_search_ctx *ctx);
-ATTR_RECORD * find_first_attribute(const ATTR_TYPES type, MFT_RECORD *mft);
+ATTR_RECORD *find_attribute(const ATTR_TYPES type, ntfs_attr_search_ctx *ctx);
+ATTR_RECORD *find_first_attribute(const ATTR_TYPES type, MFT_RECORD *mft);
 int utils_cluster_in_use(ntfs_volume *vol, long long lcn);
 
 #ifdef __cplusplus

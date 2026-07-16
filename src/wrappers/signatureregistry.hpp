@@ -36,34 +36,36 @@ extern "C" {
 #endif
 
 struct SignatureInfo {
-    QString extension;
-    QString description;
-    uint64_t maxFilesize;
-    bool enabledByDefault;
-    bool enabled;
-    int priority;
+  QString extension;
+  QString description;
+  uint64_t maxFilesize;
+  bool enabledByDefault;
+  bool enabled;
+  int priority;
 };
 
 class SignatureRegistry {
 public:
-    SignatureRegistry();
+  SignatureRegistry();
 
-    void resetDefaults();
-    void setEnabled(const QString& extension, bool enable);
-    void setEnabledExtensions(const QStringList& extensions);
-    void disableAll();
+  void resetDefaults();
+  void setEnabled(const QString &extension, bool enable);
+  void setEnabledExtensions(const QStringList &extensions);
+  void disableAll();
 
-    QVector<SignatureInfo> allSignatures() const;
-    QStringList enabledExtensions() const;
-    int count() const;
+  QVector<SignatureInfo> allSignatures() const;
+  QStringList enabledExtensions() const;
+  int count() const;
 
-    file_enable_t* rawArray() const { return (file_enable_t*)m_rawArray; }
+  file_enable_t *rawArray() const {
+    return (file_enable_t *)m_rawArray;
+  }
 
-    static bool isPreviewableImage(const QString &ext);
+  static bool isPreviewableImage(const QString &ext);
 
 private:
-    const file_enable_t* m_rawArray;
-    static int extensionPriority(const QString& ext);
+  const file_enable_t *m_rawArray;
+  static int extensionPriority(const QString &ext);
 };
 
 #endif // PHOTOREC_SIGNATUREREGISTRY_HPP

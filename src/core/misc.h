@@ -25,9 +25,7 @@
 extern "C" {
 #endif
 
-
 const char *get_os(void);
-
 
 const char *get_compiler(void);
 

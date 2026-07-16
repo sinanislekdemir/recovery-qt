@@ -32,21 +32,17 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_xcf(file_stat_t *file_stat);
 
-const file_hint_t file_hint_xcf = {
-  .extension = "xcf",
-  .description = "Gimp XCF File",
-  .max_filesize = 1024 * 1024 * 1024,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_xcf
-};
+const file_hint_t file_hint_xcf = {.extension = "xcf",
+                                   .description = "Gimp XCF File",
+                                   .max_filesize = 1024 * 1024 * 1024,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_xcf};
 
 // https://git.gnome.org/browse/gimp/tree/devel-docs/xcf.txt
-struct xcf_header
-{
+struct xcf_header {
   unsigned char magic[9];
   unsigned char version[4];
   unsigned char zero;
@@ -55,23 +51,22 @@ struct xcf_header
   uint32_t base_type;
 } __attribute__((gcc_struct, __packed__));
 
-
-static int header_check_xcf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_xcf(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   const struct xcf_header *hdr = (const struct xcf_header *)buffer;
-  if(hdr->zero != 0)
+  if (hdr->zero != 0)
     return 0;
-  if(be32(hdr->width) == 0 || be32(hdr->heigth) == 0)
+  if (be32(hdr->width) == 0 || be32(hdr->heigth) == 0)
     return 0;
-  if(be32(hdr->base_type) > 2)
+  if (be32(hdr->base_type) > 2)
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_xcf.extension;
   return 1;
 }
 
-static void register_header_check_xcf(file_stat_t *file_stat)
-{
+static void register_header_check_xcf(file_stat_t *file_stat) {
   register_header_check(0, "gimp xcf file", 13, &header_check_xcf, file_stat);
 #ifndef DISABLED_FOR_FRAMAC
   register_header_check(0, "gimp xcf v00", 12, &header_check_xcf, file_stat);

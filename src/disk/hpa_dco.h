@@ -25,7 +25,6 @@
 extern "C" {
 #endif
 
-
 void disk_get_hpa_dco(const int hd_h, disk_t *disk_car);
 
 #ifdef __cplusplus

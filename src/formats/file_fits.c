@@ -37,178 +37,151 @@
 #include "log.h"
 #endif
 
-
 static void register_header_check_fits(file_stat_t *file_stat);
 
-const file_hint_t file_hint_fits= {
-  .extension="fits",
-  .description="Flexible Image Transport System",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_fits
-};
+const file_hint_t file_hint_fits = {.extension = "fits",
+                                    .description = "Flexible Image Transport System",
+                                    .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                    .recover = 1,
+                                    .enable_by_default = 1,
+                                    .register_header_check = &register_header_check_fits};
 
 /* FITS is the standard data format used in astronomy, it's also used in quantic physics
  * Image metadata is store in an ASCII header
  * Specification can be found at http://fits.gsfc.nasa.gov/ 	*/
 
-
-static uint64_t fits_get_val(const unsigned char *str)
-{
+static uint64_t fits_get_val(const unsigned char *str) {
   unsigned int i;
-  uint64_t val=0;
-  
-  for(i=0;i<80 && str[i]!='=';i++);
+  uint64_t val = 0;
+
+  for (i = 0; i < 80 && str[i] != '='; i++)
+    ;
   i++;
-  
-  for(;i<80 && str[i]==' ';i++);
-  if(i<80 && str[i]=='-')
+
+  for (; i < 80 && str[i] == ' '; i++)
+    ;
+  if (i < 80 && str[i] == '-')
     i++;
-  
-  for(;i<80 && str[i]>='0' && str[i]<='9';i++)
-  {
-    val=val*10+(str[i]-'0');
-    if(val >= PHOTOREC_MAX_FILE_SIZE)
+
+  for (; i < 80 && str[i] >= '0' && str[i] <= '9'; i++) {
+    val = val * 10 + (str[i] - '0');
+    if (val >= PHOTOREC_MAX_FILE_SIZE)
       return val;
   }
   return val;
 }
 
-
-static uint64_t fits_info(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery, unsigned int *i_pointer)
-{
-  uint64_t naxis_size=1;
-  unsigned int i=*i_pointer;
-  if( i+80 >= buffer_size)
+static uint64_t fits_info(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery,
+                          unsigned int *i_pointer) {
+  uint64_t naxis_size = 1;
+  unsigned int i = *i_pointer;
+  if (i + 80 >= buffer_size)
     return 1;
-  
+
   /* Header is composed of 80 character fixed-length strings */
-  
-  for(; i+80 < buffer_size &&
-      memcmp(&buffer[i], "END ", 4)!=0;
-      i+=80)
-  {
-    if(naxis_size > PHOTOREC_MAX_FILE_SIZE)
-      naxis_size=0;
-    
-    if(memcmp(&buffer[i], "BITPIX",6)==0)
-    {
-      const uint64_t tmp=fits_get_val(&buffer[i]);
-      if(tmp > PHOTOREC_MAX_FILE_SIZE)
-	naxis_size=0;
-      else if(tmp>0)
-      { /* FIXME overflow */
-	naxis_size*=(tmp+8-1)/8;
+
+  for (; i + 80 < buffer_size && memcmp(&buffer[i], "END ", 4) != 0; i += 80) {
+    if (naxis_size > PHOTOREC_MAX_FILE_SIZE)
+      naxis_size = 0;
+
+    if (memcmp(&buffer[i], "BITPIX", 6) == 0) {
+      const uint64_t tmp = fits_get_val(&buffer[i]);
+      if (tmp > PHOTOREC_MAX_FILE_SIZE)
+        naxis_size = 0;
+      else if (tmp > 0) { /* FIXME overflow */
+        naxis_size *= (tmp + 8 - 1) / 8;
       }
-    }
-    else if(memcmp(&buffer[i], "NAXIS ",6)==0)
-    {
+    } else if (memcmp(&buffer[i], "NAXIS ", 6) == 0) {
       /* NAXIS - range [0:999] */
-      if(fits_get_val(&buffer[i])==0)
-	naxis_size=0;
-    }
-    else if(memcmp(&buffer[i], "NAXIS",5)==0)
-    {
+      if (fits_get_val(&buffer[i]) == 0)
+        naxis_size = 0;
+    } else if (memcmp(&buffer[i], "NAXIS", 5) == 0) {
       /* NAXISn */
-      const uint64_t naxis_val=fits_get_val(&buffer[i]);
-      if(naxis_val > PHOTOREC_MAX_FILE_SIZE)
-	naxis_size=0;
-      else
-      { /* FIXME overflow */
-	naxis_size*=naxis_val;
+      const uint64_t naxis_val = fits_get_val(&buffer[i]);
+      if (naxis_val > PHOTOREC_MAX_FILE_SIZE)
+        naxis_size = 0;
+      else { /* FIXME overflow */
+        naxis_size *= naxis_val;
       }
-    }
-    else if(memcmp(&buffer[i], "CREA_DAT=", 9)==0)
-    {
+    } else if (memcmp(&buffer[i], "CREA_DAT=", 9) == 0) {
       /*	  CREA_DAT= '2007-08-29T16:22:09' */
       /*	             0123456789012345678  */
       unsigned int j;
-      
-      for(j=0;j<80 && buffer[i+j]!='\'';j++);
-      if(j<60 && buffer[i+j]=='\'')
-      {
-	file_recovery->time=get_time_from_YYYY_MM_DD_HH_MM_SS(&buffer[i+j+1]);
+
+      for (j = 0; j < 80 && buffer[i + j] != '\''; j++)
+        ;
+      if (j < 60 && buffer[i + j] == '\'') {
+        file_recovery->time = get_time_from_YYYY_MM_DD_HH_MM_SS(&buffer[i + j + 1]);
       }
     }
   }
-  
-  *i_pointer=i;
+
+  *i_pointer = i;
   return naxis_size;
 }
 
+static data_check_t data_check_fits(const unsigned char *buffer, const unsigned int buffer_size,
+                                    file_recovery_t *file_recovery) {
+  while (file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size &&
+         file_recovery->calculated_file_size + 8 < file_recovery->file_size + buffer_size / 2) {
+    const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
 
-static data_check_t data_check_fits(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  
-  
-  
-  while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
-      file_recovery->calculated_file_size + 8 < file_recovery->file_size + buffer_size/2)
-  {
-    const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    
-    
-    if(memcmp(&buffer[i], "XTENSION", 8)!=0)
+    if (memcmp(&buffer[i], "XTENSION", 8) != 0)
       break;
     {
-      unsigned int new_i=i;
-      
-      const uint64_t tmp=fits_info(buffer, buffer_size, file_recovery, &new_i);
-      
-      
-      const unsigned int diff=new_i-i;
+      unsigned int new_i = i;
+
+      const uint64_t tmp = fits_info(buffer, buffer_size, file_recovery, &new_i);
+
+      const unsigned int diff = new_i - i;
 #ifdef DEBUG_FITS
       log_info("data_check_fits cfr=%llu fs=%llu i=%u buffer_size=%u\n",
-	  (long long unsigned)file_recovery->calculated_file_size,
-	  (long long unsigned)file_recovery->file_size,
-	  new_i, buffer_size);
+               (long long unsigned)file_recovery->calculated_file_size, (long long unsigned)file_recovery->file_size,
+               new_i, buffer_size);
 #endif
-      if(tmp==0)
-      {
-	file_recovery->data_check=NULL;
-	file_recovery->file_check=NULL;
-	return DC_CONTINUE;
+      if (tmp == 0) {
+        file_recovery->data_check = NULL;
+        file_recovery->file_check = NULL;
+        return DC_CONTINUE;
       }
-      
-      file_recovery->calculated_file_size+=(uint64_t)(diff+2880-1)/2880*2880+(tmp+2880-1)/2880*2880;
+
+      file_recovery->calculated_file_size += (uint64_t)(diff + 2880 - 1) / 2880 * 2880 + (tmp + 2880 - 1) / 2880 * 2880;
     }
   }
-  if(file_recovery->file_size + buffer_size/2 >= file_recovery->calculated_file_size)
+  if (file_recovery->file_size + buffer_size / 2 >= file_recovery->calculated_file_size)
     return DC_STOP;
   return DC_CONTINUE;
 }
 
-
-static int header_check_fits(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  unsigned int i=0;
-  uint64_t naxis_size_max=0;
-  if(file_recovery_new->blocksize >= 80)
-    naxis_size_max=fits_info(buffer, buffer_size, file_recovery_new, &i);
-  if(naxis_size_max > PHOTOREC_MAX_FILE_SIZE)
+static int header_check_fits(const unsigned char *buffer, const unsigned int buffer_size,
+                             const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                             file_recovery_t *file_recovery_new) {
+  unsigned int i = 0;
+  uint64_t naxis_size_max = 0;
+  if (file_recovery_new->blocksize >= 80)
+    naxis_size_max = fits_info(buffer, buffer_size, file_recovery_new, &i);
+  if (naxis_size_max > PHOTOREC_MAX_FILE_SIZE)
     return 0;
-  if(naxis_size_max !=0 && naxis_size_max < 2880)
+  if (naxis_size_max != 0 && naxis_size_max < 2880)
     return 0;
   reset_file_recovery(file_recovery_new);
 #ifdef DJGPP
-  file_recovery_new->extension="fts";
+  file_recovery_new->extension = "fts";
 #else
-  file_recovery_new->extension=file_hint_fits.extension;
+  file_recovery_new->extension = file_hint_fits.extension;
 #endif
-  file_recovery_new->min_filesize=2880;
-  if(naxis_size_max==0)
+  file_recovery_new->min_filesize = 2880;
+  if (naxis_size_max == 0)
     return 1;
   /* File is composed of several 2880-bytes blocks */
-  file_recovery_new->data_check=&data_check_fits;
-  file_recovery_new->file_check=&file_check_size;
-  file_recovery_new->calculated_file_size=(i+2880-1)/2880*2880+(naxis_size_max+2880-1)/2880*2880;
-  
+  file_recovery_new->data_check = &data_check_fits;
+  file_recovery_new->file_check = &file_check_size;
+  file_recovery_new->calculated_file_size = (i + 2880 - 1) / 2880 * 2880 + (naxis_size_max + 2880 - 1) / 2880 * 2880;
+
   return 1;
 }
 
-static void register_header_check_fits(file_stat_t *file_stat)
-{
+static void register_header_check_fits(file_stat_t *file_stat) {
   register_header_check(0, "SIMPLE  =", 9, &header_check_fits, file_stat);
 }
 #endif

@@ -30,57 +30,43 @@
 #include "common.h"
 #include "fat_common.h"
 
-unsigned int fat_sector_size(const struct fat_boot_sector *fat_header)
-{
-  const unsigned int hi=fat_header->sector_size[1];
-  const unsigned int lo=fat_header->sector_size[0];
-  
-  
-  
-  const unsigned int res=(hi<<8)|lo;
-  
+unsigned int fat_sector_size(const struct fat_boot_sector *fat_header) {
+  const unsigned int hi = fat_header->sector_size[1];
+  const unsigned int lo = fat_header->sector_size[0];
+
+  const unsigned int res = (hi << 8) | lo;
+
   return res;
 }
 
-unsigned int get_dir_entries(const struct fat_boot_sector *fat_header)
-{
-  const unsigned int hi=fat_header->dir_entries[1];
-  const unsigned int lo=fat_header->dir_entries[0];
-  
-  
-  
-  const unsigned int res=(hi<<8)|lo;
-  
+unsigned int get_dir_entries(const struct fat_boot_sector *fat_header) {
+  const unsigned int hi = fat_header->dir_entries[1];
+  const unsigned int lo = fat_header->dir_entries[0];
+
+  const unsigned int res = (hi << 8) | lo;
+
   return res;
 }
 
-unsigned int fat_sectors(const struct fat_boot_sector *fat_header)
-{
-  const unsigned int hi=fat_header->sectors[1];
-  const unsigned int lo=fat_header->sectors[0];
-  
-  
-  
-  const unsigned int res=(hi<<8)|lo;
-  
+unsigned int fat_sectors(const struct fat_boot_sector *fat_header) {
+  const unsigned int hi = fat_header->sectors[1];
+  const unsigned int lo = fat_header->sectors[0];
+
+  const unsigned int res = (hi << 8) | lo;
+
   return res;
 }
 
-unsigned int fat_get_cluster_from_entry(const struct msdos_dir_entry *entry)
-{
-  const unsigned int hi=le16(entry->starthi);
-  const unsigned int lo=le16(entry->start);
-  
-  
-  
-  return (hi<<16) | lo;
+unsigned int fat_get_cluster_from_entry(const struct msdos_dir_entry *entry) {
+  const unsigned int hi = le16(entry->starthi);
+  const unsigned int lo = le16(entry->start);
+
+  return (hi << 16) | lo;
 }
 
-int is_fat_directory(const unsigned char *buffer)
-{
-  return(buffer[0]=='.' &&
-      memcmp(buffer,         ".          ", 8+3)==0 &&
-      memcmp(&buffer[0x20], "..         ", 8+3)==0 &&
-      buffer[0xB]!=ATTR_EXT && (buffer[0xB]&ATTR_DIR)!=0 &&
-      buffer[1*0x20+0xB]!=ATTR_EXT && (buffer[1*0x20+0xB]&ATTR_DIR)!=0);
+int is_fat_directory(const unsigned char *buffer) {
+  return (buffer[0] == '.' && memcmp(buffer, ".          ", 8 + 3) == 0 &&
+          memcmp(&buffer[0x20], "..         ", 8 + 3) == 0 && buffer[0xB] != ATTR_EXT &&
+          (buffer[0xB] & ATTR_DIR) != 0 && buffer[1 * 0x20 + 0xB] != ATTR_EXT &&
+          (buffer[1 * 0x20 + 0xB] & ATTR_DIR) != 0);
 }

@@ -30,38 +30,38 @@
 #include <QPixmap>
 
 class ImagePreviewDialog : public QDialog {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit ImagePreviewDialog(QWidget *parent = nullptr);
+  explicit ImagePreviewDialog(QWidget *parent = nullptr);
 
-    bool loadFromData(const QByteArray &data);
+  bool loadFromData(const QByteArray &data);
 
 protected:
-    void keyPressEvent(QKeyEvent *event) override;
-    void resizeEvent(QResizeEvent *event) override;
-    void wheelEvent(QWheelEvent *event) override;
-    void showEvent(QShowEvent *event) override;
+  void keyPressEvent(QKeyEvent *event) override;
+  void resizeEvent(QResizeEvent *event) override;
+  void wheelEvent(QWheelEvent *event) override;
+  void showEvent(QShowEvent *event) override;
 
 private slots:
-    void onZoomIn();
-    void onZoomOut();
-    void onFitToWindow();
-    void onOriginalSize();
+  void onZoomIn();
+  void onZoomOut();
+  void onFitToWindow();
+  void onOriginalSize();
 
 private:
-    void applyZoom();
+  void applyZoom();
 
-    QLabel *m_imageLabel;
-    QLabel *m_infoLabel;
-    QToolBar *m_toolbar;
-    QAction *m_zoomInAction;
-    QAction *m_zoomOutAction;
-    QAction *m_origAction;
-    QAction *m_fitAction;
-    QScrollArea *m_scroll;
-    QPixmap m_originalPixmap;
-    double m_zoomFactor;
-    bool m_fitToWindow;
+  QLabel *m_imageLabel;
+  QLabel *m_infoLabel;
+  QToolBar *m_toolbar;
+  QAction *m_zoomInAction;
+  QAction *m_zoomOutAction;
+  QAction *m_origAction;
+  QAction *m_fitAction;
+  QScrollArea *m_scroll;
+  QPixmap m_originalPixmap;
+  double m_zoomFactor;
+  bool m_fitToWindow;
 };
 
 #endif // IMAGEPREVIEWDIALOG_HPP

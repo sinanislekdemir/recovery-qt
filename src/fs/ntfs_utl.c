@@ -81,8 +81,7 @@
  * Return:  Pointer  Success, an attribute was found
  *	    NULL     Error, no matching attributes were found
  */
-ATTR_RECORD * find_attribute(const ATTR_TYPES type, ntfs_attr_search_ctx *ctx)
-{
+ATTR_RECORD *find_attribute(const ATTR_TYPES type, ntfs_attr_search_ctx *ctx) {
   if (!ctx) {
     errno = EINVAL;
     return NULL;
@@ -92,7 +91,7 @@ ATTR_RECORD * find_attribute(const ATTR_TYPES type, ntfs_attr_search_ctx *ctx)
 #ifdef DEBUG_NTFS
     log_debug("find_attribute didn't find an attribute of type: 0x%02x.\n", type);
 #endif
-    return NULL;	/* None / no more of that type */
+    return NULL; /* None / no more of that type */
   }
 #ifdef DEBUG_NTFS
   log_debug("find_attribute found an attribute of type: 0x%02x.\n", type);
@@ -114,8 +113,7 @@ ATTR_RECORD * find_attribute(const ATTR_TYPES type, ntfs_attr_search_ctx *ctx)
  * Return:  Pointer  Success, an attribute was found
  *	    NULL     Error, no matching attributes were found
  */
-ATTR_RECORD * find_first_attribute(const ATTR_TYPES type, MFT_RECORD *mft)
-{
+ATTR_RECORD *find_first_attribute(const ATTR_TYPES type, MFT_RECORD *mft) {
   ntfs_attr_search_ctx *ctx;
   ATTR_RECORD *rec;
 
@@ -158,10 +156,9 @@ ATTR_RECORD * find_first_attribute(const ATTR_TYPES type, MFT_RECORD *mft)
  *	    0  Cluster is free space
  *	   -1  Error occurred
  */
-int utils_cluster_in_use(ntfs_volume *vol, long long lcn)
-{
+int utils_cluster_in_use(ntfs_volume *vol, long long lcn) {
   static unsigned char buffer[512];
-  static long long bmplcn = -sizeof(buffer) - 1;	/* Which bit of $Bitmap is in the buffer */
+  static long long bmplcn = -sizeof(buffer) - 1; /* Which bit of $Bitmap is in the buffer */
 
   int byte, bit;
 
@@ -171,7 +168,7 @@ int utils_cluster_in_use(ntfs_volume *vol, long long lcn)
   }
 
   /* Does lcn lie in the section of $Bitmap we already have cached? */
-  if ((bmplcn <0 ) ||(lcn < (unsigned)bmplcn) || (lcn >= ((unsigned)bmplcn + ((unsigned)sizeof(buffer) << 3)))) {
+  if ((bmplcn < 0) || (lcn < (unsigned)bmplcn) || (lcn >= ((unsigned)bmplcn + ((unsigned)sizeof(buffer) << 3)))) {
     ntfs_attr *attr;
 #ifdef DEBUG_NTFS
     log_debug("Bit lies outside cache.\n");
@@ -186,7 +183,7 @@ int utils_cluster_in_use(ntfs_volume *vol, long long lcn)
     memset(buffer, 0xFF, sizeof(buffer));
     bmplcn = lcn & (~((sizeof(buffer) << 3) - 1));
 
-    if (ntfs_attr_pread(attr, (bmplcn>>3), sizeof(buffer), buffer) < 0) {
+    if (ntfs_attr_pread(attr, (bmplcn >> 3), sizeof(buffer), buffer) < 0) {
       log_error("Couldn't read $Bitmap\n");
       ntfs_attr_close(attr);
       return -1;
@@ -197,10 +194,11 @@ int utils_cluster_in_use(ntfs_volume *vol, long long lcn)
     ntfs_attr_close(attr);
   }
 
-  bit  = 1 << (lcn & 7);
+  bit = 1 << (lcn & 7);
   byte = (lcn >> 3) & (sizeof(buffer) - 1);
 #ifdef DEBUG_NTFS
-  log_debug("cluster = %lld, bmplcn = %lld, byte = %d, bit = %d, in use %d\n", lcn, bmplcn, byte, bit, buffer[byte] & bit);
+  log_debug("cluster = %lld, bmplcn = %lld, byte = %d, bit = %d, in use %d\n", lcn, bmplcn, byte, bit,
+            buffer[byte] & bit);
 #endif
   return (buffer[byte] & bit);
 }

@@ -33,129 +33,116 @@
 #include "filegen.h"
 #include "log.h"
 
-
 static void register_header_check_lzh(file_stat_t *file_stat);
 
-const file_hint_t file_hint_lzh= {
-  .extension="lzh",
-  .description="lzh/LArc archive",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_lzh
-};
+const file_hint_t file_hint_lzh = {.extension = "lzh",
+                                   .description = "lzh/LArc archive",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_lzh};
 
-struct lzh_level0
-{
-  uint8_t  header_size;
-  uint8_t  header_crc;
-  uint8_t  method_id[5];
+struct lzh_level0 {
+  uint8_t header_size;
+  uint8_t header_crc;
+  uint8_t method_id[5];
   uint32_t comp_size;
   uint32_t uncomp_size;
   uint32_t file_time;
-  uint8_t  attrib;
-  uint8_t  level;
-  uint8_t  filename_len;
+  uint8_t attrib;
+  uint8_t level;
+  uint8_t filename_len;
   /* Size should be 0, be carefull when using sizeof to decrement */
 #ifndef DISABLED_FOR_FRAMAC
-  uint8_t  filename[0];
+  uint8_t filename[0];
 #endif
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
-struct lzh_level1
-{
-  uint8_t  header_size;
-  uint8_t  header_crc;
-  uint8_t  method_id[5];
+struct lzh_level1 {
+  uint8_t header_size;
+  uint8_t header_crc;
+  uint8_t method_id[5];
   uint32_t comp_size;
   uint32_t uncomp_size;
   uint32_t file_time;
-  uint8_t  reserved_20;
-  uint8_t  level;
-  uint8_t  filename_len;
+  uint8_t reserved_20;
+  uint8_t level;
+  uint8_t filename_len;
 #ifndef DISABLED_FOR_FRAMAC
-  uint8_t  filename[0];
+  uint8_t filename[0];
 #endif
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
-struct lzh_level2
-{
+struct lzh_level2 {
   uint16_t header_size;
-  uint8_t  method_id[5];
+  uint8_t method_id[5];
   uint32_t comp_size;
   uint32_t uncomp_size;
   uint32_t file_time_unix;
-  uint8_t  reserved;
-  uint8_t  level;
+  uint8_t reserved;
+  uint8_t level;
   uint16_t file_crc;
-  uint8_t  os_id;
+  uint8_t os_id;
   uint16_t next_header_size;
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
-
-static void file_rename_level0(file_recovery_t *file_recovery)
-{
+static void file_rename_level0(file_recovery_t *file_recovery) {
   unsigned char buffer[512];
   FILE *file;
   size_t buffer_size;
   unsigned int i;
-  const struct lzh_level0 *hdr=(const struct lzh_level0 *)&buffer;
-  const char *fn=(const char *)hdr + sizeof(struct lzh_level0);
-  if((file=fopen(file_recovery->filename, "rb"))==NULL)
+  const struct lzh_level0 *hdr = (const struct lzh_level0 *)&buffer;
+  const char *fn = (const char *)hdr + sizeof(struct lzh_level0);
+  if ((file = fopen(file_recovery->filename, "rb")) == NULL)
     return;
-  buffer_size=fread(buffer, 1, sizeof(buffer), file);
+  buffer_size = fread(buffer, 1, sizeof(buffer), file);
   fclose(file);
-  if(buffer_size < sizeof(struct lzh_level0))
+  if (buffer_size < sizeof(struct lzh_level0))
     return;
-  if(buffer_size < sizeof(struct lzh_level0) + hdr->filename_len)
+  if (buffer_size < sizeof(struct lzh_level0) + hdr->filename_len)
     return;
-  
-  
-  for(i=0; i< hdr->filename_len && fn[i]!=0 && fn[i]!='.'; i++);
-  
+
+  for (i = 0; i < hdr->filename_len && fn[i] != 0 && fn[i] != '.'; i++)
+    ;
+
   file_rename(file_recovery, fn, i, 0, NULL, 1);
 }
 
-
-static int header_check_lzh(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  switch(buffer[20])
-  {
-    /* Level 0 */
-    case 0:
-      {
-	const struct lzh_level0 *hdr=(const struct lzh_level0 *)buffer;
-	if(hdr->header_size!=22+hdr->filename_len)
-	  return 0;
-	reset_file_recovery(file_recovery_new);
-	file_recovery_new->extension=file_hint_lzh.extension;
-	file_recovery_new->file_rename=&file_rename_level0;
-	return 1;
-      }
-      /* Level 1 */
-    case 1:
-      {
-	const struct lzh_level1 *hdr=(const struct lzh_level1 *)buffer;
-	if(hdr->reserved_20!=0x20)
-	  return 0;
-	reset_file_recovery(file_recovery_new);
-	file_recovery_new->extension=file_hint_lzh.extension;
-	return 1;
-      }
-      /* Level 2 */
-    case 2:
-      {
-	//	const struct lzh_level2 *hdr=(const struct lzh_level2 *)buffer;
-	reset_file_recovery(file_recovery_new);
-	file_recovery_new->extension=file_hint_lzh.extension;
-	return 1;
-      }
+static int header_check_lzh(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  switch (buffer[20]) {
+  /* Level 0 */
+  case 0: {
+    const struct lzh_level0 *hdr = (const struct lzh_level0 *)buffer;
+    if (hdr->header_size != 22 + hdr->filename_len)
+      return 0;
+    reset_file_recovery(file_recovery_new);
+    file_recovery_new->extension = file_hint_lzh.extension;
+    file_recovery_new->file_rename = &file_rename_level0;
+    return 1;
+  }
+    /* Level 1 */
+  case 1: {
+    const struct lzh_level1 *hdr = (const struct lzh_level1 *)buffer;
+    if (hdr->reserved_20 != 0x20)
+      return 0;
+    reset_file_recovery(file_recovery_new);
+    file_recovery_new->extension = file_hint_lzh.extension;
+    return 1;
+  }
+    /* Level 2 */
+  case 2: {
+    //	const struct lzh_level2 *hdr=(const struct lzh_level2 *)buffer;
+    reset_file_recovery(file_recovery_new);
+    file_recovery_new->extension = file_hint_lzh.extension;
+    return 1;
+  }
   }
   return 0;
 }
 
-static void register_header_check_lzh(file_stat_t *file_stat)
-{
+static void register_header_check_lzh(file_stat_t *file_stat) {
   register_header_check(2, "-lh0-", 5, &header_check_lzh, file_stat);
 #ifndef DISABLED_FOR_FRAMAC
   register_header_check(2, "-lh1-", 5, &header_check_lzh, file_stat);

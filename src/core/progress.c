@@ -20,7 +20,6 @@
 
  */
 
-
 #include "progress.h"
 
 checkpoint_fn g_checkpoint_progress = 0;

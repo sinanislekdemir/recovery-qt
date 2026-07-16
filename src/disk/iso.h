@@ -28,7 +28,6 @@ extern "C" {
 
 int check_ISO(disk_t *disk_car, partition_t *partition);
 
-
 int recover_ISO(const struct iso_primary_descriptor *iso, partition_t *partition);
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

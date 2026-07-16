@@ -38,140 +38,115 @@
 
 /* https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/ */
 
-
 static void register_header_check_psd(file_stat_t *file_stat);
 
-const file_hint_t file_hint_psd= {
-  .extension="psd",
-  .description="Adobe Photoshop Image",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_psd
-};
+const file_hint_t file_hint_psd = {.extension = "psd",
+                                   .description = "Adobe Photoshop Image",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_psd};
 
-struct psd_file_header
-{
+struct psd_file_header {
   char signature[4];
-  uint16_t version;	/* must be 1 */
-  char reserved[6];	/* must be 0 */
-  uint16_t channels;	/* between 1 and 56 */
-  uint32_t height;	/* max of 30,000 */
-  uint32_t width;	/* max of 30,000 */
-  uint16_t depth;	/* 1, 8, 16 or 32 */
-  uint16_t color_mode;	/* Bitmap = 0; Grayscale = 1; Indexed = 2; RGB = 3; CMYK = 4; Multichannel = 7; Duotone = 8; Lab = 9 */
-} __attribute__ ((gcc_struct, __packed__));
+  uint16_t version;  /* must be 1 */
+  char reserved[6];  /* must be 0 */
+  uint16_t channels; /* between 1 and 56 */
+  uint32_t height;   /* max of 30,000 */
+  uint32_t width;    /* max of 30,000 */
+  uint16_t depth;    /* 1, 8, 16 or 32 */
+  uint16_t
+      color_mode; /* Bitmap = 0; Grayscale = 1; Indexed = 2; RGB = 3; CMYK = 4; Multichannel = 7; Duotone = 8; Lab = 9 */
+} __attribute__((gcc_struct, __packed__));
 
-
-static uint32_t get_be32(const void *buffer, const unsigned int offset)
-{
-  const uint32_t *val=(const uint32_t *)((const unsigned char *)buffer+offset);
+static uint32_t get_be32(const void *buffer, const unsigned int offset) {
+  const uint32_t *val = (const uint32_t *)((const unsigned char *)buffer + offset);
   return be32(*val);
 }
 
-
-static data_check_t psd_skip_image_data(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  
-  
-  
-  file_recovery->calculated_file_size+=2;
-  file_recovery->data_check=NULL;
+static data_check_t psd_skip_image_data(const unsigned char *buffer, const unsigned int buffer_size,
+                                        file_recovery_t *file_recovery) {
+  file_recovery->calculated_file_size += 2;
+  file_recovery->data_check = NULL;
   return DC_CONTINUE;
 }
 
+static data_check_t psd_skip_layer_info(const unsigned char *buffer, const unsigned int buffer_size,
+                                        file_recovery_t *file_recovery) {
+  if (file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size &&
+      file_recovery->calculated_file_size + 4 < file_recovery->file_size + buffer_size / 2) {
+    const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
 
-static data_check_t psd_skip_layer_info(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  
-  
-  
-  if(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
-      file_recovery->calculated_file_size + 4 < file_recovery->file_size + buffer_size/2)
-  {
-    const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    
-    const unsigned int l=get_be32(buffer, i);
+    const unsigned int l = get_be32(buffer, i);
 #ifdef DEBUG_PHOTOSHOP
     log_info("Layer info at 0x%lx, l=0x%x\n", (long unsigned)file_recovery->calculated_file_size, l);
 #endif
-    file_recovery->calculated_file_size+=(uint64_t)l+4;
+    file_recovery->calculated_file_size += (uint64_t)l + 4;
 #ifdef DEBUG_PHOTOSHOP
     log_info("Image data at 0x%lx\n", (long unsigned)file_recovery->calculated_file_size);
 #endif
-    file_recovery->data_check=&psd_skip_image_data;
+    file_recovery->data_check = &psd_skip_image_data;
     return psd_skip_image_data(buffer, buffer_size, file_recovery);
   }
   return DC_CONTINUE;
 }
 
+static data_check_t psd_skip_image_resources(const unsigned char *buffer, const unsigned int buffer_size,
+                                             file_recovery_t *file_recovery) {
+  if (file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size &&
+      file_recovery->calculated_file_size + 4 < file_recovery->file_size + buffer_size / 2) {
+    const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
 
-static data_check_t psd_skip_image_resources(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  
-  
-  
-  if(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
-      file_recovery->calculated_file_size + 4 < file_recovery->file_size + buffer_size/2)
-  {
-    const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    
-    const unsigned int l=get_be32(buffer, i);
+    const unsigned int l = get_be32(buffer, i);
 #ifdef DEBUG_PHOTOSHOP
     log_info("Image resource at 0x%lx, l=0x%x\n", (long unsigned)file_recovery->calculated_file_size, l);
 #endif
-    file_recovery->calculated_file_size+=(uint64_t)l+4;
+    file_recovery->calculated_file_size += (uint64_t)l + 4;
 #ifdef DEBUG_PHOTOSHOP
     log_info("Layer info at 0x%lx\n", (long unsigned)file_recovery->calculated_file_size);
 #endif
-    file_recovery->data_check=&psd_skip_layer_info;
+    file_recovery->data_check = &psd_skip_layer_info;
     return psd_skip_layer_info(buffer, buffer_size, file_recovery);
   }
   return DC_CONTINUE;
 }
 
-
-static data_check_t psd_skip_color_mode(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  const struct psd_file_header *hdr=(const struct psd_file_header *)&buffer[buffer_size/2];
-  const unsigned int channels=be16(hdr->channels);
-  const unsigned int depth=be16(hdr->depth);
-  const unsigned int height=be32(hdr->height);
-  const unsigned int width=be32(hdr->width);
-  if(channels==0 || channels>56 ||
-      height==0 || height>30000 ||
-      width==0 || width>30000 ||
-      (depth!=1 && depth!=8 && depth!=16 && depth!=32))
+static data_check_t psd_skip_color_mode(const unsigned char *buffer, const unsigned int buffer_size,
+                                        file_recovery_t *file_recovery) {
+  const struct psd_file_header *hdr = (const struct psd_file_header *)&buffer[buffer_size / 2];
+  const unsigned int channels = be16(hdr->channels);
+  const unsigned int depth = be16(hdr->depth);
+  const unsigned int height = be32(hdr->height);
+  const unsigned int width = be32(hdr->width);
+  if (channels == 0 || channels > 56 || height == 0 || height > 30000 || width == 0 || width > 30000 ||
+      (depth != 1 && depth != 8 && depth != 16 && depth != 32))
     return DC_ERROR;
-  
-  
-  
-  if(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
-      file_recovery->calculated_file_size + 4 < file_recovery->file_size + buffer_size/2)
-  {
-    const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    
-    const unsigned int l=get_be32(buffer, i);
+
+  if (file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size &&
+      file_recovery->calculated_file_size + 4 < file_recovery->file_size + buffer_size / 2) {
+    const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
+
+    const unsigned int l = get_be32(buffer, i);
 #ifdef DEBUG_PHOTOSHOP
     log_info("Color mode at 0x%lx, l=0x%x\n", (long unsigned)file_recovery->calculated_file_size, l);
 #endif
-    if(l!=0 && l<4)
+    if (l != 0 && l < 4)
       return DC_ERROR;
-    file_recovery->calculated_file_size+=(uint64_t)l+4;
-    file_recovery->data_check=&psd_skip_image_resources;
+    file_recovery->calculated_file_size += (uint64_t)l + 4;
+    file_recovery->data_check = &psd_skip_image_resources;
     return psd_skip_image_resources(buffer, buffer_size, file_recovery);
   }
   return DC_CONTINUE;
 }
 
-
-static int header_check_psd(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct psd_file_header *hdr=(const struct psd_file_header *)buffer;
-  const unsigned int channels=be16(hdr->channels);
-  const unsigned int depth=be16(hdr->depth);
-  const unsigned int height=be32(hdr->height);
-  const unsigned int width=be32(hdr->width);
+static int header_check_psd(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const struct psd_file_header *hdr = (const struct psd_file_header *)buffer;
+  const unsigned int channels = be16(hdr->channels);
+  const unsigned int depth = be16(hdr->depth);
+  const unsigned int height = be32(hdr->height);
+  const unsigned int width = be32(hdr->width);
 #ifdef DEBUG_PHOTOSHOP
   log_info("channels %u\n", channels);
   log_info("height %u\n", height);
@@ -179,26 +154,23 @@ static int header_check_psd(const unsigned char *buffer, const unsigned int buff
   log_info("depth  %u\n", depth);
   log_info("color_mode %u\n", be16(hdr->color_mode));
 #endif
-  if(channels==0 || channels>56 ||
-      height==0 || height>30000 ||
-      width==0 || width>30000 ||
-      (depth!=1 && depth!=8 && depth!=16 && depth!=32))
+  if (channels == 0 || channels > 56 || height == 0 || height > 30000 || width == 0 || width > 30000 ||
+      (depth != 1 && depth != 8 && depth != 16 && depth != 32))
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->min_filesize=70;
-  file_recovery_new->extension=file_hint_psd.extension;
-  if(file_recovery_new->blocksize < 16)
+  file_recovery_new->min_filesize = 70;
+  file_recovery_new->extension = file_hint_psd.extension;
+  if (file_recovery_new->blocksize < 16)
     return 1;
   /* File header */
-  file_recovery_new->calculated_file_size=0x1a;
-  file_recovery_new->data_check=&psd_skip_color_mode;
-  file_recovery_new->file_check=&file_check_size_min;
+  file_recovery_new->calculated_file_size = 0x1a;
+  file_recovery_new->data_check = &psd_skip_color_mode;
+  file_recovery_new->file_check = &file_check_size_min;
   return 1;
 }
 
-static void register_header_check_psd(file_stat_t *file_stat)
-{
-  static const unsigned char psd_header[6]={'8', 'B', 'P', 'S', 0x00, 0x01};
-  register_header_check(0, psd_header,sizeof(psd_header), &header_check_psd, file_stat);
+static void register_header_check_psd(file_stat_t *file_stat) {
+  static const unsigned char psd_header[6] = {'8', 'B', 'P', 'S', 0x00, 0x01};
+  register_header_check(0, psd_header, sizeof(psd_header), &header_check_psd, file_stat);
 }
 #endif

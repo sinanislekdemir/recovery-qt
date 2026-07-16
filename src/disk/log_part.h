@@ -25,9 +25,7 @@
 extern "C" {
 #endif
 
-
 void log_partition(const disk_t *disk, const partition_t *partition);
-
 
 void log_all_partitions(const disk_t *disk, const list_part_t *list_part);
 

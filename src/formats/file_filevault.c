@@ -31,35 +31,29 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_filevault(file_stat_t *file_stat);
 
-const file_hint_t file_hint_filevault= {
-  .extension="sparseimage",
-  .description="Filevault",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_filevault
-};
+const file_hint_t file_hint_filevault = {.extension = "sparseimage",
+                                         .description = "Filevault",
+                                         .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                         .recover = 1,
+                                         .enable_by_default = 1,
+                                         .register_header_check = &register_header_check_filevault};
 
-
-static int header_check_filevault(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_filevault(const unsigned char *buffer, const unsigned int buffer_size,
+                                  const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                                  file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
 #ifdef DJGPP
-  file_recovery_new->extension="img";
+  file_recovery_new->extension = "img";
 #else
-  file_recovery_new->extension=file_hint_filevault.extension;
+  file_recovery_new->extension = file_hint_filevault.extension;
 #endif
   return 1;
 }
 
-static void register_header_check_filevault(file_stat_t *file_stat)
-{
-  static const unsigned char filevault_header[8]=  {
-    'e', 'n', 'c', 'r', 'c', 'd', 's', 'a'
-  };
+static void register_header_check_filevault(file_stat_t *file_stat) {
+  static const unsigned char filevault_header[8] = {'e', 'n', 'c', 'r', 'c', 'd', 's', 'a'};
   register_header_check(0, filevault_header, sizeof(filevault_header), &header_check_filevault, file_stat);
 }
 #endif

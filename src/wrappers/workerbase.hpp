@@ -32,25 +32,25 @@
 class ProgressCallback;
 
 class WorkerBase : public QObject {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit WorkerBase(QObject *parent = nullptr);
-    ~WorkerBase() override;
+  explicit WorkerBase(QObject *parent = nullptr);
+  ~WorkerBase() override;
 
-    void cancel();
-    bool isRunning() const;
+  void cancel();
+  bool isRunning() const;
 
 protected:
-    void startThread(std::function<void()> workFn);
-    void storeConnection(QMetaObject::Connection conn);
-    void disconnectAllConnections();
-    ProgressCallback *beginOperation();
+  void startThread(std::function<void()> workFn);
+  void storeConnection(QMetaObject::Connection conn);
+  void disconnectAllConnections();
+  ProgressCallback *beginOperation();
 
-    std::atomic<bool> m_running;
-    QThread *m_thread;
+  std::atomic<bool> m_running;
+  QThread *m_thread;
 
 private:
-    std::vector<QMetaObject::Connection> m_connections;
+  std::vector<QMetaObject::Connection> m_connections;
 };
 
 #endif

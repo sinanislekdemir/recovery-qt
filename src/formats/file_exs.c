@@ -31,47 +31,39 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_exs(file_stat_t *file_stat);
 
-const file_hint_t file_hint_exs= {
-  .extension="exs",
-  .description="Apple Logic",
-  .max_filesize=1024*1024,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_exs
-};
+const file_hint_t file_hint_exs = {.extension = "exs",
+                                   .description = "Apple Logic",
+                                   .max_filesize = 1024 * 1024,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_exs};
 
-
-static void file_rename_exs(file_recovery_t *file_recovery)
-{
+static void file_rename_exs(file_recovery_t *file_recovery) {
   unsigned char buffer[512];
   FILE *file;
   int buffer_size;
-  if((file=fopen(file_recovery->filename, "rb"))==NULL)
+  if ((file = fopen(file_recovery->filename, "rb")) == NULL)
     return;
-  buffer_size=fread(buffer, 1, sizeof(buffer), file);
+  buffer_size = fread(buffer, 1, sizeof(buffer), file);
   fclose(file);
   file_rename(file_recovery, buffer, buffer_size, 0x14, "exs", 0);
 }
 
-
-static int header_check_exs(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(memcmp(&buffer[0x10], "TBOS", 4)!=0)
+static int header_check_exs(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (memcmp(&buffer[0x10], "TBOS", 4) != 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_exs.extension;
-  file_recovery_new->file_rename=&file_rename_exs;
+  file_recovery_new->extension = file_hint_exs.extension;
+  file_recovery_new->file_rename = &file_rename_exs;
   return 1;
 }
 
-static void register_header_check_exs(file_stat_t *file_stat)
-{
-  static const unsigned char exs_header[8]=  {
-    0x01, 0x01, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00
-  };
+static void register_header_check_exs(file_stat_t *file_stat) {
+  static const unsigned char exs_header[8] = {0x01, 0x01, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00};
   register_header_check(0, exs_header, sizeof(exs_header), &header_check_exs, file_stat);
 }
 #endif

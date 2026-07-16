@@ -32,68 +32,52 @@
 #include "common.h"
 #include "filegen.h"
 
-
 static void register_header_check_dxf(file_stat_t *file_stat);
 
-const file_hint_t file_hint_dxf= {
-  .extension="dxf",
-  .description="Drawing Interchange File",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_dxf
-};
+const file_hint_t file_hint_dxf = {.extension = "dxf",
+                                   .description = "Drawing Interchange File",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_dxf};
 
-
-static data_check_t data_check_dxf(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
+static data_check_t data_check_dxf(const unsigned char *buffer, const unsigned int buffer_size,
+                                   file_recovery_t *file_recovery) {
   unsigned int i;
-  
-  
-  
-  for(i=(buffer_size/2)-3;i+4<buffer_size;i++)
-  {
-    if(buffer[i]=='\n' && buffer[i+1]=='E' && buffer[i+2]=='O' && buffer[i+3]=='F')
-    {
-      file_recovery->calculated_file_size=file_recovery->file_size+i+4-(buffer_size/2);
+
+  for (i = (buffer_size / 2) - 3; i + 4 < buffer_size; i++) {
+    if (buffer[i] == '\n' && buffer[i + 1] == 'E' && buffer[i + 2] == 'O' && buffer[i + 3] == 'F') {
+      file_recovery->calculated_file_size = file_recovery->file_size + i + 4 - (buffer_size / 2);
       return DC_STOP;
     }
   }
-  file_recovery->calculated_file_size=file_recovery->file_size+(buffer_size/2);
+  file_recovery->calculated_file_size = file_recovery->file_size + (buffer_size / 2);
   return DC_CONTINUE;
 }
 
-
-static void file_check_dxf(file_recovery_t *file_recovery)
-{
-  const unsigned char dxf_footer[4]= {'\n', 'E', 'O', 'F'};
+static void file_check_dxf(file_recovery_t *file_recovery) {
+  const unsigned char dxf_footer[4] = {'\n', 'E', 'O', 'F'};
   file_search_footer(file_recovery, dxf_footer, sizeof(dxf_footer), 0);
-  file_allow_nl(file_recovery, NL_BARENL|NL_CRLF);
+  file_allow_nl(file_recovery, NL_BARENL | NL_CRLF);
 }
 
-
-static int header_check_dxf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_dxf(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_dxf.extension;
-  file_recovery_new->file_check=&file_check_dxf;
-  if(file_recovery_new->blocksize >= 3)
-  {
-    file_recovery_new->data_check=&data_check_dxf;
+  file_recovery_new->extension = file_hint_dxf.extension;
+  file_recovery_new->file_check = &file_check_dxf;
+  if (file_recovery_new->blocksize >= 3) {
+    file_recovery_new->data_check = &data_check_dxf;
   }
   return 1;
 }
 
-static void register_header_check_dxf(file_stat_t *file_stat)
-{
-  static const unsigned char header_dxflib[10]= 	{'9', '9', '9', '\n',
-    'd', 'x', 'f', 'l', 'i', 'b'};
-  static const unsigned char header_dxflib_dos[11]= 	{'9', '9', '9', '\r', '\n',
-    'd', 'x', 'f', 'l', 'i', 'b'};
-  static const unsigned char header_dxf[11]= 	{' ', ' ', '0', '\n',
-    'S', 'E', 'C', 'T', 'I', 'O', 'N'};
-  static const unsigned char header_dxf_dos[12]= 	{' ', ' ', '0', '\r', '\n',
-    'S', 'E', 'C', 'T', 'I', 'O', 'N'};
+static void register_header_check_dxf(file_stat_t *file_stat) {
+  static const unsigned char header_dxflib[10] = {'9', '9', '9', '\n', 'd', 'x', 'f', 'l', 'i', 'b'};
+  static const unsigned char header_dxflib_dos[11] = {'9', '9', '9', '\r', '\n', 'd', 'x', 'f', 'l', 'i', 'b'};
+  static const unsigned char header_dxf[11] = {' ', ' ', '0', '\n', 'S', 'E', 'C', 'T', 'I', 'O', 'N'};
+  static const unsigned char header_dxf_dos[12] = {' ', ' ', '0', '\r', '\n', 'S', 'E', 'C', 'T', 'I', 'O', 'N'};
 
   register_header_check(0, header_dxf, sizeof(header_dxf), &header_check_dxf, file_stat);
 #ifndef DISABLED_FOR_FRAMAC

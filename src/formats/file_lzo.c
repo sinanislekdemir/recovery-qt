@@ -31,32 +31,25 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_lzo(file_stat_t *file_stat);
 
-const file_hint_t file_hint_lzo= {
-  .extension="lzo",
-  .description="lzo archive",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_lzo
-};
+const file_hint_t file_hint_lzo = {.extension = "lzo",
+                                   .description = "lzo archive",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_lzo};
 
-
-static int header_check_lzo(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_lzo(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_lzo.extension;
+  file_recovery_new->extension = file_hint_lzo.extension;
   return 1;
 }
 
-static void register_header_check_lzo(file_stat_t *file_stat)
-{
-  static const unsigned char lzo_header[9]=  {
-    0x89, 'L', 'Z', 'O', 0x00, 0x0d, 0x0a, 0x1a,
-    0x0a
-  };
+static void register_header_check_lzo(file_stat_t *file_stat) {
+  static const unsigned char lzo_header[9] = {0x89, 'L', 'Z', 'O', 0x00, 0x0d, 0x0a, 0x1a, 0x0a};
   register_header_check(0, lzo_header, sizeof(lzo_header), &header_check_lzo, file_stat);
 }
 #endif

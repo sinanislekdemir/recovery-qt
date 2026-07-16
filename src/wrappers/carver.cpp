@@ -25,29 +25,24 @@
 #include "carver.hpp"
 #include "progresscallback.hpp"
 
-Carver::Carver(QObject *parent)
-    : WorkerBase(parent)
-{
-}
+Carver::Carver(QObject *parent) : WorkerBase(parent) {}
 
-void Carver::start(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
-                   const QString &extFilter, bool deepScan)
-{
-    ProgressCallback *pc = beginOperation();
-    if (!pc) return;
+void Carver::start(scan_tree_t *tree, disk_t *disk, const partition_t *partition, const QString &extFilter,
+                   bool deepScan) {
+  ProgressCallback *pc = beginOperation();
+  if (!pc)
+    return;
 
-    QByteArray extBytes = extFilter.toLocal8Bit();
+  QByteArray extBytes = extFilter.toLocal8Bit();
 
-    storeConnection(connect(pc, &ProgressCallback::carverProgress,
-            this, &Carver::progressUpdated, Qt::DirectConnection));
+  storeConnection(connect(pc, &ProgressCallback::carverProgress, this, &Carver::progressUpdated, Qt::DirectConnection));
 
-    startThread([this, pc, tree, disk, partition, extBytes, deepScan]() {
-        pc->installCarverCallbacks();
-        int result = carver_run(tree, disk, partition,
-            extBytes.constData(), deepScan ? 1 : 0);
-        if (result < 0)
-            emit errorOccurred(tr("Carving failed"));
-        emit finished(result);
-        m_running.store(false);
-    });
+  startThread([this, pc, tree, disk, partition, extBytes, deepScan]() {
+    pc->installCarverCallbacks();
+    int result = carver_run(tree, disk, partition, extBytes.constData(), deepScan ? 1 : 0);
+    if (result < 0)
+      emit errorOccurred(tr("Carving failed"));
+    emit finished(result);
+    m_running.store(false);
+  });
 }

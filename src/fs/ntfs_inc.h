@@ -27,13 +27,13 @@ extern "C" {
 
 #if defined(HAVE_LIBNTFS) || defined(HAVE_LIBNTFS3G)
 struct ntfs_dir_struct {
-	file_info_t *dir_list;
-	ntfs_volume *vol;
-	my_data_t *my_data;
-	dir_data_t *dir_data;
-	unsigned long int inode;
+  file_info_t *dir_list;
+  ntfs_volume *vol;
+  my_data_t *my_data;
+  dir_data_t *dir_data;
+  unsigned long int inode;
 #ifdef HAVE_ICONV
-        iconv_t cd;
+  iconv_t cd;
 #endif
 };
 #endif

@@ -38,122 +38,104 @@
 #include "log.h"
 #endif
 
-
 static void register_header_check_hdf(file_stat_t *file_stat);
 
-const file_hint_t file_hint_hdf= {
-  .extension="hdf",
-  .description="Hierarchical Data Format 4",
-  .max_filesize=PHOTOREC_MAX_SIZE_32,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_hdf
-};
+const file_hint_t file_hint_hdf = {.extension = "hdf",
+                                   .description = "Hierarchical Data Format 4",
+                                   .max_filesize = PHOTOREC_MAX_SIZE_32,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_hdf};
 
-struct ddh_struct
-{
-  uint16_t	size;
-  uint32_t	next;
-} __attribute__ ((gcc_struct, __packed__));
+struct ddh_struct {
+  uint16_t size;
+  uint32_t next;
+} __attribute__((gcc_struct, __packed__));
 
-struct dd_struct
-{
-  uint16_t	tag;
-  uint16_t	ref;
-  uint32_t	offset;
-  uint32_t	length;
-} __attribute__ ((gcc_struct, __packed__));
+struct dd_struct {
+  uint16_t tag;
+  uint16_t ref;
+  uint32_t offset;
+  uint32_t length;
+} __attribute__((gcc_struct, __packed__));
 
-
-static uint64_t file_check_hdf_aux(FILE *handle, char *dd_buf)
-{
-  uint64_t file_size=0;
+static uint64_t file_check_hdf_aux(FILE *handle, char *dd_buf) {
+  uint64_t file_size = 0;
   uint64_t offset_old;
-  uint64_t offset=4;
-  const struct dd_struct *dd=(const struct dd_struct *)dd_buf;
-  
-  do
-  {
+  uint64_t offset = 4;
+  const struct dd_struct *dd = (const struct dd_struct *)dd_buf;
+
+  do {
     char ddh_buf[sizeof(struct ddh_struct)];
-    const struct ddh_struct *ddh=(const struct ddh_struct *)&ddh_buf;
+    const struct ddh_struct *ddh = (const struct ddh_struct *)&ddh_buf;
     unsigned int i;
     unsigned int size;
-    if(my_fseek(handle, offset, SEEK_SET) < 0 ||
-	fread(&ddh_buf, sizeof(ddh_buf), 1, handle) !=1)
-    {
+    if (my_fseek(handle, offset, SEEK_SET) < 0 || fread(&ddh_buf, sizeof(ddh_buf), 1, handle) != 1) {
       return 0;
     }
 #ifdef __FRAMAC__
     Frama_C_make_unknown(&ddh_buf, sizeof(ddh_buf));
 #endif
-    size=be16(ddh->size);
-    
-    if(size==0 ||
-	fread(dd_buf, sizeof(struct dd_struct)*size, 1, handle) !=1)
-    {
+    size = be16(ddh->size);
+
+    if (size == 0 || fread(dd_buf, sizeof(struct dd_struct) * size, 1, handle) != 1) {
       return 0;
     }
 #ifdef __FRAMAC__
-    Frama_C_make_unknown(dd_buf, sizeof(struct dd_struct)*size);
+    Frama_C_make_unknown(dd_buf, sizeof(struct dd_struct) * size);
 #endif
-    if(file_size < offset + sizeof(struct dd_struct) * size)
+    if (file_size < offset + sizeof(struct dd_struct) * size)
       file_size = offset + sizeof(struct dd_struct) * size;
 #ifdef DEBUG_HDF
     log_info("size=%u next=%lu\n", size, be32(ddh->next));
 #endif
-    
-    for(i=0; i < size; i++)
-    {
-      const struct dd_struct *p=&dd[i];
-      const unsigned int p_offset=be32(p->offset);
-      const unsigned int p_length=be32(p->length);
+
+    for (i = 0; i < size; i++) {
+      const struct dd_struct *p = &dd[i];
+      const unsigned int p_offset = be32(p->offset);
+      const unsigned int p_length = be32(p->length);
 #ifdef DEBUG_HDF
-      log_info("tag=0x%04x, ref=%u, offset=%lu, length=%lu\n",
-	  be16(p->tag), be16(p->ref), p_offset, p_length);
+      log_info("tag=0x%04x, ref=%u, offset=%lu, length=%lu\n", be16(p->tag), be16(p->ref), p_offset, p_length);
 #endif
-      if(p_offset!=0xffffffff &&
-	file_size < (uint64_t)p_offset + (uint64_t)p_length)
-	file_size = (uint64_t)p_offset + (uint64_t)p_length;
+      if (p_offset != 0xffffffff && file_size < (uint64_t)p_offset + (uint64_t)p_length)
+        file_size = (uint64_t)p_offset + (uint64_t)p_length;
     }
-    offset_old=offset;
-    offset=be32(ddh->next);
-  } while(offset > offset_old);
+    offset_old = offset;
+    offset = be32(ddh->next);
+  } while (offset > offset_old);
   file_size++;
   return file_size;
 }
 
-
-static void file_check_hdf(file_recovery_t *file_recovery)
-{
+static void file_check_hdf(file_recovery_t *file_recovery) {
   uint64_t file_size;
   char *dd;
-  dd=(char *)MALLOC(sizeof(struct dd_struct)*65536);
+  dd = (char *)MALLOC(sizeof(struct dd_struct) * 65536);
   file_size = file_check_hdf_aux(file_recovery->handle, dd);
   free(dd);
 #ifdef DEBUG_HDF
   log_info("file_size %llu\n", (long long unsigned)file_size);
 #endif
-  if(file_recovery->file_size < file_size || file_size==0)
-    file_recovery->file_size=0;
+  if (file_recovery->file_size < file_size || file_size == 0)
+    file_recovery->file_size = 0;
   else
     file_recovery->file_size = file_size;
 }
 
-
-static int header_check_hdf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct ddh_struct *ddh=(const struct ddh_struct *)&buffer[4];
-  if(be16(ddh->size)==0)
+static int header_check_hdf(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const struct ddh_struct *ddh = (const struct ddh_struct *)&buffer[4];
+  if (be16(ddh->size) == 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_hdf.extension;
-  file_recovery_new->file_check=&file_check_hdf;
+  file_recovery_new->extension = file_hint_hdf.extension;
+  file_recovery_new->file_check = &file_check_hdf;
   return 1;
 }
 
-static void register_header_check_hdf(file_stat_t *file_stat)
-{
-  static const unsigned char hdf_header[4]=  { 0x0e, 0x03, 0x13, 0x01};
+static void register_header_check_hdf(file_stat_t *file_stat) {
+  static const unsigned char hdf_header[4] = {0x0e, 0x03, 0x13, 0x01};
   register_header_check(0, hdf_header, sizeof(hdf_header), &header_check_hdf, file_stat);
 }
 #endif

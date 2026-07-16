@@ -33,80 +33,67 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_spf(file_stat_t *file_stat);
 
-const file_hint_t file_hint_spf= {
-  .extension="spf",
-  .description="ShadowProtect",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_spf
-};
+const file_hint_t file_hint_spf = {.extension = "spf",
+                                   .description = "ShadowProtect",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_spf};
 
-enum { READ_SIZE=32*512 };
+enum { READ_SIZE = 32 * 512 };
 
-
-static void file_check_spf(file_recovery_t *file_recovery)
-{
-  file_recovery->file_size=0;
-  if(my_fseek(file_recovery->handle, 0, SEEK_SET)<0)
-  {
+static void file_check_spf(file_recovery_t *file_recovery) {
+  file_recovery->file_size = 0;
+  if (my_fseek(file_recovery->handle, 0, SEEK_SET) < 0) {
     return;
   }
-  
-  while(1)
-  {
+
+  while (1) {
     int i;
     char buffer[READ_SIZE];
-    const int taille=fread(buffer,1,READ_SIZE,file_recovery->handle);
-    if(taille<512 || taille%512!=0)
-    {
-      file_recovery->file_size=0;
-      return ;
+    const int taille = fread(buffer, 1, READ_SIZE, file_recovery->handle);
+    if (taille < 512 || taille % 512 != 0) {
+      file_recovery->file_size = 0;
+      return;
     }
 #ifdef __FRAMAC__
     Frama_C_make_unknown(buffer, READ_SIZE);
 #endif
-    
-    for(i=0; i<taille; i+=512)
-    {
+
+    for (i = 0; i < taille; i += 512) {
       int j;
-      int is_valid=0;
-      file_recovery->file_size+=512;
-      if(file_recovery->file_size >= PHOTOREC_MAX_FILE_SIZE)
-      {
-	return;
+      int is_valid = 0;
+      file_recovery->file_size += 512;
+      if (file_recovery->file_size >= PHOTOREC_MAX_FILE_SIZE) {
+        return;
       }
-      
-      for(j=0; j<8; j++)
-	if(buffer[i+j]!=0)
-	  is_valid=1;
-      
-      for(j=8; j<512 && buffer[i+j]==0; j++);
-      if(is_valid > 0 && j==512)
-      {
-	return;
+
+      for (j = 0; j < 8; j++)
+        if (buffer[i + j] != 0)
+          is_valid = 1;
+
+      for (j = 8; j < 512 && buffer[i + j] == 0; j++)
+        ;
+      if (is_valid > 0 && j == 512) {
+        return;
       }
     }
   }
 }
 
-
-static int header_check_spf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_spf(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_spf.extension;
-  file_recovery_new->file_check=&file_check_spf;
+  file_recovery_new->extension = file_hint_spf.extension;
+  file_recovery_new->file_check = &file_check_spf;
   return 1;
 }
 
-static void register_header_check_spf(file_stat_t *file_stat)
-{
-  static const unsigned char spf_header[12]= {
-    'S', 'P', 'F', 'I', 0x00, 0x02, 0x00, 0x00, 0x41, 0x00, 0x00, 0x00
-  };
-  register_header_check(0, spf_header,sizeof(spf_header), &header_check_spf, file_stat);
+static void register_header_check_spf(file_stat_t *file_stat) {
+  static const unsigned char spf_header[12] = {'S', 'P', 'F', 'I', 0x00, 0x02, 0x00, 0x00, 0x41, 0x00, 0x00, 0x00};
+  register_header_check(0, spf_header, sizeof(spf_header), &header_check_spf, file_stat);
 }
 #endif

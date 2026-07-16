@@ -32,31 +32,26 @@
 #include "common.h"
 #include "filegen.h"
 
-
 static void register_header_check_apa(file_stat_t *file_stat);
 
-const file_hint_t file_hint_apa= {
-  .extension="apa",
-  .description="APA Style Helper",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_apa
-};
+const file_hint_t file_hint_apa = {.extension = "apa",
+                                   .description = "APA Style Helper",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_apa};
 
-
-static int header_check_apa(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_apa(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_apa.extension;
+  file_recovery_new->extension = file_hint_apa.extension;
   return 1;
 }
 
-static void register_header_check_apa(file_stat_t *file_stat)
-{
-  static const unsigned char apa_magic[16]= {
-    'c', 'o', 'm', '.', 'a', 'p', 'a', '.',
-    'D', 'o', 'c', 'u', 'm', 'e', 'n', 't'};
+static void register_header_check_apa(file_stat_t *file_stat) {
+  static const unsigned char apa_magic[16] = {'c', 'o', 'm', '.', 'a', 'p', 'a', '.',
+                                              'D', 'o', 'c', 'u', 'm', 'e', 'n', 't'};
   register_header_check(8, apa_magic, sizeof(apa_magic), &header_check_apa, file_stat);
 }
 

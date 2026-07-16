@@ -35,168 +35,138 @@
 #include "__fc_builtin.h"
 #endif
 
-
 static void register_header_check_bmp(file_stat_t *file_stat);
 
-const file_hint_t file_hint_bmp= {
-  .extension="bmp",
-  .description="BMP bitmap image",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_bmp
-};
+const file_hint_t file_hint_bmp = {.extension = "bmp",
+                                   .description = "BMP bitmap image",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_bmp};
 
-static const unsigned char bmp_header[2]= {'B','M'};
+static const unsigned char bmp_header[2] = {'B', 'M'};
 
-struct bmp_header
-{
+struct bmp_header {
   uint16_t magic;
   uint32_t size;
   uint32_t reserved;
   uint32_t offset;
   uint32_t hdr_size;
-} __attribute__ ((gcc_struct, __packed__));
-
+} __attribute__((gcc_struct, __packed__));
 
 // ensures (\result == 1) ==>  \separated(file_recovery_new, file_recovery_new->extension);
-static int header_check_bmp(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  
-  
-  const struct bmp_header *bm=(const struct bmp_header *)buffer;
-  
-  const unsigned int size=le32(bm->size);
-  const unsigned int hdr_size=le32(bm->hdr_size);
-  if(buffer[0]!='B' || buffer[1]!='M')
+static int header_check_bmp(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const struct bmp_header *bm = (const struct bmp_header *)buffer;
+
+  const unsigned int size = le32(bm->size);
+  const unsigned int hdr_size = le32(bm->hdr_size);
+  if (buffer[0] != 'B' || buffer[1] != 'M')
     return 0;
-  switch(hdr_size)
-  {
-    case 12:
-    case 64:
-    case 40:
-    case 52:
-    case 56:
-    case 108:
-    case 124:
-      break;
-    default:
-      return 0;
+  switch (hdr_size) {
+  case 12:
+  case 64:
+  case 40:
+  case 52:
+  case 56:
+  case 108:
+  case 124:
+    break;
+  default:
+    return 0;
   }
-  if(bm->reserved!=0)
+  if (bm->reserved != 0)
     return 0;
-  if(le32(bm->offset) >= size ||
-    size < 65 ||
-    hdr_size >= size)
+  if (le32(bm->offset) >= size || size < 65 || hdr_size >= size)
     return 0;
   /* See http://en.wikipedia.org/wiki/BMP_file_format */
   reset_file_recovery(file_recovery_new);
-  
-  
-  file_recovery_new->extension=file_hint_bmp.extension;
-  file_recovery_new->min_filesize=65;
-  file_recovery_new->calculated_file_size=size;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
+  file_recovery_new->extension = file_hint_bmp.extension;
+  file_recovery_new->min_filesize = 65;
+  file_recovery_new->calculated_file_size = size;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
+
   return 1;
 }
 
-static void register_header_check_bmp(file_stat_t *file_stat)
-{
-  register_header_check(0, bmp_header,sizeof(bmp_header), &header_check_bmp, file_stat);
+static void register_header_check_bmp(file_stat_t *file_stat) {
+  register_header_check(0, bmp_header, sizeof(bmp_header), &header_check_bmp, file_stat);
 }
 #endif
 
 #if defined(MAIN_bmp)
 #define BLOCKSIZE 65536u
-int main(void)
-{
+int main(void) {
   const char fn[] = "recup_dir.1/f0000000.bmp";
   unsigned char buffer[BLOCKSIZE];
   file_recovery_t file_recovery_new;
   file_recovery_t file_recovery;
   file_stat_t file_stats;
 
-  
 #if defined(__FRAMAC__)
   Frama_C_make_unknown((char *)buffer, BLOCKSIZE);
 #endif
 
   reset_file_recovery(&file_recovery);
-  
-  file_recovery.blocksize=BLOCKSIZE;
-  file_recovery_new.blocksize=BLOCKSIZE;
-  file_recovery_new.data_check=NULL;
-  file_recovery_new.file_stat=NULL;
-  file_recovery_new.file_check=NULL;
-  file_recovery_new.file_rename=NULL;
-  file_recovery_new.calculated_file_size=0;
-  file_recovery_new.file_size=0;
-  file_recovery_new.location.start=0;
 
-  file_stats.file_hint=&file_hint_bmp;
-  file_stats.not_recovered=0;
-  file_stats.recovered=0;
+  file_recovery.blocksize = BLOCKSIZE;
+  file_recovery_new.blocksize = BLOCKSIZE;
+  file_recovery_new.data_check = NULL;
+  file_recovery_new.file_stat = NULL;
+  file_recovery_new.file_check = NULL;
+  file_recovery_new.file_rename = NULL;
+  file_recovery_new.calculated_file_size = 0;
+  file_recovery_new.file_size = 0;
+  file_recovery_new.location.start = 0;
+
+  file_stats.file_hint = &file_hint_bmp;
+  file_stats.not_recovered = 0;
+  file_stats.recovered = 0;
   register_header_check_bmp(&file_stats);
-  if(header_check_bmp(buffer, BLOCKSIZE, 0u, &file_recovery, &file_recovery_new)!=1)
+  if (header_check_bmp(buffer, BLOCKSIZE, 0u, &file_recovery, &file_recovery_new) != 1)
     return 0;
-  
+
   memcpy(file_recovery_new.filename, fn, sizeof(fn));
-  file_recovery_new.file_stat=&file_stats;
-  
-  
-  
-  
-  
-  
-  
-  
+  file_recovery_new.file_stat = &file_stats;
+
   {
-    unsigned char big_buffer[2*BLOCKSIZE];
-    data_check_t res_data_check=DC_CONTINUE;
+    unsigned char big_buffer[2 * BLOCKSIZE];
+    data_check_t res_data_check = DC_CONTINUE;
     memset(big_buffer, 0, BLOCKSIZE);
     memcpy(big_buffer + BLOCKSIZE, buffer, BLOCKSIZE);
-    
+
     ;
     ;
-    res_data_check=data_check_size(big_buffer, 2*BLOCKSIZE, &file_recovery_new);
-    file_recovery_new.file_size+=BLOCKSIZE;
-    if(res_data_check == DC_CONTINUE)
-    {
+    res_data_check = data_check_size(big_buffer, 2 * BLOCKSIZE, &file_recovery_new);
+    file_recovery_new.file_size += BLOCKSIZE;
+    if (res_data_check == DC_CONTINUE) {
       memcpy(big_buffer, big_buffer + BLOCKSIZE, BLOCKSIZE);
 #if defined(__FRAMAC__)
       Frama_C_make_unknown((char *)big_buffer + BLOCKSIZE, BLOCKSIZE);
 #endif
-      data_check_size(big_buffer, 2*BLOCKSIZE, &file_recovery_new);
+      data_check_size(big_buffer, 2 * BLOCKSIZE, &file_recovery_new);
     }
   }
   {
     file_recovery_t file_recovery_new2;
-    file_recovery_new2.blocksize=BLOCKSIZE;
-    file_recovery_new2.file_stat=NULL;
-    file_recovery_new2.file_check=NULL;
-    file_recovery_new2.location.start=BLOCKSIZE;
-    file_recovery_new.handle=NULL;	/* In theory should be not null */
+    file_recovery_new2.blocksize = BLOCKSIZE;
+    file_recovery_new2.file_stat = NULL;
+    file_recovery_new2.file_check = NULL;
+    file_recovery_new2.location.start = BLOCKSIZE;
+    file_recovery_new.handle = NULL; /* In theory should be not null */
 #if defined(__FRAMAC__)
     Frama_C_make_unknown((char *)buffer, BLOCKSIZE);
 #endif
-    
+
     header_check_bmp(buffer, BLOCKSIZE, 0, &file_recovery_new, &file_recovery_new2);
   }
-  
-  file_recovery_new.handle=fopen(fn, "rb");
-  
-  if(file_recovery_new.handle!=NULL)
-  {
+
+  file_recovery_new.handle = fopen(fn, "rb");
+
+  if (file_recovery_new.handle != NULL) {
     file_check_size(&file_recovery_new);
     fclose(file_recovery_new.handle);
   }

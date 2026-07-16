@@ -35,52 +35,48 @@
 #include "common.h"
 #include "filegen.h"
 
-
 static void register_header_check_pyc(file_stat_t *file_stat);
 
-const file_hint_t file_hint_pyc= {
-  .extension="pyc",
-  .description="Python Compiled Script",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_pyc
-};
+const file_hint_t file_hint_pyc = {.extension = "pyc",
+                                   .description = "Python Compiled Script",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_pyc};
 
 struct pyc_header {
   uint32_t magic_number;
   uint32_t modtime;
 };
 
-
-static int header_check_pyc(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct pyc_header *pyc=(const struct pyc_header *)buffer;
+static int header_check_pyc(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const struct pyc_header *pyc = (const struct pyc_header *)buffer;
   /* marshalled code object must be of of type TYPE_CODE and argcount < 256 */
-  if(buffer[8]!='c' || buffer[9]!=0 || buffer[10]!=0 || buffer[11]!=0)
+  if (buffer[8] != 'c' || buffer[9] != 0 || buffer[10] != 0 || buffer[11] != 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_pyc.extension;
-  file_recovery_new->time=le32(pyc->modtime);
+  file_recovery_new->extension = file_hint_pyc.extension;
+  file_recovery_new->time = le32(pyc->modtime);
   return 1;
 }
 
-static void register_header_check_pyc(file_stat_t *file_stat)
-{
-  static const unsigned char pyc_15_magic[4]= { 0x99, 0x4e, '\r', '\n'};
-  static const unsigned char pyc_20_magic[4]= { 0x87, 0xc6, '\r', '\n'};
-  static const unsigned char pyc_21_magic[4]= { 0x2a, 0xeb, '\r', '\n'};
-  static const unsigned char pyc_22_magic[4]= { 0x2d, 0xed, '\r', '\n'};
-  static const unsigned char pyc_23_magic[4]= { 0x3b, 0xf2, '\r', '\n'};
-  static const unsigned char pyc_24_magic[4]= { 0x6d, 0xf2, '\r', '\n'};
-  static const unsigned char pyc_25_magic[4]= { 0xb3, 0xf2, '\r', '\n'};
-  static const unsigned char pyc_26_magic[4]= { 0xd1, 0xf2, '\r', '\n'};
-  static const unsigned char pyc_27_magic[4]= { 0x03, 0xf3, '\r', '\n'};
-  static const unsigned char pyc_30_magic[4]= { 0x3b, 0x0c, '\r', '\n'};
-  static const unsigned char pyc_31_magic[4]= { 0x4f, 0x0c, '\r', '\n'};
-  static const unsigned char pyc_32_magic[4]= { 0x6c, 0x0c, '\r', '\n'};
-  static const unsigned char pyc_33_magic[4]= { 0x9e, 0x0c, '\r', '\n'};
-  static const unsigned char pyc_34_magic[4]= { 0xee, 0x0c, '\r', '\n'};
+static void register_header_check_pyc(file_stat_t *file_stat) {
+  static const unsigned char pyc_15_magic[4] = {0x99, 0x4e, '\r', '\n'};
+  static const unsigned char pyc_20_magic[4] = {0x87, 0xc6, '\r', '\n'};
+  static const unsigned char pyc_21_magic[4] = {0x2a, 0xeb, '\r', '\n'};
+  static const unsigned char pyc_22_magic[4] = {0x2d, 0xed, '\r', '\n'};
+  static const unsigned char pyc_23_magic[4] = {0x3b, 0xf2, '\r', '\n'};
+  static const unsigned char pyc_24_magic[4] = {0x6d, 0xf2, '\r', '\n'};
+  static const unsigned char pyc_25_magic[4] = {0xb3, 0xf2, '\r', '\n'};
+  static const unsigned char pyc_26_magic[4] = {0xd1, 0xf2, '\r', '\n'};
+  static const unsigned char pyc_27_magic[4] = {0x03, 0xf3, '\r', '\n'};
+  static const unsigned char pyc_30_magic[4] = {0x3b, 0x0c, '\r', '\n'};
+  static const unsigned char pyc_31_magic[4] = {0x4f, 0x0c, '\r', '\n'};
+  static const unsigned char pyc_32_magic[4] = {0x6c, 0x0c, '\r', '\n'};
+  static const unsigned char pyc_33_magic[4] = {0x9e, 0x0c, '\r', '\n'};
+  static const unsigned char pyc_34_magic[4] = {0xee, 0x0c, '\r', '\n'};
   register_header_check(0, pyc_15_magic, sizeof(pyc_15_magic), &header_check_pyc, file_stat);
 #ifndef DISABLED_FOR_FRAMAC
   register_header_check(0, pyc_20_magic, sizeof(pyc_20_magic), &header_check_pyc, file_stat);

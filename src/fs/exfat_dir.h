@@ -28,19 +28,18 @@ extern "C" {
 #include <iconv.h>
 #endif
 
-struct exfat_dir_struct
-{
+struct exfat_dir_struct {
   struct exfat_super_block *boot_sector;
 #ifdef HAVE_ICONV
   iconv_t cd;
 #endif
 };
 
+dir_partition_t dir_partition_exfat_init(disk_t *disk_car, const partition_t *partition, dir_data_t *dir_data,
+                                         const int verbose);
 
-dir_partition_t dir_partition_exfat_init(disk_t *disk_car, const partition_t *partition, dir_data_t *dir_data, const int verbose);
-
-
-unsigned int exfat_get_next_cluster(disk_t *disk_car, const partition_t *partition, const uint64_t offset, const unsigned int cluster);
+unsigned int exfat_get_next_cluster(disk_t *disk_car, const partition_t *partition, const uint64_t offset,
+                                    const unsigned int cluster);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

@@ -31,50 +31,41 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_hds(file_stat_t *file_stat);
 
-const file_hint_t file_hint_hds= {
-  .extension="hds",
-  .description="Parallels disk image",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_hds
-};
+const file_hint_t file_hint_hds = {.extension = "hds",
+                                   .description = "Parallels disk image",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_hds};
 
 // always little-endian
 struct parallels_header {
-    char magic[16]; // "WithoutFreeSpace"
-    uint32_t version;
-    uint32_t heads;
-    uint32_t cylinders;
-    uint32_t tracks;
-    uint32_t catalog_entries;
-    uint32_t nb_sectors;
-    char padding[24];
-} __attribute__((gcc_struct,__packed__));
+  char magic[16]; // "WithoutFreeSpace"
+  uint32_t version;
+  uint32_t heads;
+  uint32_t cylinders;
+  uint32_t tracks;
+  uint32_t catalog_entries;
+  uint32_t nb_sectors;
+  char padding[24];
+} __attribute__((gcc_struct, __packed__));
 
-
-static int header_check_hds(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct parallels_header *hdr=(const struct parallels_header *)buffer;
-  if(le32(hdr->heads)==0 ||
-      le32(hdr->cylinders)==0 ||
-      le32(hdr->tracks)==0 ||
-      le32(hdr->nb_sectors)==0)
+static int header_check_hds(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const struct parallels_header *hdr = (const struct parallels_header *)buffer;
+  if (le32(hdr->heads) == 0 || le32(hdr->cylinders) == 0 || le32(hdr->tracks) == 0 || le32(hdr->nb_sectors) == 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_hds.extension;
+  file_recovery_new->extension = file_hint_hds.extension;
   return 1;
 }
 
-static void register_header_check_hds(file_stat_t *file_stat)
-{
-  static const unsigned char hds_header[20]= {
-    'W','i','t','h','o','u','t','F','r','e','e','S','p','a','c','e',
-    0x02, 0x00, 0x00, 0x00
-  };
-  register_header_check(0, hds_header,sizeof(hds_header), &header_check_hds, file_stat);
+static void register_header_check_hds(file_stat_t *file_stat) {
+  static const unsigned char hds_header[20] = {'W', 'i', 't', 'h', 'o', 'u', 't',  'F',  'r',  'e',
+                                               'e', 'S', 'p', 'a', 'c', 'e', 0x02, 0x00, 0x00, 0x00};
+  register_header_check(0, hds_header, sizeof(hds_header), &header_check_hds, file_stat);
 }
 #endif

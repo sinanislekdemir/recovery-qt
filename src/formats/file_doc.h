@@ -25,7 +25,6 @@
 extern "C" {
 #endif
 
-
 void file_check_doc_aux(file_recovery_t *file_recovery, const uint64_t offset);
 
 #ifdef __cplusplus

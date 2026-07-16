@@ -32,20 +32,16 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_fxp(file_stat_t *file_stat);
 
-const file_hint_t file_hint_fxp= {
-  .extension="fxp",
-  .description="FX Preset files",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_fxp
-};
+const file_hint_t file_hint_fxp = {.extension = "fxp",
+                                   .description = "FX Preset files",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_fxp};
 
-struct fxp_header
-{
+struct fxp_header {
   char magic[4];
   uint32_t size;
   char fxmagic[4];
@@ -55,27 +51,26 @@ struct fxp_header
   uint32_t numPrograms;
   char name[28];
   uint32_t chunksize;
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
-
-static int header_check_fxp(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct fxp_header *fxp=(const struct fxp_header *)buffer;
-  if(be32(fxp->size) < sizeof(struct fxp_header))
+static int header_check_fxp(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const struct fxp_header *fxp = (const struct fxp_header *)buffer;
+  if (be32(fxp->size) < sizeof(struct fxp_header))
     return 0;
-  if(memcmp(&fxp->fxmagic, "FPCh", 4) != 0)
+  if (memcmp(&fxp->fxmagic, "FPCh", 4) != 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_fxp.extension;
-  file_recovery_new->calculated_file_size=(uint64_t)be32(fxp->size);
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->extension = file_hint_fxp.extension;
+  file_recovery_new->calculated_file_size = (uint64_t)be32(fxp->size);
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
   return 1;
 }
 
-static void register_header_check_fxp(file_stat_t *file_stat)
-{
-  static const unsigned char fxp_header[4]=  { 'C' , 'c' , 'n' , 'K'   };
+static void register_header_check_fxp(file_stat_t *file_stat) {
+  static const unsigned char fxp_header[4] = {'C', 'c', 'n', 'K'};
   register_header_check(0, fxp_header, sizeof(fxp_header), &header_check_fxp, file_stat);
 }
 #endif

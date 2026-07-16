@@ -26,14 +26,11 @@
 extern "C" {
 #endif
 
-
 int parti386_can_be_ext(const disk_t *disk_car, const partition_t *partition);
-
 
 // ensures  valid_list_part(\result);
 // ensures  valid_read_string(*current_cmd);
 list_part_t *add_partition_i386_cli(disk_t *disk_car, list_part_t *list_part, char **current_cmd);
-
 
 int recover_i386_logical(disk_t *disk, const unsigned char *buffer, partition_t *partition);
 

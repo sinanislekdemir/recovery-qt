@@ -31,34 +31,27 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_dmp(file_stat_t *file_stat);
 
-const file_hint_t file_hint_dmp= {
-  .extension="dmp",
-  .description="Oracle Dump (export)",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_dmp
-};
+const file_hint_t file_hint_dmp = {.extension = "dmp",
+                                   .description = "Oracle Dump (export)",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_dmp};
 
-
-static int header_check_dmp(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(buffer[11] < '0' || buffer[11] > '9')
+static int header_check_dmp(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (buffer[11] < '0' || buffer[11] > '9')
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_dmp.extension;
+  file_recovery_new->extension = file_hint_dmp.extension;
   return 1;
 }
 
-static void register_header_check_dmp(file_stat_t *file_stat)
-{
-  static const unsigned char dmp_header[11]=  {
-    0x03, 0x00, 0x01, 'E', 'X', 'P', 'O', 'R',
-    'T',  ':',  'V'
-  };
+static void register_header_check_dmp(file_stat_t *file_stat) {
+  static const unsigned char dmp_header[11] = {0x03, 0x00, 0x01, 'E', 'X', 'P', 'O', 'R', 'T', ':', 'V'};
   register_header_check(0, dmp_header, sizeof(dmp_header), &header_check_dmp, file_stat);
 }
 #endif

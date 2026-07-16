@@ -31,23 +31,21 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_z2d(file_stat_t *file_stat);
 
-const file_hint_t file_hint_z2d = {
-  .extension = "z2d",
-  .description = "ZeroCad",
-  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_z2d
-};
+const file_hint_t file_hint_z2d = {.extension = "z2d",
+                                   .description = "ZeroCad",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_z2d};
 
-
-static int header_check_z2d(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(buffer[0x28] == 0xc3 && buffer[0x29] == 0x40 && buffer[0x30] == 0xc3 && buffer[0x31] == 0x40 && buffer[0x38] == 0xbf && buffer[0x39] == 0x40 && buffer[0x40] == 0xbf && buffer[0x41] == 0x40 && buffer[0x48] == 0xb7 && buffer[0x49] == 0x40)
-  {
+static int header_check_z2d(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (buffer[0x28] == 0xc3 && buffer[0x29] == 0x40 && buffer[0x30] == 0xc3 && buffer[0x31] == 0x40 &&
+      buffer[0x38] == 0xbf && buffer[0x39] == 0x40 && buffer[0x40] == 0xbf && buffer[0x41] == 0x40 &&
+      buffer[0x48] == 0xb7 && buffer[0x49] == 0x40) {
     reset_file_recovery(file_recovery_new);
     file_recovery_new->extension = file_hint_z2d.extension;
     return 1;
@@ -55,9 +53,8 @@ static int header_check_z2d(const unsigned char *buffer, const unsigned int buff
   return 0;
 }
 
-static void register_header_check_z2d(file_stat_t *file_stat)
-{
-  static const unsigned char z2d_header[2] = { 0xc3, 0x40 };
+static void register_header_check_z2d(file_stat_t *file_stat) {
+  static const unsigned char z2d_header[2] = {0xc3, 0x40};
   register_header_check(0x28, z2d_header, sizeof(z2d_header), &header_check_z2d, file_stat);
 }
 #endif

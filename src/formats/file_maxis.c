@@ -31,31 +31,27 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_maxis(file_stat_t *file_stat);
 
-const file_hint_t file_hint_maxis= {
-  .extension="maxis",
-  .description="Maxis games (ie. The Sims)",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_maxis
-};
+const file_hint_t file_hint_maxis = {.extension = "maxis",
+                                     .description = "Maxis games (ie. The Sims)",
+                                     .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                     .recover = 1,
+                                     .enable_by_default = 1,
+                                     .register_header_check = &register_header_check_maxis};
 
-
-static int header_check_maxis(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(buffer[5]!=0 || buffer[6]!= 0 || buffer[7]!= 0)
+static int header_check_maxis(const unsigned char *buffer, const unsigned int buffer_size,
+                              const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                              file_recovery_t *file_recovery_new) {
+  if (buffer[5] != 0 || buffer[6] != 0 || buffer[7] != 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_maxis.extension;
-  file_recovery_new->min_filesize=0x60;
+  file_recovery_new->extension = file_hint_maxis.extension;
+  file_recovery_new->min_filesize = 0x60;
   return 1;
 }
 
-static void register_header_check_maxis(file_stat_t *file_stat)
-{
+static void register_header_check_maxis(file_stat_t *file_stat) {
   register_header_check(0, "DBPF", 4, &header_check_maxis, file_stat);
 }
 #endif

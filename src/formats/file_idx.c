@@ -31,52 +31,43 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_idx(file_stat_t *file_stat);
 
-const file_hint_t file_hint_idx= {
-  .extension="idx",
-  .description="RT60",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_idx
-};
+const file_hint_t file_hint_idx = {.extension = "idx",
+                                   .description = "RT60",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_idx};
 
+static data_check_t data_check_idx(const unsigned char *buffer, const unsigned int buffer_size,
+                                   file_recovery_t *file_recovery) {
+  while (file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size &&
+         file_recovery->calculated_file_size + 4 < file_recovery->file_size + buffer_size / 2) {
+    const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
 
-static data_check_t data_check_idx(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  
-  
-  
-  while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
-      file_recovery->calculated_file_size + 4 < file_recovery->file_size + buffer_size/2)
-  {
-    const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    
-    if(memcmp(&buffer[i], "RT60", 4)!=0)
+    if (memcmp(&buffer[i], "RT60", 4) != 0)
       return DC_STOP;
-    file_recovery->calculated_file_size+=0x30;
+    file_recovery->calculated_file_size += 0x30;
   }
   return DC_CONTINUE;
 }
 
-
-static int header_check_idx(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(memcmp(&buffer[0x18], "RT60", 4)!=0)
+static int header_check_idx(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (memcmp(&buffer[0x18], "RT60", 4) != 0)
     return 0;
-  if(file_recovery->data_check==&data_check_idx)
+  if (file_recovery->data_check == &data_check_idx)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_idx.extension;
-  file_recovery_new->data_check=&data_check_idx;
-  file_recovery_new->min_filesize=0x30;
+  file_recovery_new->extension = file_hint_idx.extension;
+  file_recovery_new->data_check = &data_check_idx;
+  file_recovery_new->min_filesize = 0x30;
   return 1;
 }
 
-static void register_header_check_idx(file_stat_t *file_stat)
-{
+static void register_header_check_idx(file_stat_t *file_stat) {
   register_header_check(0, "RT60", 4, &header_check_idx, file_stat);
 }
 #endif

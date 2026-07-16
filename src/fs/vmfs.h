@@ -26,24 +26,22 @@
 extern "C" {
 #endif
 /* VMFS boot block */
-#define VDEV_BOOT_MAGIC         0x2f5b007b10cULL
-#define VDEV_BOOT_VERSION       1               /* version number       */
-#define	VDEV_BOOT_HEADER_SIZE	(8 << 10)
+#define VDEV_BOOT_MAGIC 0x2f5b007b10cULL
+#define VDEV_BOOT_VERSION 1 /* version number       */
+#define VDEV_BOOT_HEADER_SIZE (8 << 10)
 
-struct vmfs_volume
-{
+struct vmfs_volume {
   uint32_t magic;
   uint32_t version;
-} __attribute__ ((gcc_struct, __packed__));
-struct vmfs_lvm
-{
+} __attribute__((gcc_struct, __packed__));
+struct vmfs_lvm {
   uint64_t size;
   uint64_t blocks;
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
-
-int check_VMFS(disk_t *disk,partition_t *partition);
-int recover_VMFS(const disk_t *disk, const struct vmfs_volume *sb, partition_t *partition, const int verbose, const int dump_ind);
+int check_VMFS(disk_t *disk, partition_t *partition);
+int recover_VMFS(const disk_t *disk, const struct vmfs_volume *sb, partition_t *partition, const int verbose,
+                 const int dump_ind);
 #ifdef __cplusplus
 } /* closing brace for extern "C" */
 #endif

@@ -32,17 +32,14 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_vdi(file_stat_t *file_stat);
 
-const file_hint_t file_hint_vdi = {
-  .extension = "vdi",
-  .description = "Virtual desktop infrastructure 1.1",
-  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_vdi
-};
+const file_hint_t file_hint_vdi = {.extension = "vdi",
+                                   .description = "Virtual desktop infrastructure 1.1",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_vdi};
 
 /* Image version. */
 #define VDI_VERSION_1_1 0x00010001
@@ -53,8 +50,7 @@ const file_hint_t file_hint_vdi = {
 
 typedef unsigned char uuid_t[16];
 
-typedef struct
-{
+typedef struct {
   char text[0x40];
   uint32_t signature;
   uint32_t version;
@@ -81,28 +77,27 @@ typedef struct
   uint64_t unused2[7];
 } VdiHeader;
 
-
-static int header_check_vdi(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_vdi(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   const VdiHeader *header = (const VdiHeader *)buffer;
   uint64_t fs;
   const uint32_t offset_data = le32(header->offset_data);
-  if(le32(header->version) != VDI_VERSION_1_1)
+  if (le32(header->version) != VDI_VERSION_1_1)
     return 0;
-  if(offset_data < sizeof(VdiHeader))
+  if (offset_data < sizeof(VdiHeader))
     return 0;
-  if(le32(header->image_type) != VDI_TYPE_STATIC)
-  {
+  if (le32(header->image_type) != VDI_TYPE_STATIC) {
     reset_file_recovery(file_recovery_new);
     file_recovery_new->extension = file_hint_vdi.extension;
     file_recovery_new->min_filesize = offset_data;
     return 1;
   }
   fs = (uint64_t)le32(header->blocks_in_image) * le32(header->block_size);
-  if(fs > PHOTOREC_MAX_FILE_SIZE)
+  if (fs > PHOTOREC_MAX_FILE_SIZE)
     return 0;
   fs += offset_data;
-  if(fs > PHOTOREC_MAX_FILE_SIZE)
+  if (fs > PHOTOREC_MAX_FILE_SIZE)
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_vdi.extension;
@@ -112,9 +107,8 @@ static int header_check_vdi(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-static void register_header_check_vdi(file_stat_t *file_stat)
-{
-  static const unsigned char vdi_header[4] = { 0x7f, 0x10, 0xda, 0xbe };
+static void register_header_check_vdi(file_stat_t *file_stat) {
+  static const unsigned char vdi_header[4] = {0x7f, 0x10, 0xda, 0xbe};
   register_header_check(0x40, vdi_header, sizeof(vdi_header), &header_check_vdi, file_stat);
 }
 #endif

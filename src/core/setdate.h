@@ -25,7 +25,6 @@
 extern "C" {
 #endif
 
-
 int set_date(const char *pathname, time_t actime, time_t modtime);
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

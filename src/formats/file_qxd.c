@@ -31,44 +31,40 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_qxd(file_stat_t *file_stat);
 
-const file_hint_t file_hint_qxd= {
-  .extension="qxd",
-  .description="QuarkXpress Document",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_qxd
-};
+const file_hint_t file_hint_qxd = {.extension = "qxd",
+                                   .description = "QuarkXpress Document",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_qxd};
 
-
-static int header_check_qxd(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_qxd(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_qxd.extension;
-  file_recovery_new->min_filesize=4;
+  file_recovery_new->extension = file_hint_qxd.extension;
+  file_recovery_new->min_filesize = 4;
   return 1;
 }
 
-
-static int header_check_qxp(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_qxp(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   /* Intel or Mac QuarkXpress Document */
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension="qxp";
-  file_recovery_new->min_filesize=8;
+  file_recovery_new->extension = "qxp";
+  file_recovery_new->min_filesize = 8;
   return 1;
 }
 
-static void register_header_check_qxd(file_stat_t *file_stat)
-{
-  static const unsigned char qxd_header[4]={'X','P','R','3' };
-  static const unsigned char qxp_header_be[6]={'I','I','X','P','R','3' };
-  static const unsigned char qxp_header_le[6]={'M','M','X','P','R','3' };
-  register_header_check(0, qxd_header,sizeof(qxd_header), &header_check_qxd, file_stat);
-  register_header_check(2, qxp_header_be,sizeof(qxp_header_be), &header_check_qxp, file_stat);
-  register_header_check(2, qxp_header_le,sizeof(qxp_header_le), &header_check_qxp, file_stat);
+static void register_header_check_qxd(file_stat_t *file_stat) {
+  static const unsigned char qxd_header[4] = {'X', 'P', 'R', '3'};
+  static const unsigned char qxp_header_be[6] = {'I', 'I', 'X', 'P', 'R', '3'};
+  static const unsigned char qxp_header_le[6] = {'M', 'M', 'X', 'P', 'R', '3'};
+  register_header_check(0, qxd_header, sizeof(qxd_header), &header_check_qxd, file_stat);
+  register_header_check(2, qxp_header_be, sizeof(qxp_header_be), &header_check_qxp, file_stat);
+  register_header_check(2, qxp_header_le, sizeof(qxp_header_le), &header_check_qxp, file_stat);
 }
 #endif

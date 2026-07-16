@@ -34,52 +34,44 @@
 #include "common.h"
 #include "log.h"
 
-
 static void register_header_check_fs(file_stat_t *file_stat);
 
-const file_hint_t file_hint_fs= {
-  .extension="fs",
-  .description="Zope",
-  .max_filesize=200*1024*1024,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_fs
-};
+const file_hint_t file_hint_fs = {.extension = "fs",
+                                  .description = "Zope",
+                                  .max_filesize = 200 * 1024 * 1024,
+                                  .recover = 1,
+                                  .enable_by_default = 1,
+                                  .register_header_check = &register_header_check_fs};
 
 /* See http://www.linkitsolutions.org/uploader/dilu/lib/python2.6/site-packages/ZODB/FileStorage/FileStorage.py for more information */
-struct transaction_header
-{
+struct transaction_header {
   uint64_t id;
   uint64_t len;
-  char     status;
+  char status;
   uint16_t len_username;
   uint16_t len_descr;
   uint16_t len_ext;
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
+static data_check_t data_check_fs(const unsigned char *buffer, const unsigned int buffer_size,
+                                  file_recovery_t *file_recovery) {
+  while (file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size &&
+         file_recovery->calculated_file_size + 0x11 < file_recovery->file_size + buffer_size / 2) {
+    const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
 
-static data_check_t data_check_fs(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  
-  
-  
-  while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
-      file_recovery->calculated_file_size + 0x11 < file_recovery->file_size + buffer_size/2)
-  {
-    const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    
-    const struct transaction_header *hdr=(const struct transaction_header *)&buffer[i];
-    const uint64_t len=be64(hdr->len);
-    if(len < sizeof(struct transaction_header)-8)
+    const struct transaction_header *hdr = (const struct transaction_header *)&buffer[i];
+    const uint64_t len = be64(hdr->len);
+    if (len < sizeof(struct transaction_header) - 8)
       return DC_STOP;
-    if(hdr->status!=' ' && hdr->status!='p' && hdr->status!='c' &&  hdr->status!='u')
+    if (hdr->status != ' ' && hdr->status != 'p' && hdr->status != 'c' && hdr->status != 'u')
       return DC_STOP;
-    if(len > PHOTOREC_MAX_FILE_SIZE)
+    if (len > PHOTOREC_MAX_FILE_SIZE)
       return DC_STOP;
 #ifdef DEBUG_FS
-    log_info("0x%08llx len=%llu status=%c\n", (long long unsigned)file_recovery->calculated_file_size, (long long unsigned)len, hdr->status);
+    log_info("0x%08llx len=%llu status=%c\n", (long long unsigned)file_recovery->calculated_file_size,
+             (long long unsigned)len, hdr->status);
 #endif
-    file_recovery->calculated_file_size+=(uint64_t)8+len;
+    file_recovery->calculated_file_size += (uint64_t)8 + len;
 #ifdef DEBUG_FS
     log_info("0x%08llx\n", (long long unsigned)file_recovery->calculated_file_size);
 #endif
@@ -87,28 +79,27 @@ static data_check_t data_check_fs(const unsigned char *buffer, const unsigned in
   return DC_CONTINUE;
 }
 
-
-static int header_check_fs(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct transaction_header *hdr=(const struct transaction_header *)&buffer[4];
-  const uint64_t len=be64(hdr->len);
-  if(len < sizeof(struct transaction_header)-8)
+static int header_check_fs(const unsigned char *buffer, const unsigned int buffer_size,
+                           const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                           file_recovery_t *file_recovery_new) {
+  const struct transaction_header *hdr = (const struct transaction_header *)&buffer[4];
+  const uint64_t len = be64(hdr->len);
+  if (len < sizeof(struct transaction_header) - 8)
     return 0;
-  if(hdr->status!=' ' && hdr->status!='p' && hdr->status!='c' &&  hdr->status!='u')
+  if (hdr->status != ' ' && hdr->status != 'p' && hdr->status != 'c' && hdr->status != 'u')
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_fs.extension;
-  if(file_recovery_new->blocksize < 0x11)
+  file_recovery_new->extension = file_hint_fs.extension;
+  if (file_recovery_new->blocksize < 0x11)
     return 1;
-  file_recovery_new->data_check=&data_check_fs;
-  file_recovery_new->file_check=&file_check_size;
-  file_recovery_new->calculated_file_size=4;
+  file_recovery_new->data_check = &data_check_fs;
+  file_recovery_new->file_check = &file_check_size;
+  file_recovery_new->calculated_file_size = 4;
   return 1;
 }
 
-static void register_header_check_fs(file_stat_t *file_stat)
-{
-  static const unsigned char fs_header[4]={ 'F', 'S','2','1' };
-  register_header_check(0, fs_header,sizeof(fs_header), &header_check_fs, file_stat);
+static void register_header_check_fs(file_stat_t *file_stat) {
+  static const unsigned char fs_header[4] = {'F', 'S', '2', '1'};
+  register_header_check(0, fs_header, sizeof(fs_header), &header_check_fs, file_stat);
 }
 #endif

@@ -25,7 +25,6 @@
 extern "C" {
 #endif
 
-
 alloc_data_t *file_found(alloc_data_t *current_search_space, const uint64_t offset, file_stat_t *file_stat);
 
 #ifdef __cplusplus

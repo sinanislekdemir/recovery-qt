@@ -31,31 +31,27 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_skp(file_stat_t *file_stat);
 
-const file_hint_t file_hint_skp= {
-  .extension="skp",
-  .description="SketchUp",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_skp
-};
+const file_hint_t file_hint_skp = {.extension = "skp",
+                                   .description = "SketchUp",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_skp};
 
-
-static int header_check_skp(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_skp(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_skp.extension;
+  file_recovery_new->extension = file_hint_skp.extension;
   return 1;
 }
 
-static void register_header_check_skp(file_stat_t *file_stat)
-{
-  static const unsigned char skp_header[32]= {
-    0xff, 0xfe, 0xff, 0x0e, 'S', 0x00, 'k', 0x00, 'e', 0x00, 't', 0x00, 'c', 0x00, 'h', 0x00,
-    'U',  0x00,  'p', 0x00, ' ', 0x00, 'M', 0x00, 'o', 0x00, 'd', 0x00, 'e', 0x00, 'l', 0x00 };
-  register_header_check(0, skp_header,sizeof(skp_header), &header_check_skp, file_stat);
+static void register_header_check_skp(file_stat_t *file_stat) {
+  static const unsigned char skp_header[32] = {0xff, 0xfe, 0xff, 0x0e, 'S',  0x00, 'k',  0x00, 'e',  0x00, 't',
+                                               0x00, 'c',  0x00, 'h',  0x00, 'U',  0x00, 'p',  0x00, ' ',  0x00,
+                                               'M',  0x00, 'o',  0x00, 'd',  0x00, 'e',  0x00, 'l',  0x00};
+  register_header_check(0, skp_header, sizeof(skp_header), &header_check_skp, file_stat);
 }
 #endif

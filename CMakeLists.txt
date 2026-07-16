@@ -4,6 +4,7 @@ project(recovery_qt VERSION 7.3.0 LANGUAGES C CXX)
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ---------------------------
 # Dependencies
@@ -214,10 +215,20 @@ target_compile_definitions(recovery_qt PRIVATE
 # ---------------------------
 # Compile options
 # ---------------------------
+# -Wno-unused-parameter: the photorec file-format plugins and disk/fs
+#   callbacks all share fixed function signatures, so unused parameters are
+#   architectural, not a code smell.
+# -Wno-address-of-packed-member: FAT/NTFS parsers read on-disk packed
+#   structures; unaligned access is well-defined on the Linux/x86_64 target.
+# Everything else stays strict so genuinely new warnings surface as smells.
 target_compile_options(recovery_qt PRIVATE
     -include ${CMAKE_BINARY_DIR}/config.h
-    -O2 -g -Wall -Wextra
+    -O2 -g -Wall -Wextra -Wno-unused-parameter -Wno-address-of-packed-member
 )
+
+# Vendored third-party code (argon2) is kept byte-identical to upstream;
+# do not lint it.
+set_source_files_properties(${ARGON2_C} PROPERTIES COMPILE_OPTIONS "-w")
 
 # ---------------------------
 # Install

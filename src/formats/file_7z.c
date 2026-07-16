@@ -32,17 +32,14 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_7z(file_stat_t *file_stat);
 
-const file_hint_t file_hint_7z= {
-  .extension="7z",
-  .description="7zip archive file",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_7z
-};
+const file_hint_t file_hint_7z = {.extension = "7z",
+                                  .description = "7zip archive file",
+                                  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                  .recover = 1,
+                                  .enable_by_default = 1,
+                                  .register_header_check = &register_header_check_7z};
 
 struct header_7z {
   unsigned char signature[6];
@@ -52,32 +49,29 @@ struct header_7z {
   uint64_t nextHeaderOffset;
   uint64_t nextHeaderSize;
   uint64_t nextHeaderCRC;
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
-
-static int header_check_7z(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery,  file_recovery_t *file_recovery_new)
-{
-  const struct header_7z *buffer_7z=(const struct header_7z *)buffer;
-  if(buffer_7z->majorversion!=0 ||
-      le64(buffer_7z->nextHeaderSize)==0)
+static int header_check_7z(const unsigned char *buffer, const unsigned int buffer_size,
+                           const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                           file_recovery_t *file_recovery_new) {
+  const struct header_7z *buffer_7z = (const struct header_7z *)buffer;
+  if (buffer_7z->majorversion != 0 || le64(buffer_7z->nextHeaderSize) == 0)
     return 0;
-  if( le64(buffer_7z->nextHeaderOffset) > 0x7000000000000000 ||
-      le64(buffer_7z->nextHeaderSize)   > 0x7000000000000000)
+  if (le64(buffer_7z->nextHeaderOffset) > 0x7000000000000000 || le64(buffer_7z->nextHeaderSize) > 0x7000000000000000)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_7z.extension;
-  file_recovery_new->min_filesize=31;
+  file_recovery_new->extension = file_hint_7z.extension;
+  file_recovery_new->min_filesize = 31;
   /* Signature size 12 + Start header size 20 */
-  file_recovery_new->calculated_file_size=(uint64_t)le64(buffer_7z->nextHeaderOffset)+
-    le64(buffer_7z->nextHeaderSize) + 12 + 20;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->calculated_file_size =
+      (uint64_t)le64(buffer_7z->nextHeaderOffset) + le64(buffer_7z->nextHeaderSize) + 12 + 20;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
   return 1;
 }
 
-static void register_header_check_7z(file_stat_t *file_stat)
-{
-  static const unsigned char header_7z[6]  = {'7','z', 0xbc, 0xaf, 0x27, 0x1c};
+static void register_header_check_7z(file_stat_t *file_stat) {
+  static const unsigned char header_7z[6] = {'7', 'z', 0xbc, 0xaf, 0x27, 0x1c};
   register_header_check(0, header_7z, sizeof(header_7z), &header_check_7z, file_stat);
 }
 #endif

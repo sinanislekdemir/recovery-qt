@@ -40,22 +40,22 @@ extern "C" {
 #endif
 
 class Restorer : public WorkerBase {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit Restorer(QObject *parent = nullptr);
+  explicit Restorer(QObject *parent = nullptr);
 
-    void start(scan_tree_t *tree, disk_t *disk, const partition_t *partition,
-               const QString &destDir, file_node_t *onlyNode = nullptr);
+  void start(scan_tree_t *tree, disk_t *disk, const partition_t *partition, const QString &destDir,
+             file_node_t *onlyNode = nullptr);
 
 signals:
-    void progressUpdated(int pct, const QString &currentFile, int total, int done);
-    void fileRestored(const QString &path, bool ok);
-    void finished(uint64_t okCount, uint64_t failCount);
-    void errorOccurred(const QString &message);
+  void progressUpdated(int pct, const QString &currentFile, int total, int done);
+  void fileRestored(const QString &path, bool ok);
+  void finished(uint64_t okCount, uint64_t failCount);
+  void errorOccurred(const QString &message);
 
 private:
-    std::atomic<uint64_t> m_okCount;
-    std::atomic<uint64_t> m_failCount;
+  std::atomic<uint64_t> m_okCount;
+  std::atomic<uint64_t> m_failCount;
 };
 
 #endif

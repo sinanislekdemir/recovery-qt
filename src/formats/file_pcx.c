@@ -35,21 +35,18 @@
 #include "log.h"
 #endif
 
-
 static void register_header_check_pcx(file_stat_t *file_stat);
 
-const file_hint_t file_hint_pcx= {
-  .extension="pcx",
-  .description="PCX bitmap image",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_pcx
-};
+const file_hint_t file_hint_pcx = {.extension = "pcx",
+                                   .description = "PCX bitmap image",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_pcx};
 
 struct pcx_file_entry {
-  uint8_t  Manufacturer; /* should always be 0Ah		*/
-  uint8_t  Version;
+  uint8_t Manufacturer; /* should always be 0Ah		*/
+  uint8_t Version;
   /* Version
    * 0x00  PCX ver. 2.5 image data
    * 0x02  PCX ver. 2.8 image data, with palette
@@ -57,59 +54,50 @@ struct pcx_file_entry {
    * 0x04  PCX for Windows image data
    * 0x05  PCX ver. 3.0 image data
    */
-  uint8_t  Encoding;	/* 0: uncompressed, 1: RLE compressed */
-  uint8_t  BitsPerPixel;
-  uint16_t XMin; 	/* image width = XMax-XMin	*/
-  uint16_t YMin; 	/* image height = YMax-YMin	*/
+  uint8_t Encoding; /* 0: uncompressed, 1: RLE compressed */
+  uint8_t BitsPerPixel;
+  uint16_t XMin; /* image width = XMax-XMin	*/
+  uint16_t YMin; /* image height = YMax-YMin	*/
   uint16_t XMax;
   uint16_t YMax;
   uint16_t VertDPI;
-  uint8_t  Palette[48];
-  uint8_t  Reserved;
-  uint8_t  ColorPlanes;
+  uint8_t Palette[48];
+  uint8_t Reserved;
+  uint8_t ColorPlanes;
   /* 4 -- 16 colors
    * 3 -- 24 bit color (16.7 million colors)
    */
   uint16_t BytesPerLine;
   uint16_t PaletteType;
-  uint16_t HScrSize; 	/* only supported by		*/
-  uint16_t VScrSize; 	/* PC Paintbrush IV or higher 	*/
-  uint8_t  Filler[56];
-} __attribute__ ((gcc_struct, __packed__));
+  uint16_t HScrSize; /* only supported by		*/
+  uint16_t VScrSize; /* PC Paintbrush IV or higher 	*/
+  uint8_t Filler[56];
+} __attribute__((gcc_struct, __packed__));
 
-
-static int header_check_pcx(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct pcx_file_entry *pcx=(const struct pcx_file_entry *)buffer;
-  if(pcx->Manufacturer==0x0a &&
-      (pcx->Version<=5 && pcx->Version!=1) &&
-      pcx->Encoding <=1 &&
-      (pcx->BitsPerPixel==1 || pcx->BitsPerPixel==4 ||
-       pcx->BitsPerPixel==8 || pcx->BitsPerPixel==24) &&
-      pcx->Reserved==0 &&
-      le16(pcx->XMin) <= le16(pcx->XMax) &&
-      le16(pcx->YMin) <= le16(pcx->YMax) &&
-      pcx->BytesPerLine>0 && pcx->BytesPerLine%2==0 &&
-      pcx->Filler[0]==0 && pcx->Filler[1]==0 &&
-      pcx->Filler[54]==0 && pcx->Filler[55]==0)
-  {
+static int header_check_pcx(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const struct pcx_file_entry *pcx = (const struct pcx_file_entry *)buffer;
+  if (pcx->Manufacturer == 0x0a && (pcx->Version <= 5 && pcx->Version != 1) && pcx->Encoding <= 1 &&
+      (pcx->BitsPerPixel == 1 || pcx->BitsPerPixel == 4 || pcx->BitsPerPixel == 8 || pcx->BitsPerPixel == 24) &&
+      pcx->Reserved == 0 && le16(pcx->XMin) <= le16(pcx->XMax) && le16(pcx->YMin) <= le16(pcx->YMax) &&
+      pcx->BytesPerLine > 0 && pcx->BytesPerLine % 2 == 0 && pcx->Filler[0] == 0 && pcx->Filler[1] == 0 &&
+      pcx->Filler[54] == 0 && pcx->Filler[55] == 0) {
     reset_file_recovery(file_recovery_new);
 #ifdef DEBUG_PCX
-    log_info("X %u-%u, Y %u-%u\n",
-	le16(pcx->XMin), le16(pcx->XMax),
-	le16(pcx->YMin), le16(pcx->YMax));
+    log_info("X %u-%u, Y %u-%u\n", le16(pcx->XMin), le16(pcx->XMax), le16(pcx->YMin), le16(pcx->YMax));
     log_info("ColorPlanes %u\n", pcx->ColorPlanes);
-    log_info("BytesPerLine %u - %u\n", pcx->BytesPerLine, (le16(pcx->XMax)-le16(pcx->XMin)+1)*pcx->BitsPerPixel/8);
+    log_info("BytesPerLine %u - %u\n", pcx->BytesPerLine,
+             (le16(pcx->XMax) - le16(pcx->XMin) + 1) * pcx->BitsPerPixel / 8);
 #endif
-    file_recovery_new->extension=file_hint_pcx.extension;
+    file_recovery_new->extension = file_hint_pcx.extension;
     return 1;
   }
   return 0;
 }
 
-static void register_header_check_pcx(file_stat_t *file_stat)
-{
-  static const unsigned char pcx_header[1]= {0x0a};
-  register_header_check(0, pcx_header,sizeof(pcx_header), &header_check_pcx, file_stat);
+static void register_header_check_pcx(file_stat_t *file_stat) {
+  static const unsigned char pcx_header[1] = {0x0a};
+  register_header_check(0, pcx_header, sizeof(pcx_header), &header_check_pcx, file_stat);
 }
 #endif

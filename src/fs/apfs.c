@@ -38,22 +38,18 @@
 #include "log.h"
 #include "guid_cpy.h"
 
-static void set_APFS_info(const nx_superblock_t *sb, partition_t *partition)
-{
-  partition->upart_type=UP_APFS;
+static void set_APFS_info(const nx_superblock_t *sb, partition_t *partition) {
+  partition->upart_type = UP_APFS;
 }
 
-int check_APFS(disk_t *disk_car, partition_t *partition)
-{
-  unsigned char *buffer=(unsigned char*)MALLOC(APFS_SUPERBLOCK_SIZE);
-  const nx_superblock_t* sb=(const nx_superblock_t *)buffer;
-  if(disk_car->pread(disk_car, buffer, APFS_SUPERBLOCK_SIZE, partition->part_offset) != APFS_SUPERBLOCK_SIZE)
-  {
+int check_APFS(disk_t *disk_car, partition_t *partition) {
+  unsigned char *buffer = (unsigned char *)MALLOC(APFS_SUPERBLOCK_SIZE);
+  const nx_superblock_t *sb = (const nx_superblock_t *)buffer;
+  if (disk_car->pread(disk_car, buffer, APFS_SUPERBLOCK_SIZE, partition->part_offset) != APFS_SUPERBLOCK_SIZE) {
     free(buffer);
     return 1;
   }
-  if(test_APFS(sb, partition)!=0)
-  {
+  if (test_APFS(sb, partition) != 0) {
     free(buffer);
     return 1;
   }
@@ -62,41 +58,36 @@ int check_APFS(disk_t *disk_car, partition_t *partition)
   return 0;
 }
 
-int recover_APFS(const disk_t *disk, const nx_superblock_t *sb, partition_t *partition, const int verbose, const int dump_ind)
-{
-  if(test_APFS(sb, partition)!=0)
+int recover_APFS(const disk_t *disk, const nx_superblock_t *sb, partition_t *partition, const int verbose,
+                 const int dump_ind) {
+  if (test_APFS(sb, partition) != 0)
     return 1;
-  if(dump_ind!=0)
-  {
-    if(partition!=NULL && disk!=NULL)
-      log_info("\nAPFS magic value at %u/%u/%u\n",
-	  offset2cylinder(disk,partition->part_offset),
-	  offset2head(disk,partition->part_offset),
-	  offset2sector(disk,partition->part_offset));
+  if (dump_ind != 0) {
+    if (partition != NULL && disk != NULL)
+      log_info("\nAPFS magic value at %u/%u/%u\n", offset2cylinder(disk, partition->part_offset),
+               offset2head(disk, partition->part_offset), offset2sector(disk, partition->part_offset));
     /* There is a little offset ... */
-    dump_log(sb,DEFAULT_SECTOR_SIZE);
+    dump_log(sb, DEFAULT_SECTOR_SIZE);
   }
-  if(partition==NULL)
+  if (partition == NULL)
     return 0;
   set_APFS_info(sb, partition);
-  partition->part_type_i386=P_LINUX;
-  partition->part_type_mac=PMAC_LINUX;
-  partition->part_type_sun=PSUN_LINUX;
-  partition->part_type_gpt=GPT_ENT_TYPE_MAC_APFS;
-  partition->part_size=le32(sb->nx_block_size) * le64(sb->nx_block_count);
+  partition->part_type_i386 = P_LINUX;
+  partition->part_type_mac = PMAC_LINUX;
+  partition->part_type_sun = PSUN_LINUX;
+  partition->part_type_gpt = GPT_ENT_TYPE_MAC_APFS;
+  partition->part_size = le32(sb->nx_block_size) * le64(sb->nx_block_count);
   guid_cpy(&partition->part_uuid, (const efi_guid_t *)&sb->nx_uuid);
-  if(verbose>0)
-  {
+  if (verbose > 0) {
     log_info("\n");
   }
-  partition->sborg_offset=0;
-  partition->sb_size=le32(sb->nx_block_size);
-  partition->sb_offset=0;
-  if(verbose>0)
-  {
+  partition->sborg_offset = 0;
+  partition->sb_size = le32(sb->nx_block_size);
+  partition->sb_offset = 0;
+  if (verbose > 0) {
     log_info("recover_APFS: s_blocksize=%u\n", partition->blocksize);
     log_info("recover_APFS: s_blocks_count %lu\n", (long unsigned int)le64(sb->nx_block_count));
-    if(disk==NULL)
+    if (disk == NULL)
       log_info("recover_APFS: part_size %lu\n", (long unsigned)(partition->part_size / DEFAULT_SECTOR_SIZE));
     else
       log_info("recover_APFS: part_size %lu\n", (long unsigned)(partition->part_size / disk->sector_size));

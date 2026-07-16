@@ -36,29 +36,24 @@
 #include "utfsize.h"
 #include "common.h"
 
-
 static void register_header_check_win(file_stat_t *file_stat);
 
-const file_hint_t file_hint_win = {
-  .extension = "win",
-  .description = "Opera preferences",
-  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_win
-};
+const file_hint_t file_hint_win = {.extension = "win",
+                                   .description = "Opera preferences",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_win};
 
-
-static data_check_t data_check_win(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
+static data_check_t data_check_win(const unsigned char *buffer, const unsigned int buffer_size,
+                                   file_recovery_t *file_recovery) {
   unsigned int i;
   unsigned int offset = 0;
-  if(file_recovery->calculated_file_size == 0)
+  if (file_recovery->calculated_file_size == 0)
     offset = 3;
   i = UTFsize(&buffer[buffer_size / 2 + offset], buffer_size / 2 - offset);
-  if(i < buffer_size / 2 - offset)
-  {
-    if(i >= 10)
+  if (i < buffer_size / 2 - offset) {
+    if (i >= 10)
       file_recovery->calculated_file_size = file_recovery->file_size + offset + i;
     return DC_STOP;
   }
@@ -66,25 +61,21 @@ static data_check_t data_check_win(const unsigned char *buffer, const unsigned i
   return DC_CONTINUE;
 }
 
-
-static int header_check_win(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_win(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_win.extension;
   file_recovery_new->data_check = &data_check_win;
   file_recovery_new->file_check = &file_check_size;
-  
+
   return 1;
 }
 
-static void register_header_check_win(file_stat_t *file_stat)
-{
-  static const unsigned char win_header[31] = {
-    0xef, 0xbb, 0xbf, 'O', 'p', 'e', 'r', 'a',
-    ' ', 'P', 'r', 'e', 'f', 'e', 'r', 'e',
-    'n', 'c', 'e', 's', ' ', 'v', 'e', 'r',
-    's', 'i', 'o', 'n', ' ', '2', '.'
-  };
+static void register_header_check_win(file_stat_t *file_stat) {
+  static const unsigned char win_header[31] = {0xef, 0xbb, 0xbf, 'O', 'p', 'e', 'r', 'a', ' ', 'P', 'r',
+                                               'e',  'f',  'e',  'r', 'e', 'n', 'c', 'e', 's', ' ', 'v',
+                                               'e',  'r',  's',  'i', 'o', 'n', ' ', '2', '.'};
   register_header_check(0, win_header, sizeof(win_header), &header_check_win, file_stat);
 }
 #endif

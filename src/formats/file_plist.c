@@ -36,39 +36,33 @@ extern const file_hint_t file_hint_qbb;
 extern const file_hint_t file_hint_sqlite;
 #endif
 
-
 static void register_header_check_plist(file_stat_t *file_stat);
 
-const file_hint_t file_hint_plist= {
-  .extension="plist",
-  .description="Apple binary property list",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_plist
-};
+const file_hint_t file_hint_plist = {.extension = "plist",
+                                     .description = "Apple binary property list",
+                                     .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                     .recover = 1,
+                                     .enable_by_default = 1,
+                                     .register_header_check = &register_header_check_plist};
 
-
-static int header_check_plist(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_plist(const unsigned char *buffer, const unsigned int buffer_size,
+                              const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                              file_recovery_t *file_recovery_new) {
 #if !defined(SINGLE_FORMAT)
-  if(file_recovery->file_stat!=NULL)
-  {
-    if( file_recovery->file_stat->file_hint==&file_hint_qbb ||
-	file_recovery->file_stat->file_hint==&file_hint_sqlite)
-    {
-      if(header_ignored_adv(file_recovery, file_recovery_new)==0)
-	return 0;
+  if (file_recovery->file_stat != NULL) {
+    if (file_recovery->file_stat->file_hint == &file_hint_qbb ||
+        file_recovery->file_stat->file_hint == &file_hint_sqlite) {
+      if (header_ignored_adv(file_recovery, file_recovery_new) == 0)
+        return 0;
     }
   }
 #endif
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_plist.extension;
+  file_recovery_new->extension = file_hint_plist.extension;
   return 1;
 }
 
-static void register_header_check_plist(file_stat_t *file_stat)
-{
-  register_header_check(0, "bplist00",  8,  &header_check_plist, file_stat);
+static void register_header_check_plist(file_stat_t *file_stat) {
+  register_header_check(0, "bplist00", 8, &header_check_plist, file_stat);
 }
 #endif

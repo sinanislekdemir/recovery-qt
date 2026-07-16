@@ -37,26 +37,20 @@
 
 #define MAX_BPG_SIZE 0x800000
 
-
 static void register_header_check_bpg(file_stat_t *file_stat);
 
-const file_hint_t file_hint_bpg= {
-  .extension="bpg",
-  .description="Better Portable Graphics image",
-  .max_filesize=MAX_BPG_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_bpg
-};
+const file_hint_t file_hint_bpg = {.extension = "bpg",
+                                   .description = "Better Portable Graphics image",
+                                   .max_filesize = MAX_BPG_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_bpg};
 
-
-static unsigned int getue32(const unsigned char *buffer, const unsigned int buffer_size, unsigned int *buf_ptr)
-{
+static unsigned int getue32(const unsigned char *buffer, const unsigned int buffer_size, unsigned int *buf_ptr) {
   uint64_t value = 0;
   int bitsRead = 0;
-  
-  while (*buf_ptr < buffer_size)
-  {
+
+  while (*buf_ptr < buffer_size) {
     const unsigned int b = buffer[*buf_ptr];
     *buf_ptr = *buf_ptr + 1;
     value <<= 7;
@@ -67,19 +61,19 @@ static unsigned int getue32(const unsigned char *buffer, const unsigned int buff
     if (bitsRead >= 32)
       break;
   }
-  return value&0xffffffff;
+  return value & 0xffffffff;
 }
 
-
-static int header_check_bpg(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_bpg(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   unsigned int buf_ptr = 6;
   // get image width
   const unsigned int picture_width = getue32(buffer, buffer_size, &buf_ptr);
   // get image height
   const unsigned int picture_height = getue32(buffer, buffer_size, &buf_ptr);
   uint64_t size = getue32(buffer, buffer_size, &buf_ptr);
-  if(picture_width==0 || picture_height==0)
+  if (picture_width == 0 || picture_height == 0)
     return 0;
   if (size == 0) {
     size = MAX_BPG_SIZE;
@@ -87,16 +81,15 @@ static int header_check_bpg(const unsigned char *buffer, const unsigned int buff
     size += buf_ptr;
   }
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->calculated_file_size=size;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
-  file_recovery_new->extension=file_hint_bpg.extension;
+  file_recovery_new->calculated_file_size = size;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
+  file_recovery_new->extension = file_hint_bpg.extension;
   return 1;
 }
 
-static void register_header_check_bpg(file_stat_t *file_stat)
-{
-  static const unsigned char bpg_header[4]= {'B','P','G',0xFB};
-  register_header_check(0, bpg_header,sizeof(bpg_header), &header_check_bpg, file_stat);
+static void register_header_check_bpg(file_stat_t *file_stat) {
+  static const unsigned char bpg_header[4] = {'B', 'P', 'G', 0xFB};
+  register_header_check(0, bpg_header, sizeof(bpg_header), &header_check_bpg, file_stat);
 }
 #endif

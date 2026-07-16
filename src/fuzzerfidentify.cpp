@@ -52,64 +52,56 @@
 extern file_enable_t array_file_enable[];
 extern file_check_list_t file_check_list;
 
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
-{
-  const size_t blocksize=65536;
-  static unsigned char *buffer_start=NULL;
-  static file_stat_t *file_stats=NULL;
-  static char *filename=NULL;
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+  const size_t blocksize = 65536;
+  static unsigned char *buffer_start = NULL;
+  static file_stat_t *file_stats = NULL;
+  static char *filename = NULL;
   uint8_t *buffer;
-  if(Size == 0)
+  if (Size == 0)
     return 0;
-  if(filename==NULL)
-  {
-    pid_t pid=getpid();
-    filename=(char *)MALLOC(64);
+  if (filename == NULL) {
+    pid_t pid = getpid();
+    filename = (char *)MALLOC(64);
     sprintf(filename, "sample%u", pid);
   }
-  if(file_stats==NULL)
-  {
+  if (file_stats == NULL) {
     /* Enable all file formats */
     file_enable_t *file_enable;
-    for(file_enable=array_file_enable;file_enable->file_hint!=NULL;file_enable++)
-      file_enable->enable=1;
-    file_stats=init_file_stats(array_file_enable);
+    for (file_enable = array_file_enable; file_enable->file_hint != NULL; file_enable++)
+      file_enable->enable = 1;
+    file_stats = init_file_stats(array_file_enable);
   }
-  if(buffer_start==NULL)
-  {
-    buffer_start=(unsigned char *)MALLOC(2*blocksize);
+  if (buffer_start == NULL) {
+    buffer_start = (unsigned char *)MALLOC(2 * blocksize);
   }
-  buffer=buffer_start+blocksize;
+  buffer = buffer_start + blocksize;
   memcpy(buffer, Data, (Size < blocksize ? Size : blocksize));
   {
     struct td_list_head *tmpl;
     file_recovery_t file_recovery_new;
     file_recovery_t file_recovery;
     reset_file_recovery(&file_recovery);
-    file_recovery.blocksize=blocksize;
-    file_recovery_new.blocksize=blocksize;
-    file_recovery_new.file_stat=NULL;
-    td_list_for_each(tmpl, &file_check_list.list)
-    {
+    file_recovery.blocksize = blocksize;
+    file_recovery_new.blocksize = blocksize;
+    file_recovery_new.file_stat = NULL;
+    td_list_for_each(tmpl, &file_check_list.list) {
       struct td_list_head *tmp;
-      const file_check_list_t *pos=td_list_entry_const(tmpl, const file_check_list_t, list);
-      if(pos->offset <= blocksize)
-      {
-	td_list_for_each(tmp, &pos->file_checks[buffer[pos->offset]].list)
-	{
-	  const file_check_t *file_check=td_list_entry_const(tmp, const file_check_t, list);
-	  if((file_check->length==0 ||
-		(file_check->offset+file_check->length <=blocksize &&
-		 memcmp(buffer + file_check->offset, file_check->value, file_check->length)==0)) &&
-	      file_check->header_check(buffer, blocksize, 0, &file_recovery, &file_recovery_new)!=0)
-	  {
-	    file_recovery_new.file_stat=file_check->file_stat;
-	    break;
-	  }
-	}
+      const file_check_list_t *pos = td_list_entry_const(tmpl, const file_check_list_t, list);
+      if (pos->offset <= blocksize) {
+        td_list_for_each(tmp, &pos->file_checks[buffer[pos->offset]].list) {
+          const file_check_t *file_check = td_list_entry_const(tmp, const file_check_t, list);
+          if ((file_check->length == 0 ||
+               (file_check->offset + file_check->length <= blocksize &&
+                memcmp(buffer + file_check->offset, file_check->value, file_check->length) == 0)) &&
+              file_check->header_check(buffer, blocksize, 0, &file_recovery, &file_recovery_new) != 0) {
+            file_recovery_new.file_stat = file_check->file_stat;
+            break;
+          }
+        }
       }
-      if(file_recovery_new.file_stat!=NULL)
-	break;
+      if (file_recovery_new.file_stat != NULL)
+        break;
     }
 #if 0
     if( file_recovery_new.file_stat!=NULL && file_recovery_new.file_stat->file_hint!=NULL &&
@@ -127,5 +119,5 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
     }
 #endif
   }
-  return 0;  // Non-zero return values are reserved for future use.
+  return 0; // Non-zero return values are reserved for future use.
 }

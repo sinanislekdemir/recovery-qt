@@ -39,47 +39,47 @@ extern "C" {
 #endif
 
 struct DiskData {
-    disk_t *disk = nullptr;
-    list_disk_t *listItem = nullptr;
-    bool cached = false;
-    bool owned = false;
-    ~DiskData() {
-        if (owned && disk && disk->clean)
-            disk->clean(disk);
-    }
+  disk_t *disk = nullptr;
+  list_disk_t *listItem = nullptr;
+  bool cached = false;
+  bool owned = false;
+  ~DiskData() {
+    if (owned && disk && disk->clean)
+      disk->clean(disk);
+  }
 };
 
 class Disk {
 public:
-    Disk();
-    ~Disk() = default;
+  Disk();
+  ~Disk() = default;
 
-    Disk(const Disk&) = default;
-    Disk& operator=(const Disk&) = default;
-    Disk(Disk&&) noexcept = default;
-    Disk& operator=(Disk&&) noexcept = default;
+  Disk(const Disk &) = default;
+  Disk &operator=(const Disk &) = default;
+  Disk(Disk &&) noexcept = default;
+  Disk &operator=(Disk &&) noexcept = default;
 
-    static QVector<Disk> enumerateSystem();
-    static Disk openDevice(const QString& path, int mode);
-    static Disk adopt(disk_t* raw);
+  static QVector<Disk> enumerateSystem();
+  static Disk openDevice(const QString &path, int mode);
+  static Disk adopt(disk_t *raw);
 
-    bool isValid() const;
-    QString device() const;
-    QString model() const;
-    QString serialNumber() const;
-    uint64_t totalSize() const;
-    unsigned int sectorSize() const;
-    QString description() const;
-    int accessMode() const;
+  bool isValid() const;
+  QString device() const;
+  QString model() const;
+  QString serialNumber() const;
+  uint64_t totalSize() const;
+  unsigned int sectorSize() const;
+  QString description() const;
+  int accessMode() const;
 
-    int read(void *buf, unsigned int count, uint64_t offset) const;
-    int write(const void *buf, unsigned int count, uint64_t offset) const;
-    int sync();
+  int read(void *buf, unsigned int count, uint64_t offset) const;
+  int write(const void *buf, unsigned int count, uint64_t offset) const;
+  int sync();
 
-    disk_t* raw() const;
+  disk_t *raw() const;
 
 private:
-    std::shared_ptr<DiskData> d;
+  std::shared_ptr<DiskData> d;
 };
 
 #endif // PHOTOREC_DISK_HPP

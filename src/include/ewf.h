@@ -34,7 +34,7 @@ extern "C" {
 disk_t *fewf_init(const char *device, const int testdisk_mode);
 #endif
 
-const char*td_ewf_version(void);
+const char *td_ewf_version(void);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

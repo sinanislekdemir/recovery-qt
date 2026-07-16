@@ -29,54 +29,48 @@ unsigned int log_set_levels(const unsigned int levels);
 
 void log_set_json_handler(void (*handler)(const unsigned int level, const char *format, va_list ap), int verbose);
 
+int log_open(const char *default_filename, const int mode, int *errsv);
 
-int log_open(const char*default_filename, const int mode, int *errsv);
-
-
-int log_open_default(const char*default_filename, const int mode, int *errsv);
+int log_open_default(const char *default_filename, const int mode, int *errsv);
 
 int log_flush(void);
 int log_close(void);
 
-
 int log_redirect(const unsigned int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
-
 
 int log_redirect_nojson(const unsigned int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
 
-
 void dump_log(const void *nom_dump, const unsigned int lng);
 
+void dump2_log(const void *dump_1, const void *dump_2, const unsigned int lng);
 
-void dump2_log(const void *dump_1, const void *dump_2,const unsigned int lng);
+#define TD_LOG_NONE 0
+#define TD_LOG_CREATE 1
+#define TD_LOG_APPEND 2
+#define TD_LOG_DONE 3
 
-#define TD_LOG_NONE	0
-#define TD_LOG_CREATE	1
-#define TD_LOG_APPEND	2
-#define TD_LOG_DONE	3
+#define LOG_LEVEL_DEBUG (1 << 0)    /* x = 42 */
+#define LOG_LEVEL_TRACE (1 << 1)    /* Entering function x() */
+#define LOG_LEVEL_QUIET (1 << 2)    /* Quietable output */
+#define LOG_LEVEL_INFO (1 << 3)     /* Volume needs defragmenting */
+#define LOG_LEVEL_VERBOSE (1 << 4)  /* Forced to continue */
+#define LOG_LEVEL_PROGRESS (1 << 5) /* 54% complete */
+#define LOG_LEVEL_WARNING (1 << 6)  /* You should backup before starting */
+#define LOG_LEVEL_ERROR (1 << 7)    /* Operation failed, no damage done */
+#define LOG_LEVEL_PERROR (1 << 8)   /* Message : standard error description */
+#define LOG_LEVEL_CRITICAL (1 << 9) /* Operation failed,damage may have occurred */
 
-#define LOG_LEVEL_DEBUG    (1 <<  0) /* x = 42 */
-#define LOG_LEVEL_TRACE    (1 <<  1) /* Entering function x() */
-#define LOG_LEVEL_QUIET    (1 <<  2) /* Quietable output */
-#define LOG_LEVEL_INFO     (1 <<  3) /* Volume needs defragmenting */
-#define LOG_LEVEL_VERBOSE  (1 <<  4) /* Forced to continue */
-#define LOG_LEVEL_PROGRESS (1 <<  5) /* 54% complete */
-#define LOG_LEVEL_WARNING  (1 <<  6) /* You should backup before starting */
-#define LOG_LEVEL_ERROR    (1 <<  7) /* Operation failed, no damage done */
-#define LOG_LEVEL_PERROR   (1 <<  8) /* Message : standard error description */
-#define LOG_LEVEL_CRITICAL (1 <<  9) /* Operation failed,damage may have occurred */
-
-#define log_debug(FORMAT, ARGS...)	log_redirect(LOG_LEVEL_DEBUG,FORMAT,##ARGS)
-#define log_trace(FORMAT, ARGS...)	log_redirect(LOG_LEVEL_TRACE,FORMAT,##ARGS)
-#define log_quiet(FORMAT, ARGS...)	log_redirect(LOG_LEVEL_QUIET,FORMAT,##ARGS)
-#define log_info(FORMAT, ARGS...)	log_redirect(LOG_LEVEL_INFO,FORMAT,##ARGS)
-#define log_info_nojson(FORMAT, ARGS...)	log_redirect_nojson(LOG_LEVEL_INFO,FORMAT,##ARGS)
-#define log_verbose(FORMAT, ARGS...)	log_redirect(LOG_LEVEL_VERBOSE,FORMAT,##ARGS)
-#define log_progress(FORMAT, ARGS...)	log_redirect(LOG_LEVEL_PROGRESS,FORMAT,##ARGS)
-#define log_warning(FORMAT, ARGS...)	log_redirect(LOG_LEVEL_WARNING,FORMAT,##ARGS)
-#define log_error(FORMAT, ARGS...)	log_redirect(LOG_LEVEL_ERROR,FORMAT,##ARGS)
-#define log_perror(FORMAT, ARGS...)	log_redirect(LOG_LEVEL_PERROR,FORMAT,##ARGS)
-#define log_critical(FORMAT, ARGS...)	log_redirect(LOG_LEVEL_CRITICAL,FORMAT,##ARGS)
+#define log_debug(FORMAT, ARGS...) log_redirect(LOG_LEVEL_DEBUG, FORMAT, ##ARGS)
+#define log_trace(FORMAT, ARGS...) log_redirect(LOG_LEVEL_TRACE, FORMAT, ##ARGS)
+#define log_quiet(FORMAT, ARGS...) log_redirect(LOG_LEVEL_QUIET, FORMAT, ##ARGS)
+#define log_info(FORMAT, ARGS...) log_redirect(LOG_LEVEL_INFO, FORMAT, ##ARGS)
+#define log_info_nojson(FORMAT, ARGS...) log_redirect_nojson(LOG_LEVEL_INFO, FORMAT, ##ARGS)
+#define log_verbose(FORMAT, ARGS...) log_redirect(LOG_LEVEL_VERBOSE, FORMAT, ##ARGS)
+#define log_progress(FORMAT, ARGS...) log_redirect(LOG_LEVEL_PROGRESS, FORMAT, ##ARGS)
+#define log_warning(FORMAT, ARGS...) log_redirect(LOG_LEVEL_WARNING, FORMAT, ##ARGS)
+#define log_error(FORMAT, ARGS...) log_redirect(LOG_LEVEL_ERROR, FORMAT, ##ARGS)
+#define log_perror(FORMAT, ARGS...) log_redirect(LOG_LEVEL_PERROR, FORMAT, ##ARGS)
+#define log_critical(FORMAT, ARGS...) log_redirect(LOG_LEVEL_CRITICAL, FORMAT, ##ARGS)
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

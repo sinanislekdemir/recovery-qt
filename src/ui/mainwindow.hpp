@@ -44,52 +44,52 @@ class SimpleWorker;
 class SessionManager;
 
 class MainWindow : public QMainWindow {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow() override;
+  explicit MainWindow(QWidget *parent = nullptr);
+  ~MainWindow() override;
 
 private slots:
-    void onDiskSelected(const Disk &disk);
-    void onScanRequested();
-    void onCarveRequested();
-    void onDeepScanRequested();
-    void onBackupRequested();
-    void onRestoreRequested();
-    void onBackToDisks();
-    void onRestoreFromBrowser();
-    void onPreviewRequested(const QModelIndex &idx);
-    void onBrowserQuit();
-    void onAbout();
-    void onContinueSession();
+  void onDiskSelected(const Disk &disk);
+  void onScanRequested();
+  void onCarveRequested();
+  void onDeepScanRequested();
+  void onBackupRequested();
+  void onRestoreRequested();
+  void onBackToDisks();
+  void onRestoreFromBrowser();
+  void onPreviewRequested(const QModelIndex &idx);
+  void onBrowserQuit();
+  void onAbout();
+  void onContinueSession();
 
 private:
-    void setupUi();
-    void applyTheme();
-    void showBrowser();
-    void detectPartitions();
-    void runScannerOperation(bool deep);
-    partition_t *decryptLUKSAndRedetect();
+  void setupUi();
+  void applyTheme();
+  void showBrowser();
+  void detectPartitions();
+  void runScannerOperation(bool deep);
+  partition_t *decryptLUKSAndRedetect();
 
-    QStackedWidget *m_stack;
-    DiskSelectionWidget *m_diskPage;
-    PartitionSelectionWidget *m_partPage;
-    BrowserWidget *m_browserPage;
-    FileTreeModel *m_fileModel;
-    ProgressCallback *m_progressCb;
+  QStackedWidget *m_stack;
+  DiskSelectionWidget *m_diskPage;
+  PartitionSelectionWidget *m_partPage;
+  BrowserWidget *m_browserPage;
+  FileTreeModel *m_fileModel;
+  ProgressCallback *m_progressCb;
 
-    Scanner *m_scanner;
-    Carver *m_carver;
-    Restorer *m_restorer;
-    SimpleWorker *m_simpleWorker;
-    LUKSManager *m_luks;
-    SessionManager *m_sessionManager;
+  Scanner *m_scanner;
+  Carver *m_carver;
+  Restorer *m_restorer;
+  SimpleWorker *m_simpleWorker;
+  LUKSManager *m_luks;
+  SessionManager *m_sessionManager;
 
-    Disk m_currentDisk;
-    QVector<PartitionInfo> m_partitions;
-    PartitionList m_partList;
-    int m_selectedPartIdx;
-    scan_tree_t *m_scanTree;
+  Disk m_currentDisk;
+  QVector<PartitionInfo> m_partitions;
+  PartitionList m_partList;
+  int m_selectedPartIdx;
+  scan_tree_t *m_scanTree;
 };
 
 #endif // MAINWINDOW_HPP

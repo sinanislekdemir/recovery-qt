@@ -25,7 +25,6 @@
 extern "C" {
 #endif
 
-
 void autodetect_arch(disk_t *disk, const arch_fnct_t *arch);
 
 #ifdef __cplusplus

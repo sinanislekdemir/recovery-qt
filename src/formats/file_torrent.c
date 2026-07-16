@@ -31,30 +31,26 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_torrent(file_stat_t *file_stat);
 
-const file_hint_t file_hint_torrent = {
-  .extension = "torrent",
-  .description = "Torrent",
-  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_torrent
-};
+const file_hint_t file_hint_torrent = {.extension = "torrent",
+                                       .description = "Torrent",
+                                       .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                       .recover = 1,
+                                       .enable_by_default = 1,
+                                       .register_header_check = &register_header_check_torrent};
 
-
-static int header_check_torrent(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(buffer[11] < '0' || buffer[11] > '9')
+static int header_check_torrent(const unsigned char *buffer, const unsigned int buffer_size,
+                                const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                                file_recovery_t *file_recovery_new) {
+  if (buffer[11] < '0' || buffer[11] > '9')
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_torrent.extension;
   return 1;
 }
 
-static void register_header_check_torrent(file_stat_t *file_stat)
-{
+static void register_header_check_torrent(file_stat_t *file_stat) {
   register_header_check(0, "d8:announce", 11, &header_check_torrent, file_stat);
 }
 #endif

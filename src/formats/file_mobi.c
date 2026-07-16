@@ -31,45 +31,34 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_mobi(file_stat_t *file_stat);
 
-const file_hint_t file_hint_mobi= {
-  .extension="mobi",
-  .description="Mobi e-book",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_mobi
-};
+const file_hint_t file_hint_mobi = {.extension = "mobi",
+                                    .description = "Mobi e-book",
+                                    .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                    .recover = 1,
+                                    .enable_by_default = 1,
+                                    .register_header_check = &register_header_check_mobi};
 
-
-static void file_check_mobi(file_recovery_t *file_recovery)
-{
-  const unsigned char mobi_footer[58]= {
-    'F' , 'L' , 'I' , 'S' , 0x00, 0x00, 0x00, 0x08,
-    0x00, 'A' , 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0xff, 0xff, 0xff, 0xff, 0x00, 0x01, 0x00, 0x03,
-    0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01,
-    0xff, 0xff, 0xff, 0xff, 'F' , 'C' , 'I' , 'S' ,
-    0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x10,
-    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00
-  };
+static void file_check_mobi(file_recovery_t *file_recovery) {
+  const unsigned char mobi_footer[58] = {'F',  'L',  'I',  'S',  0x00, 0x00, 0x00, 0x08, 0x00, 'A',  0x00, 0x00,
+                                         0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0x00, 0x01, 0x00, 0x03,
+                                         0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0xff, 0xff, 0xff, 0xff,
+                                         'F',  'C',  'I',  'S',  0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x10,
+                                         0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
   file_search_footer(file_recovery, mobi_footer, sizeof(mobi_footer), 26);
 }
 
-
-static int header_check_mobi(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_mobi(const unsigned char *buffer, const unsigned int buffer_size,
+                             const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                             file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_mobi.extension;
-  file_recovery_new->file_check=&file_check_mobi;
+  file_recovery_new->extension = file_hint_mobi.extension;
+  file_recovery_new->file_check = &file_check_mobi;
   return 1;
 }
 
-static void register_header_check_mobi(file_stat_t *file_stat)
-{
+static void register_header_check_mobi(file_stat_t *file_stat) {
   register_header_check(0x3c, "BOOKMOBI", 8, &header_check_mobi, file_stat);
 }
 #endif

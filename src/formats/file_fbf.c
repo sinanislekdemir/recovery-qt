@@ -31,32 +31,26 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_fbf(file_stat_t *file_stat);
 
-const file_hint_t file_hint_fbf= {
-  .extension="fbf",
-  .description="SymBackup",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_fbf
-};
+const file_hint_t file_hint_fbf = {.extension = "fbf",
+                                   .description = "SymBackup",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_fbf};
 
-
-static int header_check_fbf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_fbf(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_fbf.extension;
+  file_recovery_new->extension = file_hint_fbf.extension;
   return 1;
 }
 
-static void register_header_check_fbf(file_stat_t *file_stat)
-{
-  static const unsigned char fbf_header[16]=  {
-    'S' , 'y' , 'm' , 'B' , 'a' , 'k' , 'U' , 'p' ,
-    ' ' , ' ' , '1' , '.' , '0' , 0x0a, 0x1a, 0x01
-  };
+static void register_header_check_fbf(file_stat_t *file_stat) {
+  static const unsigned char fbf_header[16] = {'S', 'y', 'm', 'B', 'a', 'k',  'U',  'p',
+                                               ' ', ' ', '1', '.', '0', 0x0a, 0x1a, 0x01};
   register_header_check(0, fbf_header, sizeof(fbf_header), &header_check_fbf, file_stat);
 }
 #endif

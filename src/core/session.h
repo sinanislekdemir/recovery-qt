@@ -28,24 +28,24 @@ extern "C" {
 #include "recovery.h"
 #include "common.h"
 
-#define SESSION_MAGIC      0x53455352  /* "RSES" little-endian */
-#define SESSION_VERSION    1
+#define SESSION_MAGIC 0x53455352 /* "RSES" little-endian */
+#define SESSION_VERSION 1
 #define SESSION_HEADER_SIZE 116
 
-#define SESSION_FLAG_COMPLETED      0x01
-#define SESSION_FLAG_CANCELLED      0x02
-#define SESSION_FLAG_ENCRYPTED      0x04
+#define SESSION_FLAG_COMPLETED 0x01
+#define SESSION_FLAG_CANCELLED 0x02
+#define SESSION_FLAG_ENCRYPTED 0x04
 #define SESSION_FLAG_LUKS_DECRYPTED 0x08
 
-#define SESSION_OP_DEEP_SCAN  1
-#define SESSION_OP_CARVE      2
+#define SESSION_OP_DEEP_SCAN 1
+#define SESSION_OP_CARVE 2
 
-#define SESSION_PHASE_DIR_WALK   1
-#define SESSION_PHASE_MFT_SCAN   2
-#define SESSION_PHASE_EXT_INODE  3
-#define SESSION_PHASE_FAT_DEEP   4
-#define SESSION_PHASE_INDX_DEEP  5
-#define SESSION_PHASE_CARVER     6
+#define SESSION_PHASE_DIR_WALK 1
+#define SESSION_PHASE_MFT_SCAN 2
+#define SESSION_PHASE_EXT_INODE 3
+#define SESSION_PHASE_FAT_DEEP 4
+#define SESSION_PHASE_INDX_DEEP 5
+#define SESSION_PHASE_CARVER 6
 
 typedef struct {
   uint32_t version;
@@ -54,7 +54,7 @@ typedef struct {
   uint64_t timestamp;
   uint64_t progress1;
   uint64_t progress2;
-  int      resume_phase;
+  int resume_phase;
   uint64_t resume_offset;
   unsigned int sector_size;
   uint64_t disk_size;
@@ -64,18 +64,15 @@ typedef struct {
   uint32_t part_type_i386;
   uint32_t encrypted;
   uint64_t luks_offset;
-  char    *device_path;
-  char    *model;
-  char    *ext_filter;
+  char *device_path;
+  char *model;
+  char *ext_filter;
   scan_tree_t *tree;
 } session_info_t;
 
-int session_save(const char *filepath, const scan_tree_t *tree,
-    const disk_t *disk, const partition_t *partition,
-    int op_type, const char *ext_filter,
-    uint64_t progress1, uint64_t progress2,
-    int resume_phase, uint64_t resume_offset,
-    int flags);
+int session_save(const char *filepath, const scan_tree_t *tree, const disk_t *disk, const partition_t *partition,
+                 int op_type, const char *ext_filter, uint64_t progress1, uint64_t progress2, int resume_phase,
+                 uint64_t resume_offset, int flags);
 
 session_info_t *session_load(const char *filepath);
 

@@ -31,28 +31,24 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_spss(file_stat_t *file_stat);
 
-const file_hint_t file_hint_spss= {
-  .extension="sav",
-  .description="SPSS (Statistical Package for the Social Sciences) saved data",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_spss
-};
+const file_hint_t file_hint_spss = {.extension = "sav",
+                                    .description = "SPSS (Statistical Package for the Social Sciences) saved data",
+                                    .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                    .recover = 1,
+                                    .enable_by_default = 1,
+                                    .register_header_check = &register_header_check_spss};
 
-
-static int header_check_spss(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_spss(const unsigned char *buffer, const unsigned int buffer_size,
+                             const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                             file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_spss.extension;
+  file_recovery_new->extension = file_hint_spss.extension;
   return 1;
 }
 
-static void register_header_check_spss(file_stat_t *file_stat)
-{
+static void register_header_check_spss(file_stat_t *file_stat) {
   /* Check record type + beginning of product name*/
   register_header_check(0, "$FL2@(#) SPSS DATA FILE", 23, &header_check_spss, file_stat);
 }

@@ -32,50 +32,46 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_pnm(file_stat_t *file_stat);
 
-const file_hint_t file_hint_pnm = {
-  .extension = "pnm",
-  .description = "Netpbm (PBM/PGM/PPM)",
-  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_pnm
-};
+const file_hint_t file_hint_pnm = {.extension = "pnm",
+                                   .description = "Netpbm (PBM/PGM/PPM)",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_pnm};
 
-
-static int header_check_pbm(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(!isprint(buffer[5]) || !isprint(buffer[6]) || !isprint(buffer[7]))
+static int header_check_pbm(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (!isprint(buffer[5]) || !isprint(buffer[6]) || !isprint(buffer[7]))
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = "pbm";
   return 1;
 }
 
-
-static int header_check_pgm(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(!isprint(buffer[5]) || !isprint(buffer[6]) || !isprint(buffer[7]))
+static int header_check_pgm(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (!isprint(buffer[5]) || !isprint(buffer[6]) || !isprint(buffer[7]))
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = "pgm";
   return 1;
 }
 
-
-static int header_check_ppm(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(!isprint(buffer[5]) || !isprint(buffer[6]) || !isprint(buffer[7]))
+static int header_check_ppm(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (!isprint(buffer[5]) || !isprint(buffer[6]) || !isprint(buffer[7]))
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = "ppm";
   return 1;
 }
 
-static void register_header_check_pnm(file_stat_t *file_stat)
-{
+static void register_header_check_pnm(file_stat_t *file_stat) {
   /* See http://en.wikipedia.org/wiki/Netpbm_format */
   register_header_check(0, "P1\n# ", 5, &header_check_pbm, file_stat);
   register_header_check(0, "P2\n# ", 5, &header_check_pgm, file_stat);

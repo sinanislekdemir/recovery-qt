@@ -25,8 +25,7 @@
 extern "C" {
 #endif
 
-struct disk_netware
-{
+struct disk_netware {
   char unknown;
   char magic[12];
   char unknown2[3];
@@ -34,9 +33,7 @@ struct disk_netware
   int32_t nbr_sectors;
 };
 
-
 int check_netware(disk_t *disk_car, partition_t *partition);
-
 
 int recover_netware(const disk_t *disk_car, const struct disk_netware *netware_block, partition_t *partition);
 

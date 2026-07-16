@@ -31,30 +31,25 @@
 #include "types.h"
 #include "filegen.h"
 
-
-
 static void register_header_check_tax(file_stat_t *file_stat);
 
-const file_hint_t file_hint_tax= {
-  .extension="tax",
-  .description="Turbo Tax",
-  .max_filesize=100*1024*1024,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_tax
-};
+const file_hint_t file_hint_tax = {.extension = "tax",
+                                   .description = "Turbo Tax",
+                                   .max_filesize = 100 * 1024 * 1024,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_tax};
 
-
-static int header_check_tax(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_tax(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_tax.extension;
+  file_recovery_new->extension = file_hint_tax.extension;
   return 1;
 }
 
-static void register_header_check_tax(file_stat_t *file_stat)
-{
-  static const unsigned char tax_header[6]=  { 'T', 'T', 'F', 'N', 0x01, 0x01};
-  register_header_check(0, tax_header,  sizeof(tax_header),  &header_check_tax, file_stat);
+static void register_header_check_tax(file_stat_t *file_stat) {
+  static const unsigned char tax_header[6] = {'T', 'T', 'F', 'N', 0x01, 0x01};
+  register_header_check(0, tax_header, sizeof(tax_header), &header_check_tax, file_stat);
 }
 #endif

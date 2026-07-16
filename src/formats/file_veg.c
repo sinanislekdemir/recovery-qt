@@ -31,23 +31,21 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_veg(file_stat_t *file_stat);
 
-const file_hint_t file_hint_veg = {
-  .extension = "veg",
-  .description = "Sony Vegas",
-  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_veg
-};
+const file_hint_t file_hint_veg = {.extension = "veg",
+                                   .description = "Sony Vegas",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_veg};
 
-
-static int header_check_veg(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const uint64_t size = (uint64_t)buffer[0x10] + (((uint64_t)buffer[0x11]) << 8) + (((uint64_t)buffer[0x12]) << 16) + (((uint64_t)buffer[0x13]) << 24);
-  if(size < 0x14)
+static int header_check_veg(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const uint64_t size = (uint64_t)buffer[0x10] + (((uint64_t)buffer[0x11]) << 8) + (((uint64_t)buffer[0x12]) << 16) +
+                        (((uint64_t)buffer[0x13]) << 24);
+  if (size < 0x14)
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->calculated_file_size = size;
@@ -57,9 +55,8 @@ static int header_check_veg(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-static void register_header_check_veg(file_stat_t *file_stat)
-{
-  static const unsigned char veg_header[5] = { 'r', 'i', 'f', 'f', '.' };
+static void register_header_check_veg(file_stat_t *file_stat) {
+  static const unsigned char veg_header[5] = {'r', 'i', 'f', 'f', '.'};
   register_header_check(0, veg_header, sizeof(veg_header), &header_check_veg, file_stat);
 }
 #endif

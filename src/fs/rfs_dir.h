@@ -25,8 +25,9 @@
 extern "C" {
 #endif
 
-dir_partition_t dir_partition_reiser_init(disk_t *disk_car, const partition_t *partition, dir_data_t *dir_data, const int verbose);
-const char*td_reiserfs_version(void);
+dir_partition_t dir_partition_reiser_init(disk_t *disk_car, const partition_t *partition, dir_data_t *dir_data,
+                                          const int verbose);
+const char *td_reiserfs_version(void);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

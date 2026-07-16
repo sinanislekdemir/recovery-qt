@@ -32,34 +32,28 @@
 #include "filegen.h"
 #include "memmem.h"
 
-
 static void register_header_check_dbn(file_stat_t *file_stat);
 
-const file_hint_t file_hint_dbn= {
-  .extension="dbn",
-  .description="DriftBox",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_dbn
-};
+const file_hint_t file_hint_dbn = {.extension = "dbn",
+                                   .description = "DriftBox",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_dbn};
 
-
-static int header_check_dbn(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(td_memmem(buffer, 512, "[HEADER]", 8)==NULL)
+static int header_check_dbn(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (td_memmem(buffer, 512, "[HEADER]", 8) == NULL)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_dbn.extension;
+  file_recovery_new->extension = file_hint_dbn.extension;
   return 1;
 }
 
-static void register_header_check_dbn(file_stat_t *file_stat)
-{
-  static const unsigned char dbn_header[16]=  {
-    'F' , 'i' , 'l' , 'e' , ' ' , 'c' , 'r' , 'e' ,
-    'a' , 't' , 'e' , 'd' , ' ' , 'o' , 'n' , ' '
-  };
+static void register_header_check_dbn(file_stat_t *file_stat) {
+  static const unsigned char dbn_header[16] = {'F', 'i', 'l', 'e', ' ', 'c', 'r', 'e',
+                                               'a', 't', 'e', 'd', ' ', 'o', 'n', ' '};
   register_header_check(0, dbn_header, sizeof(dbn_header), &header_check_dbn, file_stat);
 }
 #endif

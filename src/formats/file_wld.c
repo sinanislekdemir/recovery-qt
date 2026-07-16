@@ -32,30 +32,25 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_wld(file_stat_t *file_stat);
 
-const file_hint_t file_hint_wld = {
-  .extension = "wld",
-  .description = "Terraria world",
-  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_wld
-};
+const file_hint_t file_hint_wld = {.extension = "wld",
+                                   .description = "Terraria world",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_wld};
 
 /* See http://ludwig.schafer.free.fr for WLD file format */
 
-
-static void file_rename_wld(file_recovery_t *file_recovery)
-{
+static void file_rename_wld(file_recovery_t *file_recovery) {
   uint32_t offset;
   unsigned char buffer[256];
   FILE *file;
-  if((file = fopen(file_recovery->filename, "rb")) == NULL)
+  if ((file = fopen(file_recovery->filename, "rb")) == NULL)
     return;
-  if(fseek(file, 0x1a, SEEK_SET) == -1 || fread(&offset, 4, 1, file) != 1 || fseek(file, le32(offset), SEEK_SET) == -1 || fread(&buffer, 256, 1, file) != 1)
-  {
+  if (fseek(file, 0x1a, SEEK_SET) == -1 || fread(&offset, 4, 1, file) != 1 ||
+      fseek(file, le32(offset), SEEK_SET) == -1 || fread(&buffer, 256, 1, file) != 1) {
     fclose(file);
     return;
   }
@@ -63,14 +58,13 @@ static void file_rename_wld(file_recovery_t *file_recovery)
   file_rename(file_recovery, &buffer[1], buffer[0], 0, NULL, 1);
 }
 
-
-static int header_check_wld(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(buffer[0xB] <= 0 || buffer[0xB] > 3)
+static int header_check_wld(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (buffer[0xB] <= 0 || buffer[0xB] > 3)
     return 0;
   reset_file_recovery(file_recovery_new);
-  switch(buffer[0xb])
-  {
+  switch (buffer[0xb]) {
   case 0x01:
     file_recovery_new->extension = "map";
     break;
@@ -85,12 +79,8 @@ static int header_check_wld(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-static void register_header_check_wld(file_stat_t *file_stat)
-{
-  static const unsigned char wld_header[10] = {
-    0x00, 0x00, 0x00,
-    'r', 'e', 'l', 'o', 'g', 'i', 'c'
-  };
+static void register_header_check_wld(file_stat_t *file_stat) {
+  static const unsigned char wld_header[10] = {0x00, 0x00, 0x00, 'r', 'e', 'l', 'o', 'g', 'i', 'c'};
   register_header_check(1, wld_header, sizeof(wld_header), &header_check_wld, file_stat);
 }
 #endif

@@ -30,32 +30,28 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_dsc(file_stat_t *file_stat);
 
-const file_hint_t file_hint_dsc= {
-  .extension="dsc",
-  .description="Nikon dsc",
-  .max_filesize=1024*1024,
-  .recover=0,
-  .enable_by_default=0,
-  .register_header_check=&register_header_check_dsc
-};
+const file_hint_t file_hint_dsc = {.extension = "dsc",
+                                   .description = "Nikon dsc",
+                                   .max_filesize = 1024 * 1024,
+                                   .recover = 0,
+                                   .enable_by_default = 0,
+                                   .register_header_check = &register_header_check_dsc};
 
-
-static int header_check_dsc(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(buffer_size<1024)
+static int header_check_dsc(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (buffer_size < 1024)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_dsc.extension;
-  file_recovery_new->min_filesize=588+3;
+  file_recovery_new->extension = file_hint_dsc.extension;
+  file_recovery_new->min_filesize = 588 + 3;
   return 1;
 }
 
-static void register_header_check_dsc(file_stat_t *file_stat)
-{
-  static const unsigned char dsc_header[3]= { 'M','L','T'};
-  register_header_check(588, dsc_header,sizeof(dsc_header), &header_check_dsc, file_stat);
+static void register_header_check_dsc(file_stat_t *file_stat) {
+  static const unsigned char dsc_header[3] = {'M', 'L', 'T'};
+  register_header_check(588, dsc_header, sizeof(dsc_header), &header_check_dsc, file_stat);
 }
 #endif

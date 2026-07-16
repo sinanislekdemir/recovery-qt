@@ -31,38 +31,33 @@
 #include "types.h"
 #include "filegen.h"
 
-
-
 static void register_header_check_pst(file_stat_t *file_stat);
 
-const file_hint_t file_hint_pst= {
-  .extension="pst",
-  .description="Outlook (pst/wab/dbx)",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_pst
-};
+const file_hint_t file_hint_pst = {.extension = "pst",
+                                   .description = "Outlook (pst/wab/dbx)",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_pst};
 
-#define INDEX_TYPE_OFFSET 	0x0A
-#define FILE_SIZE_POINTER 	0xA8
-#define FILE_SIZE_POINTER_64 	0xB8
-#define DBX_SIZE_POINTER	0x7C
+#define INDEX_TYPE_OFFSET 0x0A
+#define FILE_SIZE_POINTER 0xA8
+#define FILE_SIZE_POINTER_64 0xB8
+#define DBX_SIZE_POINTER 0x7C
 
-
-static int header_check_dbx(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const uint64_t size=(uint64_t)buffer[DBX_SIZE_POINTER] +
-    (((uint64_t)buffer[DBX_SIZE_POINTER+1])<<8) +
-    (((uint64_t)buffer[DBX_SIZE_POINTER+2])<<16) +
-    (((uint64_t)buffer[DBX_SIZE_POINTER+3])<<24);
-  if(size < DBX_SIZE_POINTER + 4)
+static int header_check_dbx(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const uint64_t size = (uint64_t)buffer[DBX_SIZE_POINTER] + (((uint64_t)buffer[DBX_SIZE_POINTER + 1]) << 8) +
+                        (((uint64_t)buffer[DBX_SIZE_POINTER + 2]) << 16) +
+                        (((uint64_t)buffer[DBX_SIZE_POINTER + 3]) << 24);
+  if (size < DBX_SIZE_POINTER + 4)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension="dbx";
-  file_recovery_new->calculated_file_size=size;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->extension = "dbx";
+  file_recovery_new->calculated_file_size = size;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
   return 1;
 }
 
@@ -91,63 +86,55 @@ static int header_check_dbx(const unsigned char *buffer, const unsigned int buff
    http://www.ﬁve-ten-sg.com/libpst/
 */
 
-
-static int header_check_wab(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_wab(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension="wab";	/* Adresse Book */
+  file_recovery_new->extension = "wab"; /* Adresse Book */
   return 1;
 }
 
-
-static int header_check_pst(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(buffer[INDEX_TYPE_OFFSET]==0x0e ||
-      buffer[INDEX_TYPE_OFFSET]==0x0f)
-  {
-    const uint64_t size=(uint64_t)buffer[FILE_SIZE_POINTER] +
-      (((uint64_t)buffer[FILE_SIZE_POINTER+1])<<8) +
-      (((uint64_t)buffer[FILE_SIZE_POINTER+2])<<16) +
-      (((uint64_t)buffer[FILE_SIZE_POINTER+3])<<24);
-    if(size < 0x1cd)
+static int header_check_pst(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (buffer[INDEX_TYPE_OFFSET] == 0x0e || buffer[INDEX_TYPE_OFFSET] == 0x0f) {
+    const uint64_t size = (uint64_t)buffer[FILE_SIZE_POINTER] + (((uint64_t)buffer[FILE_SIZE_POINTER + 1]) << 8) +
+                          (((uint64_t)buffer[FILE_SIZE_POINTER + 2]) << 16) +
+                          (((uint64_t)buffer[FILE_SIZE_POINTER + 3]) << 24);
+    if (size < 0x1cd)
       return 0;
     /* Outlook 2000 and older versions */
     reset_file_recovery(file_recovery_new);
-    file_recovery_new->extension=file_hint_pst.extension;
-    file_recovery_new->calculated_file_size=size;
-    file_recovery_new->data_check=&data_check_size;
-    file_recovery_new->file_check=&file_check_size;
+    file_recovery_new->extension = file_hint_pst.extension;
+    file_recovery_new->calculated_file_size = size;
+    file_recovery_new->data_check = &data_check_size;
+    file_recovery_new->file_check = &file_check_size;
     return 1;
-  }
-  else
-    //      if(buffer[INDEX_TYPE_OFFSET]==0x15 || buffer[INDEX_TYPE_OFFSET]==0x17)
+  } else
+  //      if(buffer[INDEX_TYPE_OFFSET]==0x15 || buffer[INDEX_TYPE_OFFSET]==0x17)
   { /* Outlook 2003 */
-    const uint64_t size=(uint64_t)buffer[FILE_SIZE_POINTER_64] +
-      (((uint64_t)buffer[FILE_SIZE_POINTER_64+1])<<8) +
-      (((uint64_t)buffer[FILE_SIZE_POINTER_64+2])<<16) +
-      (((uint64_t)buffer[FILE_SIZE_POINTER_64+3])<<24) +
-      (((uint64_t)buffer[FILE_SIZE_POINTER_64+4])<<32) +
-      (((uint64_t)buffer[FILE_SIZE_POINTER_64+5])<<40) +
-      (((uint64_t)buffer[FILE_SIZE_POINTER_64+6])<<48) +
-      (((uint64_t)buffer[FILE_SIZE_POINTER_64+7])<<56);
-    if(size < 0x201)
+    const uint64_t size =
+        (uint64_t)buffer[FILE_SIZE_POINTER_64] + (((uint64_t)buffer[FILE_SIZE_POINTER_64 + 1]) << 8) +
+        (((uint64_t)buffer[FILE_SIZE_POINTER_64 + 2]) << 16) + (((uint64_t)buffer[FILE_SIZE_POINTER_64 + 3]) << 24) +
+        (((uint64_t)buffer[FILE_SIZE_POINTER_64 + 4]) << 32) + (((uint64_t)buffer[FILE_SIZE_POINTER_64 + 5]) << 40) +
+        (((uint64_t)buffer[FILE_SIZE_POINTER_64 + 6]) << 48) + (((uint64_t)buffer[FILE_SIZE_POINTER_64 + 7]) << 56);
+    if (size < 0x201)
       return 0;
     reset_file_recovery(file_recovery_new);
-    file_recovery_new->extension=file_hint_pst.extension;
-    file_recovery_new->calculated_file_size=size;
-    file_recovery_new->data_check=&data_check_size;
-    file_recovery_new->file_check=&file_check_size;
+    file_recovery_new->extension = file_hint_pst.extension;
+    file_recovery_new->calculated_file_size = size;
+    file_recovery_new->data_check = &data_check_size;
+    file_recovery_new->file_check = &file_check_size;
     return 1;
   }
 }
 
-static void register_header_check_pst(file_stat_t *file_stat)
-{
-  static  const unsigned char dbx_header[4]= { 0xCF, 0xAD, 0x12, 0xFE };
-  static  const unsigned char wab_header[16] = { 0x9c, 0xcb, 0xcb, 0x8d, 0x13, 0x75, 0xd2, 0x11,
-    0x91, 0x58, 0x00, 0xc0, 0x4f, 0x79, 0x56, 0xa4 };
+static void register_header_check_pst(file_stat_t *file_stat) {
+  static const unsigned char dbx_header[4] = {0xCF, 0xAD, 0x12, 0xFE};
+  static const unsigned char wab_header[16] = {0x9c, 0xcb, 0xcb, 0x8d, 0x13, 0x75, 0xd2, 0x11,
+                                               0x91, 0x58, 0x00, 0xc0, 0x4f, 0x79, 0x56, 0xa4};
   register_header_check(0, "!BDN", 4, &header_check_pst, file_stat);
-  register_header_check(0, dbx_header,sizeof(dbx_header), &header_check_dbx, file_stat);
-  register_header_check(0, wab_header,sizeof(wab_header), &header_check_wab, file_stat);
+  register_header_check(0, dbx_header, sizeof(dbx_header), &header_check_dbx, file_stat);
+  register_header_check(0, wab_header, sizeof(wab_header), &header_check_wab, file_stat);
 }
 #endif

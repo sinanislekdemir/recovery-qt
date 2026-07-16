@@ -25,27 +25,24 @@
 #include "scanner.hpp"
 #include "progresscallback.hpp"
 
-Scanner::Scanner(QObject *parent)
-    : WorkerBase(parent)
-{
-}
+Scanner::Scanner(QObject *parent) : WorkerBase(parent) {}
 
-void Scanner::start(scan_tree_t *tree, disk_t *disk, const partition_t *partition, bool deep)
-{
-    ProgressCallback *pc = beginOperation();
-    if (!pc) return;
+void Scanner::start(scan_tree_t *tree, disk_t *disk, const partition_t *partition, bool deep) {
+  ProgressCallback *pc = beginOperation();
+  if (!pc)
+    return;
 
-    storeConnection(connect(pc, &ProgressCallback::scannerProgress,
-            this, &Scanner::progressUpdated, Qt::DirectConnection));
-    storeConnection(connect(pc, &ProgressCallback::scannerIndxProgress,
-            this, &Scanner::indxProgressUpdated, Qt::DirectConnection));
+  storeConnection(
+      connect(pc, &ProgressCallback::scannerProgress, this, &Scanner::progressUpdated, Qt::DirectConnection));
+  storeConnection(
+      connect(pc, &ProgressCallback::scannerIndxProgress, this, &Scanner::indxProgressUpdated, Qt::DirectConnection));
 
-    startThread([this, pc, tree, disk, partition, deep]() {
-        pc->installScannerCallbacks();
-        int result = scanner_run(tree, disk, partition, deep);
-        if (result < 0)
-            emit errorOccurred(tr("No filesystem detected on this partition"));
-        emit finished(result);
-        m_running.store(false);
-    });
+  startThread([this, pc, tree, disk, partition, deep]() {
+    pc->installScannerCallbacks();
+    int result = scanner_run(tree, disk, partition, deep);
+    if (result < 0)
+      emit errorOccurred(tr("No filesystem detected on this partition"));
+    emit finished(result);
+    m_running.store(false);
+  });
 }

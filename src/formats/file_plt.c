@@ -31,35 +31,27 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_plt(file_stat_t *file_stat);
 
-const file_hint_t file_hint_plt= {
-  .extension="plt",
-  .description="Gerber Graphix Advantage",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_plt
-};
+const file_hint_t file_hint_plt = {.extension = "plt",
+                                   .description = "Gerber Graphix Advantage",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_plt};
 
-
-static int header_check_plt(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_plt(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_plt.extension;
+  file_recovery_new->extension = file_hint_plt.extension;
   return 1;
 }
 
-static void register_header_check_plt(file_stat_t *file_stat)
-{
-  static const unsigned char plt_header[44]=  {
-    'G', 'e', 'r', 'b', 'e', 'r', ' ', 'S',
-    'c', 'i', 'e', 'n', 't', 'i', 'f', 'i',
-    'c', ' ', 'P', 'r', 'o', 'd', 'u', 'c',
-    't', 's', ' ', 'G', 'R', 'A', 'P', 'H',
-    'I', 'X', ' ', 'A', 'D', 'V', 'A', 'N',
-    'T', 'A', 'G', 'E',
+static void register_header_check_plt(file_stat_t *file_stat) {
+  static const unsigned char plt_header[44] = {
+      'G', 'e', 'r', 'b', 'e', 'r', ' ', 'S', 'c', 'i', 'e', 'n', 't', 'i', 'f', 'i', 'c', ' ', 'P', 'r', 'o', 'd',
+      'u', 'c', 't', 's', ' ', 'G', 'R', 'A', 'P', 'H', 'I', 'X', ' ', 'A', 'D', 'V', 'A', 'N', 'T', 'A', 'G', 'E',
   };
   register_header_check(2, plt_header, sizeof(plt_header), &header_check_plt, file_stat);
 }

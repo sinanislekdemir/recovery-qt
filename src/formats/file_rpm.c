@@ -32,17 +32,14 @@
 #include "common.h"
 #include "filegen.h"
 
-
 static void register_header_check_rpm(file_stat_t *file_stat);
 
-const file_hint_t file_hint_rpm= {
-  .extension="rpm",
-  .description="RPM package",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_rpm
-};
+const file_hint_t file_hint_rpm = {.extension = "rpm",
+                                   .description = "RPM package",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_rpm};
 
 struct rpmlead {
   unsigned char magic[4];
@@ -53,52 +50,47 @@ struct rpmlead {
   uint16_t osnum;
   uint16_t signature_type;
   char reserved[16];
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
-
-static void file_rename_rpm(file_recovery_t *file_recovery)
-{
+static void file_rename_rpm(file_recovery_t *file_recovery) {
   FILE *file;
   struct rpmlead hdr;
-  if((file=fopen(file_recovery->filename, "rb"))==NULL)
+  if ((file = fopen(file_recovery->filename, "rb")) == NULL)
     return;
-  if(fread(&hdr, sizeof(hdr), 1, file)!=1)
-  {
+  if (fread(&hdr, sizeof(hdr), 1, file) != 1) {
     fclose(file);
-    return ;
+    return;
   }
   fclose(file);
   file_rename(file_recovery, &hdr.name, 66, 0, "rpm", 0);
 }
 
-
-static int header_check_rpm(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct rpmlead *hdr=(const struct rpmlead *)buffer;
-  if(be16(hdr->type)>1)	/* 0=bin 1=src */
+static int header_check_rpm(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const struct rpmlead *hdr = (const struct rpmlead *)buffer;
+  if (be16(hdr->type) > 1) /* 0=bin 1=src */
     return 0;
-  switch(be16(hdr->signature_type))
-  {
-    case 0:	/* RPMSIG_NONE */
-    case 1:	/* RPMSIG_PGP262_1024 */
-    case 5:	/* RPMSIG_HEADERSIG */
-      break;
-    default:
+  switch (be16(hdr->signature_type)) {
+  case 0: /* RPMSIG_NONE */
+  case 1: /* RPMSIG_PGP262_1024 */
+  case 5: /* RPMSIG_HEADERSIG */
+    break;
+  default:
     return 0;
   }
-  if(hdr->name[0]=='\0')
+  if (hdr->name[0] == '\0')
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->min_filesize=(96 + 16 + 16); /* file header + checksum + content header */
-  file_recovery_new->extension=file_hint_rpm.extension;
-  file_recovery_new->file_rename=&file_rename_rpm;
+  file_recovery_new->min_filesize = (96 + 16 + 16); /* file header + checksum + content header */
+  file_recovery_new->extension = file_hint_rpm.extension;
+  file_recovery_new->file_rename = &file_rename_rpm;
   return 1;
 }
 
-static void register_header_check_rpm(file_stat_t *file_stat)
-{
+static void register_header_check_rpm(file_stat_t *file_stat) {
   /* RPM v3 */
-  static const unsigned char rpm_header[5]= {0xed, 0xab, 0xee, 0xdb, 0x3};
-  register_header_check(0, rpm_header,sizeof(rpm_header), &header_check_rpm, file_stat);
+  static const unsigned char rpm_header[5] = {0xed, 0xab, 0xee, 0xdb, 0x3};
+  register_header_check(0, rpm_header, sizeof(rpm_header), &header_check_rpm, file_stat);
 }
 #endif

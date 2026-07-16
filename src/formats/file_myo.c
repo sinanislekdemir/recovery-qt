@@ -31,41 +31,36 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_myo(file_stat_t *file_stat);
 
-const file_hint_t file_hint_myo= {
-  .extension="myo",
-  .description="Mind Your Own Business",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_myo
-};
+const file_hint_t file_hint_myo = {.extension = "myo",
+                                   .description = "Mind Your Own Business",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_myo};
 
-
-static int header_check_myo(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const uint64_t size=(uint64_t)buffer[0]+(((uint64_t)buffer[1])<<8)+(((uint64_t)buffer[2])<<16)+(((uint64_t)buffer[3])<<24)+1;
-  if(size < 0x9ce + 6)
+static int header_check_myo(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const uint64_t size = (uint64_t)buffer[0] + (((uint64_t)buffer[1]) << 8) + (((uint64_t)buffer[2]) << 16) +
+                        (((uint64_t)buffer[3]) << 24) + 1;
+  if (size < 0x9ce + 6)
     return 0;
-  if(file_recovery->file_stat!=NULL &&
-      file_recovery->file_check!=NULL &&
-      file_recovery->file_stat->file_hint==&file_hint_myo)
-  {
+  if (file_recovery->file_stat != NULL && file_recovery->file_check != NULL &&
+      file_recovery->file_stat->file_hint == &file_hint_myo) {
     header_ignored(file_recovery_new);
     return 0;
   }
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_myo.extension;
-  file_recovery_new->calculated_file_size=size;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->extension = file_hint_myo.extension;
+  file_recovery_new->calculated_file_size = size;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
   return 1;
 }
 
-static void register_header_check_myo(file_stat_t *file_stat)
-{
+static void register_header_check_myo(file_stat_t *file_stat) {
   register_header_check(0x9ce, "FC!DEF", 6, &header_check_myo, file_stat);
 }
 #endif

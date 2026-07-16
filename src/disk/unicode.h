@@ -25,9 +25,7 @@
 extern "C" {
 #endif
 
-
 unsigned int UCSle2str(char *to, const uint16_t *from, const unsigned int len);
-
 
 unsigned int str2UCSle(uint16_t *to, const char *from, const unsigned int len);
 

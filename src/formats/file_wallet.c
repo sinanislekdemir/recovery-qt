@@ -31,33 +31,31 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_wallet(file_stat_t *file_stat);
 
-const file_hint_t file_hint_wallet = {
-  .extension = "wallet",
-  .description = "Armory and multibit wallets",
-  .max_filesize = 10 * 1024 * 1024,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_wallet
-};
+const file_hint_t file_hint_wallet = {.extension = "wallet",
+                                      .description = "Armory and multibit wallets",
+                                      .max_filesize = 10 * 1024 * 1024,
+                                      .recover = 1,
+                                      .enable_by_default = 1,
+                                      .register_header_check = &register_header_check_wallet};
 
-
-static int header_check_wallet(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_wallet(const unsigned char *buffer, const unsigned int buffer_size,
+                               const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                               file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_wallet.extension;
   return 1;
 }
 
-static void register_header_check_wallet(file_stat_t *file_stat)
-{
-  static const unsigned char armory_wallet[8] = {
-    0xba, 'W', 'A', 'L', 'L', 'E', 'T', 0x00
-  };
-  static const unsigned char multibit_bitcoin[2+0x16]  = { 0x0a, 0x16, 'o', 'r', 'g', '.', 'b', 'i', 't', 'c', 'o', 'i', 'n', '.', 'p', 'r', 'o', 'd', 'u', 'c', 't', 'i', 'o', 'n' };
-  static const unsigned char multibit_dogecoin[2+0x17] = { 0x0a, 0x17, 'o', 'r', 'g', '.', 'd', 'o', 'g', 'e', 'c', 'o', 'i', 'n', '.', 'p', 'r', 'o', 'd', 'u', 'c', 't', 'i', 'o', 'n' };
+static void register_header_check_wallet(file_stat_t *file_stat) {
+  static const unsigned char armory_wallet[8] = {0xba, 'W', 'A', 'L', 'L', 'E', 'T', 0x00};
+  static const unsigned char multibit_bitcoin[2 + 0x16] = {0x0a, 0x16, 'o', 'r', 'g', '.', 'b', 'i',
+                                                           't',  'c',  'o', 'i', 'n', '.', 'p', 'r',
+                                                           'o',  'd',  'u', 'c', 't', 'i', 'o', 'n'};
+  static const unsigned char multibit_dogecoin[2 + 0x17] = {0x0a, 0x17, 'o', 'r', 'g', '.', 'd', 'o', 'g',
+                                                            'e',  'c',  'o', 'i', 'n', '.', 'p', 'r', 'o',
+                                                            'd',  'u',  'c', 't', 'i', 'o', 'n'};
   register_header_check(0, armory_wallet, sizeof(armory_wallet), &header_check_wallet, file_stat);
   register_header_check(0, multibit_bitcoin, sizeof(multibit_bitcoin), &header_check_wallet, file_stat);
   register_header_check(0, multibit_dogecoin, sizeof(multibit_dogecoin), &header_check_wallet, file_stat);

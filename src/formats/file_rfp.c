@@ -31,31 +31,26 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_rfp(file_stat_t *file_stat);
 
-const file_hint_t file_hint_rfp= {
-  .extension="rfp",
-  .description="RoboForm",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_rfp
-};
+const file_hint_t file_hint_rfp = {.extension = "rfp",
+                                   .description = "RoboForm",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_rfp};
 
-
-static int header_check_rfp(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_rfp(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_rfp.extension;
+  file_recovery_new->extension = file_hint_rfp.extension;
   return 1;
 }
 
-static void register_header_check_rfp(file_stat_t *file_stat)
-{
-  static const unsigned char rfp_header[10]=  {
-    'U' , 'R' , 'L' , '3' , ':', 'v' , 'e' , 'r' ,
-    '3' , ':',
+static void register_header_check_rfp(file_stat_t *file_stat) {
+  static const unsigned char rfp_header[10] = {
+      'U', 'R', 'L', '3', ':', 'v', 'e', 'r', '3', ':',
   };
   register_header_check(0, rfp_header, sizeof(rfp_header), &header_check_rfp, file_stat);
 }

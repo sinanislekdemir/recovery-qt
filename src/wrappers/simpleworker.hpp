@@ -5,15 +5,15 @@
 #include <functional>
 
 class SimpleWorker : public WorkerBase {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit SimpleWorker(QObject *parent = nullptr);
+  explicit SimpleWorker(QObject *parent = nullptr);
 
-    void start(std::function<int()> workFn);
+  void start(std::function<int()> workFn);
 
 signals:
-    void finished(int result);
-    void errorOccurred(const QString &message);
+  void finished(int result);
+  void errorOccurred(const QString &message);
 };
 
 #endif

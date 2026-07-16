@@ -38,38 +38,38 @@ extern "C" {
 #endif
 
 struct PartitionInfo {
-    QString fsname;
-    QString partname;
-    QString info;
-    QString typenameStr;
-    uint64_t partOffset;
-    uint64_t partSize;
-    unsigned int partTypeI386;
-    upart_type_t upartType;
-    status_type_t status;
-    int order;
-    bool encrypted;
+  QString fsname;
+  QString partname;
+  QString info;
+  QString typenameStr;
+  uint64_t partOffset;
+  uint64_t partSize;
+  unsigned int partTypeI386;
+  upart_type_t upartType;
+  status_type_t status;
+  int order;
+  bool encrypted;
 };
 
 class PartitionList {
 public:
-    PartitionList();
-    ~PartitionList();
+  PartitionList();
+  ~PartitionList();
 
-    bool detect(const class Disk& disk);
-    bool detectWholeDisk(const class Disk& disk);
+  bool detect(const class Disk &disk);
+  bool detectWholeDisk(const class Disk &disk);
 
-    QVector<PartitionInfo> partitions() const;
-    partition_t* rawAt(int index) const;
-    partition_t* wholeDiskPartition(const class Disk& disk) const;
-    int count() const;
+  QVector<PartitionInfo> partitions() const;
+  partition_t *rawAt(int index) const;
+  partition_t *wholeDiskPartition(const class Disk &disk) const;
+  int count() const;
 
-    bool isValid() const;
+  bool isValid() const;
 
 private:
-    list_part_t* m_partList;
-    list_disk_t* m_diskList;
-    int m_count;
+  list_part_t *m_partList;
+  list_disk_t *m_diskList;
+  int m_count;
 };
 
 #endif // PHOTOREC_PARTITIONLIST_HPP

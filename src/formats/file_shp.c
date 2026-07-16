@@ -32,51 +32,46 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_shp(file_stat_t *file_stat);
 
-const file_hint_t file_hint_shp= {
-  .extension="shp",
-  .description="ESRI Shapefile",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_shp
-};
+const file_hint_t file_hint_shp = {.extension = "shp",
+                                   .description = "ESRI Shapefile",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_shp};
 
 static const uint8_t shp_header[4] = {0x00, 0x00, 0x27, 0x0a};
 
 /* https://en.wikipedia.org/wiki/Shapefile */
-struct shp_header
-{
+struct shp_header {
   int32_t magic;
   int32_t reserved[5];
   uint32_t size;
   int32_t version;
   int32_t shape_type;
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
-
-static int header_check_shp(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct shp_header *shp=(const struct shp_header *)buffer;
+static int header_check_shp(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const struct shp_header *shp = (const struct shp_header *)buffer;
   const uint64_t size = (uint64_t)2 * be32(shp->size);
 
-  if(le32(shp->version) != 1000)
+  if (le32(shp->version) != 1000)
     return 0;
-  if(size < 100)
+  if (size < 100)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_shp.extension;
-  file_recovery_new->min_filesize=100;
-  file_recovery_new->calculated_file_size=size;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->extension = file_hint_shp.extension;
+  file_recovery_new->min_filesize = 100;
+  file_recovery_new->calculated_file_size = size;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
   return 1;
 }
 
-static void register_header_check_shp(file_stat_t *file_stat)
-{
+static void register_header_check_shp(file_stat_t *file_stat) {
   register_header_check(0, shp_header, sizeof(shp_header), &header_check_shp, file_stat);
 }
 #endif

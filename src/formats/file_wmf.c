@@ -32,20 +32,16 @@
 #include "common.h"
 #include "filegen.h"
 
-
 static void register_header_check_wmf(file_stat_t *file_stat);
 
-const file_hint_t file_hint_wmf = {
-  .extension = "wmf",
-  .description = "Microsoft Windows Metafile",
-  .max_filesize = 50 * 1024 * 1024,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_wmf
-};
+const file_hint_t file_hint_wmf = {.extension = "wmf",
+                                   .description = "Microsoft Windows Metafile",
+                                   .max_filesize = 50 * 1024 * 1024,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_wmf};
 
-struct wmf_header
-{
+struct wmf_header {
   uint16_t type;
   uint16_t header_size;
   uint16_t version;
@@ -55,8 +51,7 @@ struct wmf_header
   uint16_t members;
 } __attribute__((gcc_struct, __packed__));
 
-struct wmf_placeable_record
-{
+struct wmf_placeable_record {
   uint32_t key;
   uint16_t hwmf;
   uint64_t boundingbox;
@@ -65,26 +60,24 @@ struct wmf_placeable_record
   uint16_t checksum;
 } __attribute__((gcc_struct, __packed__));
 
-
-static uint64_t wmf_check_meta_header(const struct wmf_header *hdr)
-{
+static uint64_t wmf_check_meta_header(const struct wmf_header *hdr) {
   const uint64_t size = (uint64_t)2 * le32(hdr->size);
   const unsigned int num_objects = le16(hdr->num_objects);
   const unsigned int max_record = le32(hdr->max_record);
-  if(size < sizeof(struct wmf_header))
+  if (size < sizeof(struct wmf_header))
     return 0;
-  if(num_objects == 0)
+  if (num_objects == 0)
     return 0;
-  if((uint64_t)2 * max_record + num_objects - 1 >= size)
+  if ((uint64_t)2 * max_record + num_objects - 1 >= size)
     return 0;
   return size;
 }
 
-
-static int header_check_wmf(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_wmf(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   const uint64_t size = wmf_check_meta_header((const struct wmf_header *)buffer);
-  if(size == 0)
+  if (size == 0)
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_wmf.extension;
@@ -94,17 +87,17 @@ static int header_check_wmf(const unsigned char *buffer, const unsigned int buff
   return 1;
 }
 
-
-static int header_check_wmf_placeable(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_wmf_placeable(const unsigned char *buffer, const unsigned int buffer_size,
+                                      const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                                      file_recovery_t *file_recovery_new) {
   const struct wmf_placeable_record *meta = (const struct wmf_placeable_record *)buffer;
   const struct wmf_header *hdr = (const struct wmf_header *)&buffer[0x16];
   uint64_t size;
   /* Check META_PLACEABLE */
-  if(le32(meta->reserved) != 0)
+  if (le32(meta->reserved) != 0)
     return 0;
   size = wmf_check_meta_header(hdr);
-  if(size == 0)
+  if (size == 0)
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_wmf.extension;
@@ -114,11 +107,10 @@ static int header_check_wmf_placeable(const unsigned char *buffer, const unsigne
   return 1;
 }
 
-static void register_header_check_wmf(file_stat_t *file_stat)
-{
-  static const unsigned char apm_header[6] = { 0xd7, 0xcd, 0xc6, 0x9a, 0x00, 0x00 };
+static void register_header_check_wmf(file_stat_t *file_stat) {
+  static const unsigned char apm_header[6] = {0xd7, 0xcd, 0xc6, 0x9a, 0x00, 0x00};
   /* WMF: file_type=disk, header size=9, version=3.0 */
-  static const unsigned char wmf_header[6] = { 0x01, 0x00, 0x09, 0x00, 0x00, 0x03 };
+  static const unsigned char wmf_header[6] = {0x01, 0x00, 0x09, 0x00, 0x00, 0x03};
   register_header_check(0, apm_header, sizeof(apm_header), &header_check_wmf_placeable, file_stat);
   register_header_check(0, wmf_header, sizeof(wmf_header), &header_check_wmf, file_stat);
 }

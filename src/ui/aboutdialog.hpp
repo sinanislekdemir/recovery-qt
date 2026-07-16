@@ -27,13 +27,13 @@
 #include <QPushButton>
 
 class AboutDialog : public QDialog {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit AboutDialog(QWidget *parent = nullptr);
+  explicit AboutDialog(QWidget *parent = nullptr);
 
 private:
-    void setupUi();
-    void applyTheme();
+  void setupUi();
+  void applyTheme();
 };
 
 #endif // ABOUTDIALOG_HPP

@@ -25,7 +25,7 @@
 extern "C" {
 #endif
 
-const char*td_jpeg_version(void);
+const char *td_jpeg_version(void);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

@@ -31,38 +31,32 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_cdt(file_stat_t *file_stat);
 
-const file_hint_t file_hint_cdt= {
-  .extension="cdt",
-  .description="cdl/cdt/cdd Concept Draw",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_cdt
-};
+const file_hint_t file_hint_cdt = {.extension = "cdt",
+                                   .description = "cdl/cdt/cdd Concept Draw",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_cdt};
 
-
-static int header_check_cdt(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_cdt(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  if(buffer[0]==0xee)
-    file_recovery_new->extension="cdl";	/* ConceptDraw PRO Library File */
-  else if(buffer[0]==0xef)
-    file_recovery_new->extension="cdd";	/* ConceptDraw PRO Document */
-  else if(buffer[0]==0xf0)
-    file_recovery_new->extension="cdt";	/* ConceptDraw PRO Template */
+  if (buffer[0] == 0xee)
+    file_recovery_new->extension = "cdl"; /* ConceptDraw PRO Library File */
+  else if (buffer[0] == 0xef)
+    file_recovery_new->extension = "cdd"; /* ConceptDraw PRO Document */
+  else if (buffer[0] == 0xf0)
+    file_recovery_new->extension = "cdt"; /* ConceptDraw PRO Template */
   else
-    file_recovery_new->extension=file_hint_cdt.extension;
+    file_recovery_new->extension = file_hint_cdt.extension;
   return 1;
 }
 
-static void register_header_check_cdt(file_stat_t *file_stat)
-{
-  static const unsigned char cdt_header[7]=  {
-    'C' , 'O' , 'N' , 'C' , 'E' , 'P' , 'T'
-  };
+static void register_header_check_cdt(file_stat_t *file_stat) {
+  static const unsigned char cdt_header[7] = {'C', 'O', 'N', 'C', 'E', 'P', 'T'};
   register_header_check(12, cdt_header, sizeof(cdt_header), &header_check_cdt, file_stat);
 }
 #endif

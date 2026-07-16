@@ -38,60 +38,60 @@ extern "C" {
 #endif
 
 struct SessionInfo {
-    int opType;
-    int resumePhase;
-    bool completed;
-    bool cancelled;
-    bool encrypted;
-    bool luksDecrypted;
-    uint64_t progress1;
-    uint64_t progress2;
-    uint64_t resumeOffset;
-    uint64_t timestamp;
-    unsigned int sectorSize;
-    uint64_t diskSize;
-    uint64_t partOffset;
-    uint64_t partSize;
-    uint32_t upartType;
-    uint32_t partTypeI386;
-    uint64_t luksOffset;
-    QString devicePath;
-    QString model;
-    QString extFilter;
-    scan_tree_t *tree;
+  int opType;
+  int resumePhase;
+  bool completed;
+  bool cancelled;
+  bool encrypted;
+  bool luksDecrypted;
+  uint64_t progress1;
+  uint64_t progress2;
+  uint64_t resumeOffset;
+  uint64_t timestamp;
+  unsigned int sectorSize;
+  uint64_t diskSize;
+  uint64_t partOffset;
+  uint64_t partSize;
+  uint32_t upartType;
+  uint32_t partTypeI386;
+  uint64_t luksOffset;
+  QString devicePath;
+  QString model;
+  QString extFilter;
+  scan_tree_t *tree;
 };
 
 class SessionManager : public QObject {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit SessionManager(QObject *parent = nullptr);
+  explicit SessionManager(QObject *parent = nullptr);
 
-    bool hasActiveSession() const;
+  bool hasActiveSession() const;
 
-    void beginSession(const QString &path, scan_tree_t *tree,
-        disk_t *disk, const partition_t *partition,
-        int opType, const QString &extFilter);
+  void beginSession(const QString &path, scan_tree_t *tree, disk_t *disk, const partition_t *partition, int opType,
+                    const QString &extFilter);
 
-    void updateSessionPhase(int resumePhase, uint64_t resumeOffset);
+  void updateSessionPhase(int resumePhase, uint64_t resumeOffset);
 
-    void endSession(int result);
-    void cancelSession();
+  void endSession(int result);
+  void cancelSession();
 
-    void setupResume(scan_tree_t *tree, disk_t *disk,
-        int opType, const SessionInfo *info);
+  void setupResume(scan_tree_t *tree, disk_t *disk, int opType, const SessionInfo *info);
 
-    QString sessionPath() const { return m_sessionPath; }
+  QString sessionPath() const {
+    return m_sessionPath;
+  }
 
-    static SessionInfo *loadSession(const QString &path);
-    static void freeSessionInfo(SessionInfo *info);
+  static SessionInfo *loadSession(const QString &path);
+  static void freeSessionInfo(SessionInfo *info);
 
 private:
-    QString m_sessionPath;
-    session_save_ctx_t m_saveCtx;
-    QByteArray m_pathBytes;
-    QByteArray m_filterBytes;
-    int m_flags;
-    bool m_active;
+  QString m_sessionPath;
+  session_save_ctx_t m_saveCtx;
+  QByteArray m_pathBytes;
+  QByteArray m_filterBytes;
+  int m_flags;
+  bool m_active;
 };
 
 #endif

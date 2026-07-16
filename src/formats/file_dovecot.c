@@ -31,80 +31,62 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_dovecot(file_stat_t *file_stat);
 
-const file_hint_t file_hint_dovecot= {
-  .extension="dovecot",
-  .description="dovecot encrypted files",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=0,
-  .register_header_check=&register_header_check_dovecot
-};
+const file_hint_t file_hint_dovecot = {.extension = "dovecot",
+                                       .description = "dovecot encrypted files",
+                                       .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                       .recover = 1,
+                                       .enable_by_default = 0,
+                                       .register_header_check = &register_header_check_dovecot};
 
+static data_check_t data_check_dovecot2(const unsigned char *buffer, const unsigned int buffer_size,
+                                        file_recovery_t *file_recovery) {
+  if (file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size &&
+      file_recovery->calculated_file_size + 2 <= file_recovery->file_size + buffer_size / 2) {
+    const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
 
-static data_check_t data_check_dovecot2(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  
-  
-  if(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
-      file_recovery->calculated_file_size + 2 <= file_recovery->file_size + buffer_size/2)
-  {
-    const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    
-    if(buffer[i] == 0 && buffer[i+1] == 0)
-    {
+    if (buffer[i] == 0 && buffer[i + 1] == 0) {
       return DC_ERROR;
     }
-    file_recovery->data_check=NULL;
+    file_recovery->data_check = NULL;
   }
   return DC_CONTINUE;
 }
 
-static data_check_t data_check_dovecot(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
+static data_check_t data_check_dovecot(const unsigned char *buffer, const unsigned int buffer_size,
+                                       file_recovery_t *file_recovery) {
   unsigned int i;
-  
-  for(i=buffer_size/2;
-      i<buffer_size && file_recovery->calculated_file_size+i <= 0x14000;
-      i++)
-  {
-    if(buffer[i]!='\0')
+
+  for (i = buffer_size / 2; i < buffer_size && file_recovery->calculated_file_size + i <= 0x14000; i++) {
+    if (buffer[i] != '\0')
       return DC_ERROR;
   }
-  if(file_recovery->calculated_file_size+buffer_size/2 < 0x14000)
-  {
-    file_recovery->calculated_file_size+=buffer_size/2;
+  if (file_recovery->calculated_file_size + buffer_size / 2 < 0x14000) {
+    file_recovery->calculated_file_size += buffer_size / 2;
     return DC_CONTINUE;
   }
-  file_recovery->calculated_file_size=0x14000;
-  file_recovery->data_check=data_check_dovecot2;
+  file_recovery->calculated_file_size = 0x14000;
+  file_recovery->data_check = data_check_dovecot2;
   return data_check_dovecot2(buffer, buffer_size, file_recovery);
 }
 
-
-static int header_check_dovecot(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(file_recovery->data_check==&data_check_dovecot)
+static int header_check_dovecot(const unsigned char *buffer, const unsigned int buffer_size,
+                                const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                                file_recovery_t *file_recovery_new) {
+  if (file_recovery->data_check == &data_check_dovecot)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_dovecot.extension;
-  file_recovery_new->data_check=&data_check_dovecot;
-  file_recovery_new->min_filesize=0x14000;
+  file_recovery_new->extension = file_hint_dovecot.extension;
+  file_recovery_new->data_check = &data_check_dovecot;
+  file_recovery_new->min_filesize = 0x14000;
   return 1;
 }
 
-static void register_header_check_dovecot(file_stat_t *file_stat)
-{
-  static const unsigned char dovecot_header[0x30]=  {
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0
-  };
+static void register_header_check_dovecot(file_stat_t *file_stat) {
+  static const unsigned char dovecot_header[0x30] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   register_header_check(0, dovecot_header, sizeof(dovecot_header), &header_check_dovecot, file_stat);
 }
 #endif

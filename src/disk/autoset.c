@@ -37,22 +37,21 @@ extern const arch_fnct_t arch_humax;
 extern const arch_fnct_t arch_mac;
 #endif
 
-void autoset_unit(disk_t *disk)
-{
-  if(disk==NULL)
-    return ;
-  if(
+void autoset_unit(disk_t *disk) {
+  if (disk == NULL)
+    return;
+  if (
 #if !defined(SINGLE_PARTITION_TYPE) || defined(SINGLE_PARTITION_GPT)
-      disk->arch==&arch_gpt ||
+      disk->arch == &arch_gpt ||
 #endif
 #if !defined(SINGLE_PARTITION_TYPE) || defined(SINGLE_PARTITION_HUMAX)
-      disk->arch==&arch_humax ||
+      disk->arch == &arch_humax ||
 #endif
 #if !defined(SINGLE_PARTITION_TYPE) || defined(SINGLE_PARTITION_MAC)
-      disk->arch==&arch_mac ||
+      disk->arch == &arch_mac ||
 #endif
-      (disk->geom.heads_per_cylinder==1 && disk->geom.sectors_per_head==1))
-    disk->unit=UNIT_SECTOR;
+      (disk->geom.heads_per_cylinder == 1 && disk->geom.sectors_per_head == 1))
+    disk->unit = UNIT_SECTOR;
   else
-    disk->unit=UNIT_CHS;
+    disk->unit = UNIT_CHS;
 }

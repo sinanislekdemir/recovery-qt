@@ -25,12 +25,9 @@
 extern "C" {
 #endif
 
-
 void set_cylinders_from_size_up(disk_t *disk);
 
-
 int change_sector_size(disk_t *disk, const int cyl_modified, const unsigned int sector_size);
-
 
 // ensures  valid_read_string(*current_cmd);
 int change_geometry_cli(disk_t *disk, char **current_cmd);

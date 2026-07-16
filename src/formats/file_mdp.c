@@ -32,40 +32,35 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_mdp(file_stat_t *file_stat);
 
-const file_hint_t file_hint_mdp= {
-  .extension="mdp",
-  .description="MediBang Paint Pro",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_mdp
-};
+const file_hint_t file_hint_mdp = {.extension = "mdp",
+                                   .description = "MediBang Paint Pro",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_mdp};
 
-struct mdp_header
-{
+struct mdp_header {
   char magic[8];
-  uint32_t val0;	/* 0 in the sample files I have */
+  uint32_t val0; /* 0 in the sample files I have */
   uint32_t val1;
   uint32_t val2;
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
-
-static int header_check_mdp(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct mdp_header *header=(const struct mdp_header *)buffer;
+static int header_check_mdp(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const struct mdp_header *header = (const struct mdp_header *)buffer;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_mdp.extension;
-  file_recovery_new->calculated_file_size=(uint64_t)le32(header->val1) + le32(header->val2) + 20;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->extension = file_hint_mdp.extension;
+  file_recovery_new->calculated_file_size = (uint64_t)le32(header->val1) + le32(header->val2) + 20;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
   return 1;
 }
 
-static void register_header_check_mdp(file_stat_t *file_stat)
-{
+static void register_header_check_mdp(file_stat_t *file_stat) {
   register_header_check(0, "mdipack", 8, &header_check_mdp, file_stat);
 }
 #endif

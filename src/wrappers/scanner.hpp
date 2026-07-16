@@ -39,17 +39,17 @@ extern "C" {
 #endif
 
 class Scanner : public WorkerBase {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    explicit Scanner(QObject *parent = nullptr);
+  explicit Scanner(QObject *parent = nullptr);
 
-    void start(scan_tree_t *tree, disk_t *disk, const partition_t *partition, bool deep = true);
+  void start(scan_tree_t *tree, disk_t *disk, const partition_t *partition, bool deep = true);
 
 signals:
-    void progressUpdated(uint64_t deletedCount, uint64_t totalCount, const QString &path);
-    void indxProgressUpdated(const QString &msg, uint64_t current, uint64_t total, uint64_t found);
-    void finished(int deletedFiles);
-    void errorOccurred(const QString &message);
+  void progressUpdated(uint64_t deletedCount, uint64_t totalCount, const QString &path);
+  void indxProgressUpdated(const QString &msg, uint64_t current, uint64_t total, uint64_t found);
+  void finished(int deletedFiles);
+  void errorOccurred(const QString &message);
 };
 
 #endif

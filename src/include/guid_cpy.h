@@ -25,8 +25,7 @@
 
 // assigns ((char*)dst)[0..sizeof(efi_guid_t) - 1] \from ((char*)src)[0..sizeof(efi_guid_t)-1];
 // ensures copied_contents: memcmp{Post,Pre}((char*)dst,(char*)src,sizeof(efi_guid_t)) == 0;
-static inline void guid_cpy (efi_guid_t *dst, const efi_guid_t *src)
-{
+static inline void guid_cpy(efi_guid_t *dst, const efi_guid_t *src) {
   memcpy(dst, src, sizeof(efi_guid_t));
 }
 #endif

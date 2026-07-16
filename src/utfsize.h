@@ -25,7 +25,6 @@
 extern "C" {
 #endif
 
-
 int UTFsize(const unsigned char *buffer, const unsigned int buf_len);
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

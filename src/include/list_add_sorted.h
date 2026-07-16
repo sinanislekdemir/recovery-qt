@@ -30,32 +30,20 @@
   */
 
 static inline void td_list_add_sorted(struct td_list_head *newe, struct td_list_head *head,
-    int (*compar)(const struct td_list_head *a, const struct td_list_head *b))
-{
+                                      int (*compar)(const struct td_list_head *a, const struct td_list_head *b)) {
   struct td_list_head *pos;
-  
-/*
+
+  /*
     X loop invariant finite(head->prev);
     X loop invariant finite(head);
 */
-  td_list_for_each(pos, head)
-  {
-    
-    
-    
-    if(compar(newe,pos)<0)
+  td_list_for_each(pos, head) {
+    if (compar(newe, pos) < 0)
       break;
   }
-  if(pos != head)
-  {
-      __td_list_add(newe, pos->prev, pos);
-  }
-  else
-  {
-    
-    
-    
-    
+  if (pos != head) {
+    __td_list_add(newe, pos->prev, pos);
+  } else {
     td_list_add_tail(newe, head);
   }
   /*X assert finite(head); */

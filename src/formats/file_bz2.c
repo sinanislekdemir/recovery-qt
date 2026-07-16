@@ -31,33 +31,30 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_bz2(file_stat_t *file_stat);
 
-const file_hint_t file_hint_bz2= {
-  .extension="bz2",
-  .description="bzip2 compressed data",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_bz2
-};
+const file_hint_t file_hint_bz2 = {.extension = "bz2",
+                                   .description = "bzip2 compressed data",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_bz2};
 
-
-static int header_check_bz2(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(buffer[0]=='B' && buffer[1]=='Z' && buffer[2]=='h' && buffer[3]>='0' && buffer[3]<='9' && buffer[4]=='1' && buffer[5]=='A' && buffer[6]=='Y' && buffer[7]=='&' && buffer[8]=='S' && buffer[9]=='Y')
-  {
+static int header_check_bz2(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  if (buffer[0] == 'B' && buffer[1] == 'Z' && buffer[2] == 'h' && buffer[3] >= '0' && buffer[3] <= '9' &&
+      buffer[4] == '1' && buffer[5] == 'A' && buffer[6] == 'Y' && buffer[7] == '&' && buffer[8] == 'S' &&
+      buffer[9] == 'Y') {
     reset_file_recovery(file_recovery_new);
-    file_recovery_new->extension=file_hint_bz2.extension;
+    file_recovery_new->extension = file_hint_bz2.extension;
     return 1;
   }
   return 0;
 }
 
-static void register_header_check_bz2(file_stat_t *file_stat)
-{
-  static const unsigned char bz2_header[3]= {'B','Z','h'};
-  register_header_check(0, bz2_header,sizeof(bz2_header), &header_check_bz2, file_stat);
+static void register_header_check_bz2(file_stat_t *file_stat) {
+  static const unsigned char bz2_header[3] = {'B', 'Z', 'h'};
+  register_header_check(0, bz2_header, sizeof(bz2_header), &header_check_bz2, file_stat);
 }
 #endif

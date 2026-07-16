@@ -33,99 +33,79 @@
 #include "common.h"
 #include "log.h"
 
-
 static void register_header_check_gsm(file_stat_t *file_stat);
 
-const file_hint_t file_hint_gsm= {
-  .extension="gsm",
-  .description="Group Speciale Mobile GSM 06.10",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=0,
-  .register_header_check=&register_header_check_gsm
-};
+const file_hint_t file_hint_gsm = {.extension = "gsm",
+                                   .description = "Group Speciale Mobile GSM 06.10",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 0,
+                                   .register_header_check = &register_header_check_gsm};
 
-struct block_header
-{
+struct block_header {
   unsigned char marker;
   unsigned char payload[32];
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
+static data_check_t data_check_gsm(const unsigned char *buffer, const unsigned int buffer_size,
+                                   file_recovery_t *file_recovery) {
+  while (file_recovery->calculated_file_size + buffer_size / 2 >= file_recovery->file_size &&
+         file_recovery->calculated_file_size + sizeof(struct block_header) <
+             file_recovery->file_size + buffer_size / 2) {
+    const unsigned int i = file_recovery->calculated_file_size + buffer_size / 2 - file_recovery->file_size;
 
-static data_check_t data_check_gsm(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
-  
-  
-  
-  while(file_recovery->calculated_file_size + buffer_size/2  >= file_recovery->file_size &&
-      file_recovery->calculated_file_size + sizeof(struct block_header) < file_recovery->file_size + buffer_size/2)
-  {
-    const unsigned int i=file_recovery->calculated_file_size + buffer_size/2 - file_recovery->file_size;
-    
-    const struct block_header *hdr=(const struct block_header *)&buffer[i];
-    if(hdr->marker < 0xd0 || hdr->marker > 0xdf)
+    const struct block_header *hdr = (const struct block_header *)&buffer[i];
+    if (hdr->marker < 0xd0 || hdr->marker > 0xdf)
       return DC_STOP;
-    file_recovery->calculated_file_size+=sizeof(struct block_header);
+    file_recovery->calculated_file_size += sizeof(struct block_header);
   }
   return DC_CONTINUE;
 }
 
+static int header_check_gsm(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  unsigned int i = 0;
 
-static int header_check_gsm(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  unsigned int i=0;
-  
-  
-  for(i=0;
-      (i+1) * sizeof(struct block_header) <= file_recovery_new->blocksize;
-      i++)
-  {
-    
-    
-    
-    
-    const struct block_header *hdr=(const struct block_header *)&buffer[i*sizeof(struct block_header)];
-    
-    if(hdr->marker < 0xd0 || hdr->marker > 0xdf)
+  for (i = 0; (i + 1) * sizeof(struct block_header) <= file_recovery_new->blocksize; i++) {
+    const struct block_header *hdr = (const struct block_header *)&buffer[i * sizeof(struct block_header)];
+
+    if (hdr->marker < 0xd0 || hdr->marker > 0xdf)
       return 0;
   }
-  if(i<3)
+  if (i < 3)
     return 0;
-  if(file_recovery->file_stat!=NULL &&
-      file_recovery->file_check!=NULL &&
-      file_recovery->file_stat->file_hint==&file_hint_gsm)
-  {
-    
+  if (file_recovery->file_stat != NULL && file_recovery->file_check != NULL &&
+      file_recovery->file_stat->file_hint == &file_hint_gsm) {
     header_ignored(file_recovery_new);
     return 0;
   }
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_gsm.extension;
-  file_recovery_new->min_filesize=sizeof(struct block_header);
-  file_recovery_new->calculated_file_size=0;
-  file_recovery_new->data_check=&data_check_gsm;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->extension = file_hint_gsm.extension;
+  file_recovery_new->min_filesize = sizeof(struct block_header);
+  file_recovery_new->calculated_file_size = 0;
+  file_recovery_new->data_check = &data_check_gsm;
+  file_recovery_new->file_check = &file_check_size;
   return 1;
 }
 
-static void register_header_check_gsm(file_stat_t *file_stat)
-{
-  static const unsigned char gsm_header1[1]={ 0xd0 };
-  static const unsigned char gsm_header2[1]={ 0xd1 };
-  static const unsigned char gsm_header3[1]={ 0xd2 };
-  static const unsigned char gsm_header4[1]={ 0xd3 };
-  static const unsigned char gsm_header5[1]={ 0xd4 };
-  static const unsigned char gsm_header6[1]={ 0xd5 };
-  static const unsigned char gsm_header7[1]={ 0xd6 };
-  static const unsigned char gsm_header8[1]={ 0xd7 };
-  static const unsigned char gsm_header9[1]={ 0xd8 };
-  static const unsigned char gsm_header10[1]={ 0xd9 };
-  static const unsigned char gsm_header11[1]={ 0xda };
-  static const unsigned char gsm_header12[1]={ 0xdb };
-  static const unsigned char gsm_header13[1]={ 0xdc };
-  static const unsigned char gsm_header14[1]={ 0xdd };
-  static const unsigned char gsm_header15[1]={ 0xde };
-  static const unsigned char gsm_header16[1]={ 0xdf };
+static void register_header_check_gsm(file_stat_t *file_stat) {
+  static const unsigned char gsm_header1[1] = {0xd0};
+  static const unsigned char gsm_header2[1] = {0xd1};
+  static const unsigned char gsm_header3[1] = {0xd2};
+  static const unsigned char gsm_header4[1] = {0xd3};
+  static const unsigned char gsm_header5[1] = {0xd4};
+  static const unsigned char gsm_header6[1] = {0xd5};
+  static const unsigned char gsm_header7[1] = {0xd6};
+  static const unsigned char gsm_header8[1] = {0xd7};
+  static const unsigned char gsm_header9[1] = {0xd8};
+  static const unsigned char gsm_header10[1] = {0xd9};
+  static const unsigned char gsm_header11[1] = {0xda};
+  static const unsigned char gsm_header12[1] = {0xdb};
+  static const unsigned char gsm_header13[1] = {0xdc};
+  static const unsigned char gsm_header14[1] = {0xdd};
+  static const unsigned char gsm_header15[1] = {0xde};
+  static const unsigned char gsm_header16[1] = {0xdf};
 
   register_header_check(0, gsm_header1, sizeof(gsm_header1), &header_check_gsm, file_stat);
 #ifndef DISABLED_FOR_FRAMAC

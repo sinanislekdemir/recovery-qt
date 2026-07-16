@@ -32,42 +32,37 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_1cd(file_stat_t *file_stat);
 
-const file_hint_t file_hint_1cd= {
-  .extension="1cd",
-  .description="Russian Finance 1C:Enterprise 8",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_1cd
-};
+const file_hint_t file_hint_1cd = {.extension = "1cd",
+                                   .description = "Russian Finance 1C:Enterprise 8",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_1cd};
 
-struct header_1cd
-{
+struct header_1cd {
   char magic[8];
   uint32_t version;
   uint32_t size;
-} __attribute__ ((gcc_struct, __packed__));
+} __attribute__((gcc_struct, __packed__));
 
-
-static int header_check_1cd(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct header_1cd *hdr=(const struct header_1cd *)buffer;
-  if(le32(hdr->size)==0)
+static int header_check_1cd(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const struct header_1cd *hdr = (const struct header_1cd *)buffer;
+  if (le32(hdr->size) == 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_1cd.extension;
-  file_recovery_new->calculated_file_size=((uint64_t)le32(hdr->size))<<12;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->extension = file_hint_1cd.extension;
+  file_recovery_new->calculated_file_size = ((uint64_t)le32(hdr->size)) << 12;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
   return 1;
 }
 
-static void register_header_check_1cd(file_stat_t *file_stat)
-{
-  static const unsigned char header_1cd[9]=  { '1', 'C', 'D', 'B', 'M', 'S', 'V', '8', 0x08 };
+static void register_header_check_1cd(file_stat_t *file_stat) {
+  static const unsigned char header_1cd[9] = {'1', 'C', 'D', 'B', 'M', 'S', 'V', '8', 0x08};
   register_header_check(0, header_1cd, sizeof(header_1cd), &header_check_1cd, file_stat);
 }
 #endif

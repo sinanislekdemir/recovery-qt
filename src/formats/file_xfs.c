@@ -33,26 +33,24 @@
 #include "xfs_struct.h"
 #include "filegen.h"
 
-
 static void register_header_check_xfs(file_stat_t *file_stat);
 
-const file_hint_t file_hint_xfs = {
-  .extension = "xfs",
-  .description = "xfs structure",
-  .max_filesize = 0,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_xfs
-};
+const file_hint_t file_hint_xfs = {.extension = "xfs",
+                                   .description = "xfs structure",
+                                   .max_filesize = 0,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_xfs};
 
-
-static int header_check_xfs_sb(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_xfs_sb(const unsigned char *buffer, const unsigned int buffer_size,
+                               const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                               file_recovery_t *file_recovery_new) {
   const struct xfs_sb *sb = (const struct xfs_sb *)buffer;
   const unsigned int sb_blocksize = be32(sb->sb_blocksize);
-  if(sb->sb_sectlog >= 16 || sb->sb_inodelog >= 16 || sb->sb_blocklog >= 16)
+  if (sb->sb_sectlog >= 16 || sb->sb_inodelog >= 16 || sb->sb_blocklog >= 16)
     return 0;
-  if(sb->sb_magicnum != be32(XFS_SB_MAGIC) || be16(sb->sb_sectsize) != (1U << sb->sb_sectlog) || sb_blocksize != (1U << sb->sb_blocklog) || be16(sb->sb_inodesize) != (1U << sb->sb_inodelog))
+  if (sb->sb_magicnum != be32(XFS_SB_MAGIC) || be16(sb->sb_sectsize) != (1U << sb->sb_sectlog) ||
+      sb_blocksize != (1U << sb->sb_blocklog) || be16(sb->sb_inodesize) != (1U << sb->sb_inodelog))
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_xfs.extension;
@@ -62,16 +60,15 @@ static int header_check_xfs_sb(const unsigned char *buffer, const unsigned int b
   return 1;
 }
 
-
-static data_check_t data_check_stopasap(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
+static data_check_t data_check_stopasap(const unsigned char *buffer, const unsigned int buffer_size,
+                                        file_recovery_t *file_recovery) {
   return DC_STOP;
 }
 
-
-static int header_save_xfs(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(safe_header_only > 0)
+static int header_save_xfs(const unsigned char *buffer, const unsigned int buffer_size,
+                           const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                           file_recovery_t *file_recovery_new) {
+  if (safe_header_only > 0)
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_xfs.extension;
@@ -80,8 +77,7 @@ static int header_save_xfs(const unsigned char *buffer, const unsigned int buffe
   return 1;
 }
 
-typedef struct xfs_timestamp
-{
+typedef struct xfs_timestamp {
   int32_t t_sec;
   int32_t t_nsec;
 } xfs_timestamp_t;
@@ -90,8 +86,7 @@ typedef int64_t xfs_fsize_t;   /* bytes in a file */
 typedef int32_t xfs_extnum_t;  /* # of extents in a file */
 typedef int16_t xfs_aextnum_t; /* # extents in an attribute fork */
 
-typedef struct xfs_dinode_core
-{
+typedef struct xfs_dinode_core {
   uint16_t di_magic;
   uint16_t di_mode;
   int8_t di_version;
@@ -119,13 +114,15 @@ typedef struct xfs_dinode_core
   uint32_t di_gen;
 } xfs_dinode_core_t;
 
-
-static int header_check_xfs_inode(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_xfs_inode(const unsigned char *buffer, const unsigned int buffer_size,
+                                  const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                                  file_recovery_t *file_recovery_new) {
   const xfs_dinode_core_t *inode = (const xfs_dinode_core_t *)buffer;
-  if(safe_header_only > 0)
+  if (safe_header_only > 0)
     return 0;
-  if(inode->di_version != 2 || inode->di_pad[0] != 0 || inode->di_pad[1] != 0 || inode->di_pad[2] != 0 || inode->di_pad[3] != 0 || inode->di_pad[4] != 0 || inode->di_pad[5] != 0 || inode->di_pad[6] != 0 || inode->di_pad[7] != 0)
+  if (inode->di_version != 2 || inode->di_pad[0] != 0 || inode->di_pad[1] != 0 || inode->di_pad[2] != 0 ||
+      inode->di_pad[3] != 0 || inode->di_pad[4] != 0 || inode->di_pad[5] != 0 || inode->di_pad[6] != 0 ||
+      inode->di_pad[7] != 0)
     return 0;
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_xfs.extension;
@@ -133,13 +130,12 @@ static int header_check_xfs_inode(const unsigned char *buffer, const unsigned in
   return 1;
 }
 
-static void register_header_check_xfs(file_stat_t *file_stat)
-{
-  static const unsigned char xagf[8] = { 'X', 'A', 'G', 'F', 0, 0, 0, 1 };
-  static const unsigned char xagi[8] = { 'X', 'A', 'G', 'I', 0, 0, 0, 1 };
-  static const unsigned char abtb[8] = { 'A', 'B', 'T', 'B', 0, 0, 0, 1 };
-  static const unsigned char abtc[8] = { 'A', 'B', 'T', 'C', 0, 0, 0, 1 };
-  static const unsigned char iabt[8] = { 'I', 'A', 'B', 'T', 0, 0, 0, 1 };
+static void register_header_check_xfs(file_stat_t *file_stat) {
+  static const unsigned char xagf[8] = {'X', 'A', 'G', 'F', 0, 0, 0, 1};
+  static const unsigned char xagi[8] = {'X', 'A', 'G', 'I', 0, 0, 0, 1};
+  static const unsigned char abtb[8] = {'A', 'B', 'T', 'B', 0, 0, 0, 1};
+  static const unsigned char abtc[8] = {'A', 'B', 'T', 'C', 0, 0, 0, 1};
+  static const unsigned char iabt[8] = {'I', 'A', 'B', 'T', 0, 0, 0, 1};
   register_header_check(0, "XFSB", 4, &header_check_xfs_sb, file_stat);
   register_header_check(0, xagf, 8, &header_save_xfs, file_stat);
   register_header_check(0, xagi, 8, &header_save_xfs, file_stat);

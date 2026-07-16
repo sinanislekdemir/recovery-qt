@@ -31,17 +31,14 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_vault(file_stat_t *file_stat);
 
-const file_hint_t file_hint_vault = {
-  .extension = "vault",
-  .description = "McAfee Anti-Theft/FileVault",
-  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_vault
-};
+const file_hint_t file_hint_vault = {.extension = "vault",
+                                     .description = "McAfee Anti-Theft/FileVault",
+                                     .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                     .recover = 1,
+                                     .enable_by_default = 1,
+                                     .register_header_check = &register_header_check_vault};
 
 /*
  * 03200be0  00 00 00 38 65 31 39 37  34 32 30 2d 39 35 65 34  |...8e197420-95e4|
@@ -49,17 +46,13 @@ const file_hint_t file_hint_vault = {
  * 03200c00  30 64 61 62 64 64 37 00                           |0dabdd7.|
  * */
 
-
-static data_check_t data_check_vault(const unsigned char *buffer, const unsigned int buffer_size, file_recovery_t *file_recovery)
-{
+static data_check_t data_check_vault(const unsigned char *buffer, const unsigned int buffer_size,
+                                     file_recovery_t *file_recovery) {
   unsigned int i;
-  
-  
-  
-  for(i = (buffer_size / 2) - 28; i + 29 <= buffer_size; i++)
-  {
-    if(buffer[i] == '-' && buffer[i + 5] == '-' && buffer[i + 10] == '-' && buffer[i + 15] == '-' && buffer[i + 28] == '\0')
-    {
+
+  for (i = (buffer_size / 2) - 28; i + 29 <= buffer_size; i++) {
+    if (buffer[i] == '-' && buffer[i + 5] == '-' && buffer[i + 10] == '-' && buffer[i + 15] == '-' &&
+        buffer[i + 28] == '\0') {
       file_recovery->calculated_file_size = file_recovery->file_size + i + 29 - (buffer_size / 2);
       return DC_STOP;
     }
@@ -68,26 +61,21 @@ static data_check_t data_check_vault(const unsigned char *buffer, const unsigned
   return DC_CONTINUE;
 }
 
-
-static int header_check_vault(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_vault(const unsigned char *buffer, const unsigned int buffer_size,
+                              const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                              file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
   file_recovery_new->extension = file_hint_vault.extension;
-  if(file_recovery_new->blocksize >= 29)
-  {
+  if (file_recovery_new->blocksize >= 29) {
     file_recovery_new->data_check = &data_check_vault;
     file_recovery_new->file_check = &file_check_size;
   }
   return 1;
 }
 
-static void register_header_check_vault(file_stat_t *file_stat)
-{
-  static const unsigned char vault_header[0x12] = {
-    'S', 'a', 'f', 'e', 'B', 'o', 'o', 't',
-    'E', 'n', 'c', 'V', 'o', 'l', '1', 0x00,
-    0x01, 0x01
-  };
+static void register_header_check_vault(file_stat_t *file_stat) {
+  static const unsigned char vault_header[0x12] = {'S', 'a', 'f', 'e', 'B', 'o', 'o',  't',  'E',
+                                                   'n', 'c', 'V', 'o', 'l', '1', 0x00, 0x01, 0x01};
   register_header_check(0, vault_header, sizeof(vault_header), &header_check_vault, file_stat);
 }
 #endif

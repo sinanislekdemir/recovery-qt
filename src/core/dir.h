@@ -26,30 +26,24 @@ extern "C" {
 #endif
 #include "dir_common.h"
 
-
 int set_datestr(char *datestr, size_t n, const time_t timev);
 
+int dir_aff_log(const dir_data_t *dir_data, const file_info_t *dir_list);
 
-int dir_aff_log(const dir_data_t *dir_data, const file_info_t*dir_list);
-
-
-void log_list_file(const disk_t *disk_car, const partition_t *partition, const dir_data_t *dir_data, const file_info_t*list);
-
+void log_list_file(const disk_t *disk_car, const partition_t *partition, const dir_data_t *dir_data,
+                   const file_info_t *list);
 
 unsigned int delete_list_file(file_info_t *list);
 
+int dir_whole_partition_log(disk_t *disk_car, const partition_t *partition, dir_data_t *dir_data,
+                            const unsigned long int inode);
 
-int dir_whole_partition_log(disk_t *disk_car, const partition_t *partition, dir_data_t *dir_data, const unsigned long int inode);
+void dir_whole_partition_copy(disk_t *disk_car, const partition_t *partition, dir_data_t *dir_data,
+                              const unsigned long int inode);
 
-
-void dir_whole_partition_copy(disk_t *disk_car, const partition_t *partition, dir_data_t *dir_data, const unsigned long int inode);
-
-
-void mode_string (const unsigned int mode, char *str);
-
+void mode_string(const unsigned int mode, char *str);
 
 int set_mode(const char *pathname, unsigned int mode);
-
 
 /* Memory capture mode: when set, fopen_local uses open_memstream
  * instead of fopen, writing file data to a dynamically-growable
@@ -62,15 +56,11 @@ size_t get_capture_size(void);
 
 FILE *fopen_local(char **localfilename, const char *localroot, const char *filename);
 
-
 char *gen_local_filename(const char *filename);
-
 
 char *mkdir_local(const char *localroot, const char *pathname);
 
-
 void mkdir_local_for_file(const char *filename);
-
 
 int filesort(const struct td_list_head *a, const struct td_list_head *b);
 #ifdef __cplusplus

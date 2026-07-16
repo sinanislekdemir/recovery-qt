@@ -32,20 +32,16 @@
 #include "filegen.h"
 #include "common.h"
 
-
 static void register_header_check_wpd(file_stat_t *file_stat);
 
-const file_hint_t file_hint_wpd = {
-  .extension = "wpd",
-  .description = "Corel Documents",
-  .max_filesize = PHOTOREC_MAX_FILE_SIZE,
-  .recover = 1,
-  .enable_by_default = 1,
-  .register_header_check = &register_header_check_wpd
-};
+const file_hint_t file_hint_wpd = {.extension = "wpd",
+                                   .description = "Corel Documents",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_wpd};
 
-struct wpd_hdr
-{
+struct wpd_hdr {
   unsigned char magic[4];
   uint32_t documentOffset;
   uint8_t productType;
@@ -58,25 +54,23 @@ struct wpd_hdr
   uint32_t documentSize; /* 20: WP 6.1 or later ? */
 } __attribute__((gcc_struct, __packed__));
 
-
-static int header_check_wpd(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_wpd(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   const struct wpd_hdr *hdr = (const struct wpd_hdr *)buffer;
   const unsigned int documentOffset = le32(hdr->documentOffset);
-  if(hdr->fileType == 0x0a && hdr->majorVersion == 0x02)
-  {
+  if (hdr->fileType == 0x0a && hdr->majorVersion == 0x02) {
     const unsigned int documentSize = le32(hdr->documentSize);
     /* WP 6 */
-    if(hdr->minorVersion == 0)
-    {
-      if(documentOffset < 20)
+    if (hdr->minorVersion == 0) {
+      if (documentOffset < 20)
         return 0;
       reset_file_recovery(file_recovery_new);
       file_recovery_new->extension = file_hint_wpd.extension;
       file_recovery_new->min_filesize = documentOffset;
       return 1;
     }
-    if(documentOffset < sizeof(struct wpd_hdr) || documentSize < documentOffset)
+    if (documentOffset < sizeof(struct wpd_hdr) || documentSize < documentOffset)
       return 0;
     reset_file_recovery(file_recovery_new);
     file_recovery_new->extension = file_hint_wpd.extension;
@@ -85,12 +79,11 @@ static int header_check_wpd(const unsigned char *buffer, const unsigned int buff
     file_recovery_new->file_check = &file_check_size;
     return 1;
   }
-  if(/* WP5 */
-     (hdr->fileType == 0x0a && hdr->majorVersion == 0x00) ||
-     /* WP MAC 2.x, 3.0-3.5, 3.5e */
-     (hdr->fileType == 0x2c && (hdr->majorVersion >= 0x02 && hdr->majorVersion <= 0x04)))
-  {
-    if(documentOffset < 20)
+  if (/* WP5 */
+      (hdr->fileType == 0x0a && hdr->majorVersion == 0x00) ||
+      /* WP MAC 2.x, 3.0-3.5, 3.5e */
+      (hdr->fileType == 0x2c && (hdr->majorVersion >= 0x02 && hdr->majorVersion <= 0x04))) {
+    if (documentOffset < 20)
       return 0;
     reset_file_recovery(file_recovery_new);
     file_recovery_new->extension = file_hint_wpd.extension;
@@ -100,9 +93,8 @@ static int header_check_wpd(const unsigned char *buffer, const unsigned int buff
   return 0;
 }
 
-static void register_header_check_wpd(file_stat_t *file_stat)
-{
-  static const unsigned char wpd_header[4] = { 0xff, 'W', 'P', 'C' };
+static void register_header_check_wpd(file_stat_t *file_stat) {
+  static const unsigned char wpd_header[4] = {0xff, 'W', 'P', 'C'};
   register_header_check(0, wpd_header, sizeof(wpd_header), &header_check_wpd, file_stat);
 }
 #endif

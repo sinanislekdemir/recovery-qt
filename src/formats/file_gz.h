@@ -25,8 +25,7 @@
 extern "C" {
 #endif
 
-
-const char*td_zlib_version(void);
+const char *td_zlib_version(void);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

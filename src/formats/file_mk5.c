@@ -30,32 +30,28 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_mk5(file_stat_t *file_stat);
 
-const file_hint_t file_hint_mk5= {
-  .extension="mk5",
-  .description="Custom CAD-CAM",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_mk5
-};
+const file_hint_t file_hint_mk5 = {.extension = "mk5",
+                                   .description = "Custom CAD-CAM",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_mk5};
 
-
-static int header_check_mk5(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  static const unsigned char mk5_header2[4]= { 0x00, 0x40, 0x1c, 0x46 };
-  if(memcmp(buffer+0x1c,mk5_header2,sizeof(mk5_header2))!=0)
+static int header_check_mk5(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  static const unsigned char mk5_header2[4] = {0x00, 0x40, 0x1c, 0x46};
+  if (memcmp(buffer + 0x1c, mk5_header2, sizeof(mk5_header2)) != 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_mk5.extension;
+  file_recovery_new->extension = file_hint_mk5.extension;
   return 1;
 }
 
-static void register_header_check_mk5(file_stat_t *file_stat)
-{
-  static const unsigned char mk5_header[4]= { 0x36, 0xff, 0xff, 0xff };
-  register_header_check(0, mk5_header,sizeof(mk5_header), &header_check_mk5, file_stat);
+static void register_header_check_mk5(file_stat_t *file_stat) {
+  static const unsigned char mk5_header[4] = {0x36, 0xff, 0xff, 0xff};
+  register_header_check(0, mk5_header, sizeof(mk5_header), &header_check_mk5, file_stat);
 }
 #endif

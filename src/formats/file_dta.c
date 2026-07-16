@@ -31,21 +31,18 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_dta(file_stat_t *file_stat);
 
-const file_hint_t file_hint_dta= {
-  .extension="dta",
-  .description="SPSS",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=0,
-  .register_header_check=&register_header_check_dta
-};
+const file_hint_t file_hint_dta = {.extension = "dta",
+                                   .description = "SPSS",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 0,
+                                   .register_header_check = &register_header_check_dta};
 
-
-static int header_check_dta(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_dta(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   /*
      ds_format                1    byte      0x71 or 0x72
      byteorder                1    byte      0x01 -> HILO, 0x02 -> LOHI
@@ -57,17 +54,16 @@ static int header_check_dta(const unsigned char *buffer, const unsigned int buff
      time_stamp              18    char      date/time saved, \0 terminated
      */
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_dta.extension;
+  file_recovery_new->extension = file_hint_dta.extension;
   return 1;
 }
 
-static void register_header_check_dta(file_stat_t *file_stat)
-{
-  static const unsigned char dta_header_71le[3]= {0x71, 0x02, 0x01};
-  static const unsigned char dta_header_72le[3]= {0x72, 0x02, 0x01};
-  register_header_check(0, dta_header_71le,sizeof(dta_header_71le), &header_check_dta, file_stat);
+static void register_header_check_dta(file_stat_t *file_stat) {
+  static const unsigned char dta_header_71le[3] = {0x71, 0x02, 0x01};
+  static const unsigned char dta_header_72le[3] = {0x72, 0x02, 0x01};
+  register_header_check(0, dta_header_71le, sizeof(dta_header_71le), &header_check_dta, file_stat);
 #ifndef DISABLED_FOR_FRAMAC
-  register_header_check(0, dta_header_72le,sizeof(dta_header_72le), &header_check_dta, file_stat);
+  register_header_check(0, dta_header_72le, sizeof(dta_header_72le), &header_check_dta, file_stat);
 #endif
 }
 #endif

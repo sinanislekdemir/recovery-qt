@@ -1,4 +1,4 @@
-# AGENTS.md — recovery-qt Development Guide
+# AGENTS.md
 
 ## Project Overview
 
@@ -10,3 +10,40 @@ backup/restore, and LUKS decryption support.
 
 - DO NOT CHANGE any file license headers. Those headers show the clear ownership and hard work by the creators.
 - New features and new files must be marked for Sinan Islekdemir <sinan@islekdemir.com>
+- Backwards compatibility with the remote/original project is not important.
+- Always run formatter and linter at the end of a task.
+
+## Build
+
+```sh
+cmake -B build -S .          # configure (exports build/compile_commands.json)
+cmake --build build -j       # build
+```
+
+The build MUST stay warning-free (`-Wall -Wextra`). Warnings are treated as
+early signs of a code smell and must be fixed, not ignored. Two categories are
+deliberately disabled in `CMakeLists.txt` because they are architectural rather
+than smells: `-Wno-unused-parameter` (photorec plugins/callbacks share fixed
+signatures) and `-Wno-address-of-packed-member` (on-disk FAT/NTFS structures on
+the Linux/x86_64 target). Vendored `src/vendor/argon2` is not linted.
+
+## Formatter and Linter
+
+Run BOTH at the end of every task:
+
+```sh
+scripts/format.sh            # clang-format all sources in place (skips src/vendor)
+scripts/format.sh --check    # verify formatting without editing (CI-friendly)
+scripts/lint.sh              # clang-tidy over the project (needs build/ configured)
+scripts/lint.sh src/core/foo.c   # lint specific file(s)
+```
+
+- Formatting is defined by `.clang-format` (LLVM base, 2-space indent, 120 cols,
+  includes are never reordered because order is semantically significant).
+- Static analysis is defined by `.clang-tidy` (bugprone, clang-analyzer,
+  performance, portability). Fix real defects it reports (use-after-free,
+  leaks, unused-but-set variables, etc.). Known false positives from intrusive
+  linked lists (`container_of`) and ownership passed through function-pointer
+  callbacks may remain.
+
+

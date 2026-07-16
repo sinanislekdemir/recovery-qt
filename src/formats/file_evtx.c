@@ -32,53 +32,47 @@
 #include "filegen.h"
 #include "common.h"
 
-struct evtx_header
-{
-  char     magic[8];
+struct evtx_header {
+  char magic[8];
   uint64_t OldestChunk;
   uint64_t CurrentChunkNum;
   uint64_t NextRecordNum;
-  uint32_t HeaderPart1Len;	/* 0x80 */
-  uint16_t MinorVersion;	/* 1 */
-  uint16_t MajorVersion;	/* 3 */
-  uint16_t HeaderSize;		/* 0x1000 */
+  uint32_t HeaderPart1Len; /* 0x80 */
+  uint16_t MinorVersion;   /* 1 */
+  uint16_t MajorVersion;   /* 3 */
+  uint16_t HeaderSize;     /* 0x1000 */
   uint16_t ChunkCount;
-  char	   unk[76];		/* 0 */
+  char unk[76]; /* 0 */
   uint32_t Flags;
   uint32_t Checksum;
-} __attribute__ ((gcc_struct, __packed__));
-
+} __attribute__((gcc_struct, __packed__));
 
 static void register_header_check_evtx(file_stat_t *file_stat);
 
-const file_hint_t file_hint_evtx= {
-  .extension="evtx",
-  .description="Microsoft Event Log",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_evtx
-};
+const file_hint_t file_hint_evtx = {.extension = "evtx",
+                                    .description = "Microsoft Event Log",
+                                    .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                    .recover = 1,
+                                    .enable_by_default = 1,
+                                    .register_header_check = &register_header_check_evtx};
 
-
-static int header_check_evtx(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const struct evtx_header *hdr=(const struct evtx_header *)buffer;
-  if(le32(hdr->HeaderPart1Len) != 0x80 ||
-      le16(hdr->MinorVersion) != 1 ||
-      le16(hdr->MajorVersion) != 3 ||
+static int header_check_evtx(const unsigned char *buffer, const unsigned int buffer_size,
+                             const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                             file_recovery_t *file_recovery_new) {
+  const struct evtx_header *hdr = (const struct evtx_header *)buffer;
+  if (le32(hdr->HeaderPart1Len) != 0x80 || le16(hdr->MinorVersion) != 1 || le16(hdr->MajorVersion) != 3 ||
       le16(hdr->HeaderSize) != 0x1000)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_evtx.extension;
-  file_recovery_new->calculated_file_size=(uint64_t)le16(hdr->HeaderSize) + (uint64_t)le16(hdr->ChunkCount) * 64 * 1024;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->extension = file_hint_evtx.extension;
+  file_recovery_new->calculated_file_size =
+      (uint64_t)le16(hdr->HeaderSize) + (uint64_t)le16(hdr->ChunkCount) * 64 * 1024;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
   return 1;
 }
 
-static void register_header_check_evtx(file_stat_t *file_stat)
-{
+static void register_header_check_evtx(file_stat_t *file_stat) {
   register_header_check(0, "ElfFile", 8, &header_check_evtx, file_stat);
 }
 #endif

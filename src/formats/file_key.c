@@ -31,31 +31,27 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_key(file_stat_t *file_stat);
 
-const file_hint_t file_hint_key= {
-  .extension="key",
-  .description="Synology AES key",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_key
-};
+const file_hint_t file_hint_key = {.extension = "key",
+                                   .description = "Synology AES key",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_key};
 
-
-static int header_check_key(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_key(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_key.extension;
-  file_recovery_new->calculated_file_size=32;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->extension = file_hint_key.extension;
+  file_recovery_new->calculated_file_size = 32;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
   return 1;
 }
 
-static void register_header_check_key(file_stat_t *file_stat)
-{
+static void register_header_check_key(file_stat_t *file_stat) {
   register_header_check(0, "323382b3c4f1c6d2", 16, &header_check_key, file_stat);
 }
 #endif

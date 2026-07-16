@@ -26,40 +26,32 @@
 extern "C" {
 #endif
 
-
 int check_NTFS(disk_t *disk_car, partition_t *partition, const int verbose, const int dump_ind);
-
 
 int log_ntfs_info(const struct ntfs_boot_sector *ntfs_header);
 
-
 int is_ntfs(const partition_t *partition);
-
 
 int is_part_ntfs(const partition_t *partition);
 
+int recover_NTFS(disk_t *disk_car, const struct ntfs_boot_sector *ntfs_header, partition_t *partition,
+                 const int verbose, const int dump_ind, const int backup);
 
-int recover_NTFS(disk_t *disk_car, const struct ntfs_boot_sector*ntfs_header, partition_t *partition, const int verbose, const int dump_ind, const int backup);
+int test_NTFS(const disk_t *disk_car, const struct ntfs_boot_sector *ntfs_header, const partition_t *partition,
+              const int verbose, const int dump_ind);
 
-
-int test_NTFS(const disk_t *disk_car, const struct ntfs_boot_sector*ntfs_header, const partition_t *partition, const int verbose, const int dump_ind);
-
-#define NTFS_GETU8(p)      (*(const uint8_t*)(p))
-#define NTFS_GETU16(p)     (le16(*(const uint16_t*)(p)))
-#define NTFS_GETU32(p)     (le32(*(const uint32_t*)(p)))
-#define NTFS_GETU64(p)     (le64(*(const uint64_t*)(p)))
-
+#define NTFS_GETU8(p) (*(const uint8_t *)(p))
+#define NTFS_GETU16(p) (le16(*(const uint16_t *)(p)))
+#define NTFS_GETU32(p) (le32(*(const uint32_t *)(p)))
+#define NTFS_GETU64(p) (le64(*(const uint64_t *)(p)))
 
 unsigned int ntfs_sector_size(const struct ntfs_boot_sector *ntfs_header);
 
+const ntfs_attribheader *ntfs_findattribute(const ntfs_recordheader *record, uint32_t attrType, const char *end);
 
-const ntfs_attribheader* ntfs_findattribute(const ntfs_recordheader* record, uint32_t attrType, const char* end);
+const char *ntfs_getattributedata(const ntfs_attribresident *attrib, const char *end);
 
-
-const char* ntfs_getattributedata(const ntfs_attribresident* attrib, const char* end);
-
-
-long int ntfs_get_first_rl_element(const ntfs_attribnonresident *attrnr, const char* end);
+long int ntfs_get_first_rl_element(const ntfs_attribnonresident *attrnr, const char *end);
 
 #ifdef __cplusplus
 } /* closing brace for extern "C" */

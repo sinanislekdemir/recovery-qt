@@ -1,0 +1,5 @@
+# Vendored third-party code (argon2) is kept byte-identical to upstream.
+# Maintainer: Sinan Islekdemir <sinan@islekdemir.com>
+---
+DisableFormat: true
+SortIncludes: Never

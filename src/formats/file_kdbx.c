@@ -31,30 +31,26 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_kdbx(file_stat_t *file_stat);
 
-const file_hint_t file_hint_kdbx= {
-  .extension="kdbx",
-  .description="KeePassX",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_kdbx
-};
+const file_hint_t file_hint_kdbx = {.extension = "kdbx",
+                                    .description = "KeePassX",
+                                    .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                    .recover = 1,
+                                    .enable_by_default = 1,
+                                    .register_header_check = &register_header_check_kdbx};
 
-
-static int header_check_kdbx(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_kdbx(const unsigned char *buffer, const unsigned int buffer_size,
+                             const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                             file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_kdbx.extension;
-  file_recovery_new->min_filesize=124;
+  file_recovery_new->extension = file_hint_kdbx.extension;
+  file_recovery_new->min_filesize = 124;
   return 1;
 }
 
-static void register_header_check_kdbx(file_stat_t *file_stat)
-{
-  static const unsigned char kdbx_header[8]= {0x03, 0xd9, 0xa2, 0x9a, 0x67, 0xfb, 0x4b, 0xb5};
-  register_header_check(0, kdbx_header,sizeof(kdbx_header), &header_check_kdbx, file_stat);
+static void register_header_check_kdbx(file_stat_t *file_stat) {
+  static const unsigned char kdbx_header[8] = {0x03, 0xd9, 0xa2, 0x9a, 0x67, 0xfb, 0x4b, 0xb5};
+  register_header_check(0, kdbx_header, sizeof(kdbx_header), &header_check_kdbx, file_stat);
 }
 #endif

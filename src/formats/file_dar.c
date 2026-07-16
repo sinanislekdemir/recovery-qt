@@ -31,37 +31,29 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_dar(file_stat_t *file_stat);
 
-const file_hint_t file_hint_dar= {
-  .extension="dar",
-  .description="dar archive",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_dar
-};
+const file_hint_t file_hint_dar = {.extension = "dar",
+                                   .description = "dar archive",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_dar};
 
-
-static int header_check_dar(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_dar(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   /* http://darbinding.sourceforge.net/specs/dar3.html */
-  if((buffer[0xe]=='N' || buffer[0xe]=='T') &&
-    (buffer[0xf]=='N' || buffer[0xf]=='S'))
-  {
+  if ((buffer[0xe] == 'N' || buffer[0xe] == 'T') && (buffer[0xf] == 'N' || buffer[0xf] == 'S')) {
     reset_file_recovery(file_recovery_new);
-    file_recovery_new->extension=file_hint_dar.extension;
+    file_recovery_new->extension = file_hint_dar.extension;
     return 1;
   }
   return 0;
 }
 
-static void register_header_check_dar(file_stat_t *file_stat)
-{
-  static const unsigned char dar_header[4]=  {
-    0, 0, 0, 0x7b
-  };
+static void register_header_check_dar(file_stat_t *file_stat) {
+  static const unsigned char dar_header[4] = {0, 0, 0, 0x7b};
   register_header_check(0, dar_header, sizeof(dar_header), &header_check_dar, file_stat);
 }
 #endif

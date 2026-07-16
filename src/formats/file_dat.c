@@ -31,70 +31,67 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_dat(file_stat_t *file_stat);
 
-const file_hint_t file_hint_dat= {
-  .extension="dat",
-  .description="IE History, Glavna Knjiga account data",
-  .max_filesize=2*1024*1024,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_dat
-};
+const file_hint_t file_hint_dat = {.extension = "dat",
+                                   .description = "IE History, Glavna Knjiga account data",
+                                   .max_filesize = 2 * 1024 * 1024,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_dat};
 
-
-static int header_check_dat(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_dat(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_dat.extension;
-  file_recovery_new->min_filesize=8;
+  file_recovery_new->extension = file_hint_dat.extension;
+  file_recovery_new->min_filesize = 8;
   return 1;
 }
 
-
-static int header_check_datIE(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const uint64_t size=(uint64_t)buffer[0x1C]+(((uint64_t)buffer[0x1D])<<8)+(((uint64_t)buffer[0x1E])<<16)+(((uint64_t)buffer[0x1F])<<24);
-  if(size < 0x20)
+static int header_check_datIE(const unsigned char *buffer, const unsigned int buffer_size,
+                              const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                              file_recovery_t *file_recovery_new) {
+  const uint64_t size = (uint64_t)buffer[0x1C] + (((uint64_t)buffer[0x1D]) << 8) + (((uint64_t)buffer[0x1E]) << 16) +
+                        (((uint64_t)buffer[0x1F]) << 24);
+  if (size < 0x20)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_dat.extension;
-  file_recovery_new->min_filesize=0x20;
-  file_recovery_new->calculated_file_size=size;
-  file_recovery_new->data_check=&data_check_size;
-  file_recovery_new->file_check=&file_check_size;
+  file_recovery_new->extension = file_hint_dat.extension;
+  file_recovery_new->min_filesize = 0x20;
+  file_recovery_new->calculated_file_size = size;
+  file_recovery_new->data_check = &data_check_size;
+  file_recovery_new->file_check = &file_check_size;
   return 1;
 }
 
-
-static int header_check_dat_history4(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(memcmp(&buffer[0x30], "BrowserVisit", 12)!=0)
+static int header_check_dat_history4(const unsigned char *buffer, const unsigned int buffer_size,
+                                     const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                                     file_recovery_t *file_recovery_new) {
+  if (memcmp(&buffer[0x30], "BrowserVisit", 12) != 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_dat.extension;
-  file_recovery_new->min_filesize=60;
+  file_recovery_new->extension = file_hint_dat.extension;
+  file_recovery_new->min_filesize = 60;
   return 1;
 }
 
-
-static int header_check_dat_history10(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  if(memcmp(&buffer[0x36], "BrowserVisit", 12)!=0)
+static int header_check_dat_history10(const unsigned char *buffer, const unsigned int buffer_size,
+                                      const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                                      file_recovery_t *file_recovery_new) {
+  if (memcmp(&buffer[0x36], "BrowserVisit", 12) != 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_dat.extension;
-  file_recovery_new->min_filesize=66;
+  file_recovery_new->extension = file_hint_dat.extension;
+  file_recovery_new->min_filesize = 66;
   return 1;
 }
 
-static void register_header_check_dat(file_stat_t *file_stat)
-{
-  static const unsigned char dat_header[8]= {0x30, 0x7e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+static void register_header_check_dat(file_stat_t *file_stat) {
+  static const unsigned char dat_header[8] = {0x30, 0x7e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
   /* Found on Sony Ericson phone */
-  static const unsigned char dat_history[8]={ 'N', 'F', 'P', 'K', 'D', 'D', 'A', 'T'};
-  register_header_check(0, dat_header,sizeof(dat_header), &header_check_dat, file_stat);
+  static const unsigned char dat_history[8] = {'N', 'F', 'P', 'K', 'D', 'D', 'A', 'T'};
+  register_header_check(0, dat_header, sizeof(dat_header), &header_check_dat, file_stat);
   register_header_check(0, "Client UrlCache MMF Ver 5.2", 0x1c, &header_check_datIE, file_stat);
   register_header_check(4, dat_history, sizeof(dat_history), &header_check_dat_history4, file_stat);
   register_header_check(10, dat_history, sizeof(dat_history), &header_check_dat_history10, file_stat);

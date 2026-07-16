@@ -31,34 +31,27 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_bim(file_stat_t *file_stat);
 
-const file_hint_t file_hint_bim= {
-  .extension="bim",
-  .description="Broadcast Interface Module",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_bim
-};
+const file_hint_t file_hint_bim = {.extension = "bim",
+                                   .description = "Broadcast Interface Module",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_bim};
 
-
-static int header_check_bim(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_bim(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_bim.extension;
+  file_recovery_new->extension = file_hint_bim.extension;
   return 1;
 }
 
-static void register_header_check_bim(file_stat_t *file_stat)
-{
-  static const unsigned char bim_header[0x20]=  {
-    0x00, 0x1f, 0x01, '4' , 'u' , 'r' , 'n' , ':',
-    's' , 'c' , 'h' , 'e' , 'm' , 'a' , 's' , '-',
-    'p' , 'r' , 'o' , 'f' , 'e' , 's' , 's' , 'i' ,
-    'o' , 'n' , 'a' , 'l' , 'D' , 'i' , 's' , 'c'
-  };
+static void register_header_check_bim(file_stat_t *file_stat) {
+  static const unsigned char bim_header[0x20] = {0x00, 0x1f, 0x01, '4', 'u', 'r', 'n', ':', 's', 'c', 'h',
+                                                 'e',  'm',  'a',  's', '-', 'p', 'r', 'o', 'f', 'e', 's',
+                                                 's',  'i',  'o',  'n', 'a', 'l', 'D', 'i', 's', 'c'};
   register_header_check(0, bim_header, sizeof(bim_header), &header_check_bim, file_stat);
 }
 #endif

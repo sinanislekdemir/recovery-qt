@@ -25,12 +25,9 @@
 extern "C" {
 #endif
 
-
 int check_f2fs(disk_t *disk, partition_t *partition);
 
-
 int test_f2fs(const struct f2fs_super_block *hdr);
-
 
 int recover_f2fs(const disk_t *disk, const struct f2fs_super_block *hdr, partition_t *partition);
 

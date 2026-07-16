@@ -33,18 +33,15 @@
 #include "common.h"
 #include "log.h"
 
-
 static void register_header_check_nk2(file_stat_t *file_stat);
-#define NK2_MAX_FILESIZE 100*1024*1024
+#define NK2_MAX_FILESIZE 100 * 1024 * 1024
 
-const file_hint_t file_hint_nk2= {
-  .extension="nk2",
-  .description="Outlook Nickfile",
-  .max_filesize=NK2_MAX_FILESIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_nk2
-};
+const file_hint_t file_hint_nk2 = {.extension = "nk2",
+                                   .description = "Outlook Nickfile",
+                                   .max_filesize = NK2_MAX_FILESIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_nk2};
 
 typedef struct {
   uint32_t magic;
@@ -65,93 +62,81 @@ typedef struct {
   uint32_t unk3;
 } entryHeader;
 
-#define	PT_UNSPECIFIED	0x0000
-#define	PT_NULL		0x0001
-#define	PT_I2		0x0002
-#define	PT_LONG		0x0003
-#define	PT_R4		0x0004
-#define	PT_DOUBLE	0x0005
-#define	PT_CURRENCY	0x0006
-#define	PT_APPTIME	0x0007
-#define	PT_ERROR	0x000a /* means the given attr contains no value */
-#define	PT_BOOLEAN	0x000b
-#define	PT_OBJECT	0x000d
-#define	PT_I8		0x0014
-#define	PT_STRING8	0x001e
-#define	PT_UNICODE	0x001f
-#define	PT_SYSTIME	0x0040
-#define	PT_CLSID       	0x0048
-#define PT_SRVEID	0x00fb
-#define PT_SRESTRICT	0x00fd
-#define PT_ACTIONS	0x00fe
-#define	PT_BINARY	0x0102
+#define PT_UNSPECIFIED 0x0000
+#define PT_NULL 0x0001
+#define PT_I2 0x0002
+#define PT_LONG 0x0003
+#define PT_R4 0x0004
+#define PT_DOUBLE 0x0005
+#define PT_CURRENCY 0x0006
+#define PT_APPTIME 0x0007
+#define PT_ERROR 0x000a /* means the given attr contains no value */
+#define PT_BOOLEAN 0x000b
+#define PT_OBJECT 0x000d
+#define PT_I8 0x0014
+#define PT_STRING8 0x001e
+#define PT_UNICODE 0x001f
+#define PT_SYSTIME 0x0040
+#define PT_CLSID 0x0048
+#define PT_SRVEID 0x00fb
+#define PT_SRESTRICT 0x00fd
+#define PT_ACTIONS 0x00fe
+#define PT_BINARY 0x0102
 
-
-static void file_check_nk2_aux(file_recovery_t *fr, const unsigned int entries_count)
-{
+static void file_check_nk2_aux(file_recovery_t *fr, const unsigned int entries_count) {
   unsigned int j;
-  
-  for(j=0; j<entries_count; j++)
-  {
+
+  for (j = 0; j < entries_count; j++) {
     uint64_t size;
     char buf_entryh[sizeof(entryHeader)];
-    const entryHeader *entryh=(const entryHeader *)&buf_entryh;
-    
-    if (fread(&buf_entryh, sizeof(entryHeader), 1, fr->handle)!=1)
-    {
-      fr->offset_error=fr->file_size;
-      fr->file_size=0;
+    const entryHeader *entryh = (const entryHeader *)&buf_entryh;
+
+    if (fread(&buf_entryh, sizeof(entryHeader), 1, fr->handle) != 1) {
+      fr->offset_error = fr->file_size;
+      fr->file_size = 0;
       return;
     }
 #if defined(__FRAMAC__)
     Frama_C_make_unknown(&buf_entryh, sizeof(entryHeader));
 #endif
-    switch(le16(entryh->value_type))
-    {
-      case PT_LONG:
-      case PT_BOOLEAN:
-      case PT_ERROR:
-      case PT_NULL:
-	size=0;
-	break;
-      case PT_UNICODE:
-      case PT_BINARY:
-	{
-	  char buf_entry_size[sizeof(uint32_t)];
-	  const uint32_t *entry_size=(const uint32_t *)&buf_entry_size;
-	  
-	  if (fread(&buf_entry_size, sizeof(uint32_t), 1, fr->handle)!=1)
-	  {
-	    fr->offset_error=fr->file_size;
-	    fr->file_size=0;
-	    return;
-	  }
+    switch (le16(entryh->value_type)) {
+    case PT_LONG:
+    case PT_BOOLEAN:
+    case PT_ERROR:
+    case PT_NULL:
+      size = 0;
+      break;
+    case PT_UNICODE:
+    case PT_BINARY: {
+      char buf_entry_size[sizeof(uint32_t)];
+      const uint32_t *entry_size = (const uint32_t *)&buf_entry_size;
+
+      if (fread(&buf_entry_size, sizeof(uint32_t), 1, fr->handle) != 1) {
+        fr->offset_error = fr->file_size;
+        fr->file_size = 0;
+        return;
+      }
 #if defined(__FRAMAC__)
-	  Frama_C_make_unknown(&buf_entry_size, sizeof(uint32_t));
+      Frama_C_make_unknown(&buf_entry_size, sizeof(uint32_t));
 #endif
-	  size=(uint64_t)4+le32(*entry_size);
-	}
-	break;
-      default:
+      size = (uint64_t)4 + le32(*entry_size);
+    } break;
+    default:
 #ifndef DISABLED_FOR_FRAMAC
-	log_info("nk2   entry %04x size=? at 0x%llx\n",
-	    le16(entryh->value_type),
-	    (long long unsigned)fr->file_size);
+      log_info("nk2   entry %04x size=? at 0x%llx\n", le16(entryh->value_type), (long long unsigned)fr->file_size);
 #endif
-	fr->offset_error=fr->file_size;
-	fr->file_size=0;
-	return;
+      fr->offset_error = fr->file_size;
+      fr->file_size = 0;
+      return;
     }
 #ifdef DEBUG_NK2
     {
-      log_info("nk2   entry %04x size=%u at 0x%llx\n",
-	  le16(entryh->value_type),
-	  (unsigned int)size,
-	  (long long unsigned)fr->file_size);
+      log_info("nk2   entry %04x size=%u at 0x%llx\n", le16(entryh->value_type), (unsigned int)size,
+               (long long unsigned)fr->file_size);
       char buffer[2048];
-      unsigned int size_to_log=size;
-      if(size_to_log>2048)
-	size_to_log=2048;
+      unsigned int size_to_log = size;
+      if (size_to_log > 2048)
+        size_to_log = 2048;
       fread(&buffer, size_to_log, 1, fr->handle);
 #if defined(__FRAMAC__)
       Frama_C_make_unknown(buffer, 2048);
@@ -159,88 +144,78 @@ static void file_check_nk2_aux(file_recovery_t *fr, const unsigned int entries_c
       dump_log(&buffer, size_to_log);
     }
 #endif
-    fr->file_size+=sizeof(entryHeader);
-    if(fr->file_size >= NK2_MAX_FILESIZE)
-    {
-      fr->file_size=0;
+    fr->file_size += sizeof(entryHeader);
+    if (fr->file_size >= NK2_MAX_FILESIZE) {
+      fr->file_size = 0;
       return;
     }
-    if (my_fseek(fr->handle, fr->file_size+size, SEEK_SET) < 0)
-    {
-      fr->offset_error=fr->file_size;
-      fr->file_size=0;
+    if (my_fseek(fr->handle, fr->file_size + size, SEEK_SET) < 0) {
+      fr->offset_error = fr->file_size;
+      fr->file_size = 0;
       return;
     }
-    fr->file_size+=size;
+    fr->file_size += size;
   }
 }
 
-
-static void file_check_nk2(file_recovery_t *fr)
-{
+static void file_check_nk2(file_recovery_t *fr) {
   char buf_nk2h[sizeof(nk2Header)];
-  const nk2Header *nk2h=(const nk2Header *)&buf_nk2h;
+  const nk2Header *nk2h = (const nk2Header *)&buf_nk2h;
   unsigned int i;
-  
-  
+
   fr->file_size = 0;
-  fr->offset_error=0;
-  fr->offset_ok=0;
-  if(my_fseek(fr->handle, 0, SEEK_SET) < 0 ||
-      fread(&buf_nk2h, sizeof(nk2Header), 1, fr->handle)!=1)
+  fr->offset_error = 0;
+  fr->offset_ok = 0;
+  if (my_fseek(fr->handle, 0, SEEK_SET) < 0 || fread(&buf_nk2h, sizeof(nk2Header), 1, fr->handle) != 1)
     return;
 #if defined(__FRAMAC__)
   Frama_C_make_unknown(&buf_nk2h, sizeof(nk2Header));
 #endif
-  fr->file_size+=sizeof(nk2Header);
-  
+  fr->file_size += sizeof(nk2Header);
+
 #ifdef DEBUG_NK2
   log_info("nk2 item_count=%u\n", (unsigned int)le32(nk2h->items_count));
 #endif
-  
-  for(i=0; i<le32(nk2h->items_count); i++)
-  {
+
+  for (i = 0; i < le32(nk2h->items_count); i++) {
     char buf_itemh[sizeof(itemHeader)];
-    const itemHeader *itemh=(const itemHeader *)&buf_itemh;
-    
-    if(fr->file_size >= NK2_MAX_FILESIZE)
-    {
-      fr->file_size=0;
+    const itemHeader *itemh = (const itemHeader *)&buf_itemh;
+
+    if (fr->file_size >= NK2_MAX_FILESIZE) {
+      fr->file_size = 0;
       return;
     }
-    
-    if (fread(&buf_itemh, sizeof(itemHeader), 1, fr->handle)!=1)
-    {
-      fr->offset_error=fr->file_size;
-      fr->file_size=0;
+
+    if (fread(&buf_itemh, sizeof(itemHeader), 1, fr->handle) != 1) {
+      fr->offset_error = fr->file_size;
+      fr->file_size = 0;
       return;
     }
 #if defined(__FRAMAC__)
     Frama_C_make_unknown(&buf_itemh, sizeof(buf_itemh));
 #endif
-    fr->file_size+=sizeof(itemHeader);
+    fr->file_size += sizeof(itemHeader);
 #ifdef DEBUG_NK2
     log_info("nk2  entries_count=%u\n", (unsigned int)le32(itemh->entries_count));
 #endif
     file_check_nk2_aux(fr, le32(itemh->entries_count));
-    if(fr->file_size==0)
+    if (fr->file_size == 0)
       return;
   }
-  fr->file_size+=12;
+  fr->file_size += 12;
 }
 
-
-static int header_check_nk2(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_nk2(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_nk2.extension;
-  file_recovery_new->file_check=&file_check_nk2;
+  file_recovery_new->extension = file_hint_nk2.extension;
+  file_recovery_new->file_check = &file_check_nk2;
   return 1;
 }
 
-static void register_header_check_nk2(file_stat_t *file_stat)
-{
-  static const unsigned char nk2_header[8]=  { 0x0d, 0xf0, 0xad, 0xba, 0x0a, 0x00, 0x00, 0x00 };
-  register_header_check(0, nk2_header,  sizeof(nk2_header),  &header_check_nk2, file_stat);
+static void register_header_check_nk2(file_stat_t *file_stat) {
+  static const unsigned char nk2_header[8] = {0x0d, 0xf0, 0xad, 0xba, 0x0a, 0x00, 0x00, 0x00};
+  register_header_check(0, nk2_header, sizeof(nk2_header), &header_check_nk2, file_stat);
 }
 #endif

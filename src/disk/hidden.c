@@ -29,30 +29,23 @@
 #include "log.h"
 #include "hidden.h"
 
-int is_hpa_or_dco(const disk_t *disk)
-{
-  int res=0;
-  if(disk->native_max> 0 && disk->user_max < disk->native_max+1)
-  {
-    res=1;
-    if(disk->native_max < disk->dco)
-      res|=2;
-  }
-  else if(disk->dco > 0 && disk->user_max < disk->dco+1)
-  {
+int is_hpa_or_dco(const disk_t *disk) {
+  int res = 0;
+  if (disk->native_max > 0 && disk->user_max < disk->native_max + 1) {
+    res = 1;
+    if (disk->native_max < disk->dco)
+      res |= 2;
+  } else if (disk->dco > 0 && disk->user_max < disk->dco + 1) {
 #ifndef DISABLED_FOR_FRAMAC
-    log_info("user_max=%llu dco=%llu\n",
-	(long long unsigned) disk->user_max,
-	(long long unsigned) disk->dco);
+    log_info("user_max=%llu dco=%llu\n", (long long unsigned)disk->user_max, (long long unsigned)disk->dco);
 #endif
-    res|=2;
+    res |= 2;
   }
 #ifndef DISABLED_FOR_FRAMAC
-  if(res>0)
-  {
-    if(res&1)
+  if (res > 0) {
+    if (res & 1)
       log_warning("%s: Host Protected Area (HPA) present.\n", disk->device);
-    if(res&2)
+    if (res & 2)
       log_warning("%s: Device Configuration Overlay (DCO) present.\n", disk->device);
     log_flush();
   }

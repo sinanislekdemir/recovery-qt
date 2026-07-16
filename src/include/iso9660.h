@@ -24,44 +24,43 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-struct iso_primary_descriptor
-{
-	char type;
-	char id[5];
-	char version;
-	char unused1;
-	char system_id[32];
-	char volume_id[32];
-	char unused2[8];
-	uint32_t volume_space_size_le;
-	uint32_t volume_space_size_be;
-	char unused3[32];
-	char volume_set_size[4];
-	char volume_sequence_number[4];
-	uint16_t logical_block_size_le;
-	uint16_t logical_block_size_be;
-	char path_table_size[8];
-	char type_l_path_tabl[4];
-	char opt_type_l_path_table[4];
-	char type_m_path_table[4];
-	char opt_type_m_path_table[4];
-	char root_directory_record[34];
-	char volume_set_id[128];
-	char publisher_id[128];
-	char preparer_id[128];
-	char application_id[128];
-	char copyright_file_id[37];
-	char abstract_file_id[37];
-	char bibliographic_file_id[37];
-	char creation_date[17];
-	char modification_date[17];
-	char expiration_date[17];
-	char effective_date[17];
-	char file_structure_version;
-	char unused4;
-	char application_data[512];
-	char unused5[653];
-} __attribute__ ((gcc_struct, __packed__));
+struct iso_primary_descriptor {
+  char type;
+  char id[5];
+  char version;
+  char unused1;
+  char system_id[32];
+  char volume_id[32];
+  char unused2[8];
+  uint32_t volume_space_size_le;
+  uint32_t volume_space_size_be;
+  char unused3[32];
+  char volume_set_size[4];
+  char volume_sequence_number[4];
+  uint16_t logical_block_size_le;
+  uint16_t logical_block_size_be;
+  char path_table_size[8];
+  char type_l_path_tabl[4];
+  char opt_type_l_path_table[4];
+  char type_m_path_table[4];
+  char opt_type_m_path_table[4];
+  char root_directory_record[34];
+  char volume_set_id[128];
+  char publisher_id[128];
+  char preparer_id[128];
+  char application_id[128];
+  char copyright_file_id[37];
+  char abstract_file_id[37];
+  char bibliographic_file_id[37];
+  char creation_date[17];
+  char modification_date[17];
+  char expiration_date[17];
+  char effective_date[17];
+  char file_structure_version;
+  char unused4;
+  char application_data[512];
+  char unused5[653];
+} __attribute__((gcc_struct, __packed__));
 #define ISO_PD_SIZE (sizeof(struct iso_primary_descriptor))
 
 #ifdef __cplusplus

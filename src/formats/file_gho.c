@@ -31,32 +31,28 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_gho(file_stat_t *file_stat);
 
-const file_hint_t file_hint_gho= {
-  .extension="gho",
-  .description="Ghost",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_gho
-};
+const file_hint_t file_hint_gho = {.extension = "gho",
+                                   .description = "Ghost",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_gho};
 
-
-static int header_check_ghost(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  static const unsigned char gho_header_next[8]= { 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-  if(memcmp (buffer+8, gho_header_next, sizeof(gho_header_next))!=0)
+static int header_check_ghost(const unsigned char *buffer, const unsigned int buffer_size,
+                              const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                              file_recovery_t *file_recovery_new) {
+  static const unsigned char gho_header_next[8] = {0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  if (memcmp(buffer + 8, gho_header_next, sizeof(gho_header_next)) != 0)
     return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_gho.extension;
+  file_recovery_new->extension = file_hint_gho.extension;
   return 1;
 }
 
-static void register_header_check_gho(file_stat_t *file_stat)
-{
-  static const unsigned char gho_header[3]= { 0xfe, 0xef, 0x01 };
+static void register_header_check_gho(file_stat_t *file_stat) {
+  static const unsigned char gho_header[3] = {0xfe, 0xef, 0x01};
   register_header_check(0, gho_header, sizeof(gho_header), &header_check_ghost, file_stat);
 }
 #endif

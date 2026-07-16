@@ -29,65 +29,61 @@
 #include <cstdint>
 
 class ProgressCallback : public QObject {
-    Q_OBJECT
+  Q_OBJECT
 public:
-    static ProgressCallback* instance();
+  static ProgressCallback *instance();
 
-    explicit ProgressCallback(QObject *parent = nullptr);
+  explicit ProgressCallback(QObject *parent = nullptr);
 
-    void reset();
-    bool isCancelled() const;
+  void reset();
+  bool isCancelled() const;
 
 public slots:
-    void cancel();
+  void cancel();
 
 signals:
-    void progressChanged(int percent, const QString &status);
-    void scannerProgress(uint64_t deletedCount, uint64_t totalCount, const QString &path);
-    void carverProgress(uint64_t scannedBytes, uint64_t totalBytes,
-                        unsigned int fileCount, uint64_t recoveredSize);
-    void restoreProgress(int pct, const QString &currentFile, int total, int done);
-    void fileRestored(const QString &path, bool ok);
-    void scannerIndxProgress(const QString &msg, uint64_t current,
-                             uint64_t total, uint64_t found);
-    void checkpointProgress(uint64_t progress1, uint64_t progress2);
+  void progressChanged(int percent, const QString &status);
+  void scannerProgress(uint64_t deletedCount, uint64_t totalCount, const QString &path);
+  void carverProgress(uint64_t scannedBytes, uint64_t totalBytes, unsigned int fileCount, uint64_t recoveredSize);
+  void restoreProgress(int pct, const QString &currentFile, int total, int done);
+  void fileRestored(const QString &path, bool ok);
+  void scannerIndxProgress(const QString &msg, uint64_t current, uint64_t total, uint64_t found);
+  void checkpointProgress(uint64_t progress1, uint64_t progress2);
 
 private:
-    std::atomic<bool> m_cancelled;
-    static ProgressCallback* s_instance;
+  std::atomic<bool> m_cancelled;
+  static ProgressCallback *s_instance;
 
-    template<typename Fn>
-    static void emitToInstance(ProgressCallback *instance, Fn &&fn)
-    {
-        if (!instance) return;
-        QMetaObject::invokeMethod(instance, std::forward<Fn>(fn), Qt::QueuedConnection);
-    }
+  template <typename Fn> static void emitToInstance(ProgressCallback *instance, Fn &&fn) {
+    if (!instance)
+      return;
+    QMetaObject::invokeMethod(instance, std::forward<Fn>(fn), Qt::QueuedConnection);
+  }
 
-    static void cScannerProgress(uint64_t deleted, uint64_t total, const char *path);
-    static void cScannerIndxProgress(const char *msg, uint64_t cur, uint64_t tot, uint64_t found);
-    static int  cIsCancelled();
+  static void cScannerProgress(uint64_t deleted, uint64_t total, const char *path);
+  static void cScannerIndxProgress(const char *msg, uint64_t cur, uint64_t tot, uint64_t found);
+  static int cIsCancelled();
 
-    static void cCarverProgress(uint64_t scanned, uint64_t total,
-                                unsigned int files, uint64_t recovered);
-    static int  cCarverCancelled();
+  static void cCarverProgress(uint64_t scanned, uint64_t total, unsigned int files, uint64_t recovered);
+  static int cCarverCancelled();
 
-    static void cRestoreProgress(int pct, const char *file, int total, int done);
-    static void cRestoreFile(const char *path, int ok);
-    static int  cRestoreCancelled();
+  static void cRestoreProgress(int pct, const char *file, int total, int done);
+  static void cRestoreFile(const char *path, int ok);
+  static int cRestoreCancelled();
 
 public:
-    void installCarverCallbacks();
-    void installScannerCallbacks();
-    void installRestoreCallbacks();
-    void installCheckpointCallback();
-    void uninstallAllCallbacks();
+  void installCarverCallbacks();
+  void installScannerCallbacks();
+  void installRestoreCallbacks();
+  void installCheckpointCallback();
+  void uninstallAllCallbacks();
 
-    static ProgressCallback* s_carverInstance;
-    static ProgressCallback* s_scannerInstance;
-    static ProgressCallback* s_restoreInstance;
-    static ProgressCallback* s_checkpointInstance;
+  static ProgressCallback *s_carverInstance;
+  static ProgressCallback *s_scannerInstance;
+  static ProgressCallback *s_restoreInstance;
+  static ProgressCallback *s_checkpointInstance;
 
-    static void cCheckpointProgress(uint64_t progress1, uint64_t progress2);
+  static void cCheckpointProgress(uint64_t progress1, uint64_t progress2);
 };
 
 #endif // PHOTOREC_PROGRESSCALLBACK_HPP

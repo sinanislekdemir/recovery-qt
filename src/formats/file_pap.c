@@ -31,30 +31,25 @@
 #include "types.h"
 #include "filegen.h"
 
-
-
 static void register_header_check_pap(file_stat_t *file_stat);
 
-const file_hint_t file_hint_pap= {
-  .extension="pap",
-  .description="Papyrus word file",
-  .max_filesize=1024*1024,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_pap
-};
+const file_hint_t file_hint_pap = {.extension = "pap",
+                                   .description = "Papyrus word file",
+                                   .max_filesize = 1024 * 1024,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_pap};
 
-
-static int header_check_pap(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_pap(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_pap.extension;
+  file_recovery_new->extension = file_hint_pap.extension;
   return 1;
 }
 
-static void register_header_check_pap(file_stat_t *file_stat)
-{
-  static const unsigned char pap_header[]  = {'P','A','P','1'};
-  register_header_check(0, pap_header,sizeof(pap_header), &header_check_pap, file_stat);
+static void register_header_check_pap(file_stat_t *file_stat) {
+  static const unsigned char pap_header[] = {'P', 'A', 'P', '1'};
+  register_header_check(0, pap_header, sizeof(pap_header), &header_check_pap, file_stat);
 }
 #endif

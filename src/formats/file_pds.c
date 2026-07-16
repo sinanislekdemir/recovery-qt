@@ -31,34 +31,27 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_pds(file_stat_t *file_stat);
 
-const file_hint_t file_hint_pds= {
-  .extension="pds",
-  .description="Reson - Sonar Data",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_pds
-};
+const file_hint_t file_hint_pds = {.extension = "pds",
+                                   .description = "Reson - Sonar Data",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_pds};
 
-
-static int header_check_pds(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
+static int header_check_pds(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_pds.extension;
+  file_recovery_new->extension = file_hint_pds.extension;
   return 1;
 }
 
-static void register_header_check_pds(file_stat_t *file_stat)
-{
-  static const unsigned char pds_header[25]=  {
-    0x0c, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00,
-    0x04, 0x5b, 'H' , 'E' , 'A' , 'D' , 'E' , 'R' ,
-    0x5d
-  };
+static void register_header_check_pds(file_stat_t *file_stat) {
+  static const unsigned char pds_header[25] = {0x0c, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                               0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x04, 0x5b,
+                                               'H',  'E',  'A',  'D',  'E',  'R',  0x5d};
   register_header_check(0, pds_header, sizeof(pds_header), &header_check_pds, file_stat);
 }
 #endif

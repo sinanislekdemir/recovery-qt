@@ -37,13 +37,10 @@
  * sentinel head node, "prev" links not maintained.
  */
 
-static struct td_list_head *merge(
-    int (*cmp)(const struct td_list_head *a, const struct td_list_head *b),
-    struct td_list_head *a, struct td_list_head *b)
-{
+static struct td_list_head *merge(int (*cmp)(const struct td_list_head *a, const struct td_list_head *b),
+                                  struct td_list_head *a, struct td_list_head *b) {
   struct td_list_head head, *tail = &head;
 
-  
   while (a && b) {
     /* if equal, take 'a' -- important for sort stability */
     if ((*cmp)(a, b) <= 0) {
@@ -55,7 +52,7 @@ static struct td_list_head *merge(
     }
     tail = tail->next;
   }
-  tail->next = a?a:b;
+  tail->next = a ? a : b;
   return head.next;
 }
 
@@ -67,11 +64,8 @@ static struct td_list_head *merge(
  * throughout.
  */
 
-static void merge_and_restore_back_links(
-    int (*cmp)(const struct td_list_head *a, const struct td_list_head *b),
-    struct td_list_head *head,
-    struct td_list_head *a, struct td_list_head *b)
-{
+static void merge_and_restore_back_links(int (*cmp)(const struct td_list_head *a, const struct td_list_head *b),
+                                         struct td_list_head *head, struct td_list_head *a, struct td_list_head *b) {
   struct td_list_head *tail = head;
 
   while (a && b) {
@@ -119,12 +113,10 @@ static void merge_and_restore_back_links(
  * @b. If @a and @b are equivalent, and their original relative
  * ordering is to be preserved, @cmp must return 0.
  */
-void td_list_sort(struct td_list_head *head,
-    int (*cmp)(const struct td_list_head *a, const struct td_list_head *b))
-{
-  struct td_list_head *part[MAX_LIST_LENGTH_BITS+1]; /* sorted partial lists
+void td_list_sort(struct td_list_head *head, int (*cmp)(const struct td_list_head *a, const struct td_list_head *b)) {
+  struct td_list_head *part[MAX_LIST_LENGTH_BITS + 1]; /* sorted partial lists
 							-- last slot is a sentinel */
-  unsigned int lev;  /* index into part[] */
+  unsigned int lev;                                    /* index into part[] */
   unsigned int max_lev = 0;
   struct td_list_head *list;
 
@@ -136,29 +128,25 @@ void td_list_sort(struct td_list_head *head,
   head->prev->next = NULL;
   list = head->next;
 
-  
   while (list) {
     struct td_list_head *cur = list;
     list = list->next;
     cur->next = NULL;
 
-    
     for (lev = 0; part[lev]; lev++) {
       cur = merge(cmp, part[lev], cur);
       part[lev] = NULL;
     }
     if (lev > max_lev) {
-      if (lev >= MAX_LIST_LENGTH_BITS)
-      {
-	// list passed to td_list_sort() too long for efficiency
-	lev--;
+      if (lev >= MAX_LIST_LENGTH_BITS) {
+        // list passed to td_list_sort() too long for efficiency
+        lev--;
       }
       max_lev = lev;
     }
     part[lev] = cur;
   }
 
-  
   for (lev = 0; lev < max_lev; lev++)
     if (part[lev])
       list = merge(cmp, part[lev], list);

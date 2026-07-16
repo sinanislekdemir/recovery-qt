@@ -34,17 +34,14 @@
 #include "types.h"
 #include "filegen.h"
 
-
 static void register_header_check_ds2(file_stat_t *file_stat);
 
-const file_hint_t file_hint_ds2= {
-  .extension="ds2",
-  .description="Digital Speech Standard v2",
-  .max_filesize=PHOTOREC_MAX_FILE_SIZE,
-  .recover=1,
-  .enable_by_default=1,
-  .register_header_check=&register_header_check_ds2
-};
+const file_hint_t file_hint_ds2 = {.extension = "ds2",
+                                   .description = "Digital Speech Standard v2",
+                                   .max_filesize = PHOTOREC_MAX_FILE_SIZE,
+                                   .recover = 1,
+                                   .enable_by_default = 1,
+                                   .register_header_check = &register_header_check_ds2};
 
 /* 
    Digital Speech Standard (.ds2) is a digital speech recording format
@@ -57,25 +54,24 @@ const file_hint_t file_hint_ds2= {
    Filesize is always a multiple of 512
 */
 
-
-static int header_check_ds2(const unsigned char *buffer, const unsigned int buffer_size, const unsigned int safe_header_only, const file_recovery_t *file_recovery, file_recovery_t *file_recovery_new)
-{
-  const unsigned char *date_asc=&buffer[0x26];
+static int header_check_ds2(const unsigned char *buffer, const unsigned int buffer_size,
+                            const unsigned int safe_header_only, const file_recovery_t *file_recovery,
+                            file_recovery_t *file_recovery_new) {
+  const unsigned char *date_asc = &buffer[0x26];
   unsigned int i;
-  
-  for(i=0; i<24; i++)
-    if(!isdigit(date_asc[i]))
+
+  for (i = 0; i < 24; i++)
+    if (!isdigit(date_asc[i]))
       return 0;
   reset_file_recovery(file_recovery_new);
-  file_recovery_new->extension=file_hint_ds2.extension;
-  file_recovery_new->min_filesize=0x200;
-  file_recovery_new->time=get_time_from_YYMMDDHHMMSS(date_asc);
+  file_recovery_new->extension = file_hint_ds2.extension;
+  file_recovery_new->min_filesize = 0x200;
+  file_recovery_new->time = get_time_from_YYMMDDHHMMSS((const char *)date_asc);
   return 1;
 }
 
-static void register_header_check_ds2(file_stat_t *file_stat)
-{
-  static const unsigned char ds2_header[4]= { 0x03, 'd','s','2'};
-  register_header_check(0, ds2_header,sizeof(ds2_header), &header_check_ds2, file_stat);
+static void register_header_check_ds2(file_stat_t *file_stat) {
+  static const unsigned char ds2_header[4] = {0x03, 'd', 's', '2'};
+  register_header_check(0, ds2_header, sizeof(ds2_header), &header_check_ds2, file_stat);
 }
 #endif
