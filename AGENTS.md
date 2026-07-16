@@ -4,18 +4,24 @@
 
 recovery-qt is a standalone fork of testdisk-7.3-WIP providing a Qt6-based
 deleted-file browser, selective restore tool, raw file carver, filesystem
-backup/restore, and LUKS decryption support.
+backup/restore, and native LUKS1/LUKS2 decryption support.
 
-**Binary**: `build/recovery-qt` (Linux-only, Qt6 Widgets interface)
+**Binaries**:
+- `build/recovery-qt` — native Linux build (Qt6 Widgets)
+- `build-win/recovery-qt.exe` — Windows cross-build (static, MinGW-w64 via Docker)
 
 - DO NOT CHANGE any file license headers. Those headers show the clear ownership and hard work by the creators.
 - New features and new files must be marked for Sinan Islekdemir <sinan@islekdemir.com>
 - Backwards compatibility with the remote/original project is not important.
 - Always run formatter and linter at the end of a task.
+- Windows-specific material lives under `win/`; see `WIN-AGENTS.md` for the
+  cross-build guide, platform-abstraction notes, and wine testing workflow.
 
 ## Build
 
 ```sh
+make linux                   # native Linux build (cmake configure + build)
+make win                     # Windows cross-build via Docker → build-win/recovery-qt.exe
 cmake -B build -S .          # configure (exports build/compile_commands.json)
 cmake --build build -j       # build
 ```

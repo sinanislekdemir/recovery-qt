@@ -3,7 +3,8 @@
 A Qt6-based data recovery tool derived from **TestDisk & PhotoRec 7.3-WIP** by
 [Christophe GRENIER](https://www.cgsecurity.org). 
 
-**Linux only.**
+**Runs on Linux and Windows** (Windows binary is cross-compiled from Linux via
+Docker/MinGW-w64 — see [Windows Build](#windows-cross-build) below).
 
 recovery-qt provides a graphical interface for browsing deleted files, selective
 file restoration, raw file carving, filesystem backup/restore, and LUKS-encrypted
@@ -38,8 +39,9 @@ volume support.
 
 ### LUKS Support
 - Automatic LUKS1/LUKS2 detection
-- On-demand decryption via `cryptsetup` + `losetup`
-- Orphaned mapper and loop device cleanup at startup
+- Native, pure-userspace decryption (OpenSSL EVP + vendored Argon2) — no
+  `cryptsetup`, `losetup`, or kernel device-mapper needed
+- Works identically on Linux and Windows
 
 ### Disk Image Support
 Open disk images directly: `.img`, `.dd`, `.raw`, `.dsk`, `.vhd`, `.vmdk`, `.vdi`,
@@ -66,7 +68,7 @@ a modern Qt6 GUI for selective, preview-before-restore recovery.
 | **Deep FS scan** | No | Free cluster byte-by-byte scan for residual deleted directory entries |
 | **Selective file restore** | All-or-nothing per format | Tick individual files/directories (Space), restore only what you need |
 | **Image preview** | None | Zoomable preview (Enter) — 20 formats, reads raw bytes from disk pre-restore |
-| **LUKS encrypted volumes** | No | Full LUKS1/LUKS2 decrypt via cryptsetup+losetup, password dialog, async thread |
+| **LUKS encrypted volumes** | No | Native LUKS1/LUKS2 decryption in userspace (OpenSSL + Argon2), password dialog, async thread |
 | **Filesystem backup/restore** | No | .dsk index files, detects files changed since backup (backup_modified flag) |
 | **Qt6 GUI** | Ncurses TUI / old Qt4 | Modern dark theme, QTreeView browser, filter-as-you-type format selector |
 | **Disk image files** | E01 via libewf | .img, .dd, .raw, .dsk, .vhd, .vmdk, .vdi, .qcow2, .bin, .iso + E01 |
@@ -110,7 +112,9 @@ does not replicate:
 
 ## Build
 
-### Dependencies
+### Linux
+
+#### Dependencies
 
 | Dependency | Debian/Ubuntu package | Purpose |
 |-----------|----------------------|---------|
@@ -120,7 +124,7 @@ does not replicate:
 | com_err | `comerr-dev` | Error reporting for ext2fs |
 | zlib | `zlib1g-dev` | Compression support |
 | libuuid | `uuid-dev` | UUID generation |
-| cryptsetup | `cryptsetup-bin`, `libcryptsetup-dev` | LUKS decryption (runtime) |
+| OpenSSL | `libssl-dev` | Native LUKS1/LUKS2 decryption |
 | CMake | `cmake` | Build system |
 | C/C++ compiler | `build-essential` | GCC, make, headers |
 | pkg-config | `pkg-config` | Library detection |
@@ -128,16 +132,32 @@ does not replicate:
 ```bash
 sudo apt install build-essential cmake pkg-config qt6-base-dev \
   ntfs-3g-dev libext2fs-dev comerr-dev zlib1g-dev uuid-dev \
-  libcryptsetup-dev
+  libssl-dev
 ```
 
-### Compile
+#### Compile
 
 ```bash
-cmake -S . -B build && cmake --build build -- -j$(nproc)
+make linux            # or: cmake -S . -B build && cmake --build build -j
 ```
 
 Binary is at `build/recovery-qt`.
+
+### Windows (cross-build)
+
+The Windows binary is cross-compiled from Linux inside a Docker container with
+the MinGW-w64 toolchain and a fully static dependency stack (Qt6, OpenSSL,
+libntfs-3g, libext2fs, zlib) — the host system stays clean and no DLLs are
+required at runtime.
+
+```bash
+make win              # or: ./win/build.sh
+```
+
+The first run builds the Docker image (~20 min, Qt6 compiled from source;
+cached afterwards). Output is `build-win/recovery-qt.exe`, a single statically
+linked 64-bit binary with an embedded UAC `requireAdministrator` manifest.
+See [WIN-AGENTS.md](WIN-AGENTS.md) for the full cross-build documentation.
 
 ## Carve vs. Deep FS Scan
 
