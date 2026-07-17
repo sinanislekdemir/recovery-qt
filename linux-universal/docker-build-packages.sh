@@ -19,6 +19,12 @@ cmake -S /src -B /tmp/build-pkg \
 cmake --build /tmp/build-pkg --parallel
 
 # ---------------------------------------------------------------------------
+# Strip debug symbols — rpmbuild does this automatically but CPack DEB
+# does not; stripping here keeps both packages consistently small.
+# ---------------------------------------------------------------------------
+strip /tmp/build-pkg/recovery-qt
+
+# ---------------------------------------------------------------------------
 # DEB
 # ---------------------------------------------------------------------------
 mkdir -p /src/build
