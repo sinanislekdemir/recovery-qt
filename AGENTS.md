@@ -8,6 +8,7 @@ backup/restore, and native LUKS1/LUKS2 decryption support.
 
 **Binaries**:
 - `build/recovery-qt` — native Linux build (Qt6 Widgets)
+- `build/recovery-qt-<version>-x86_64.tar.gz` — portable Linux tarball (self-contained AppDir via linuxdeploy, glibc ≥ 2.35)
 - `build-win/recovery-qt.exe` — Windows cross-build (static, MinGW-w64 via Docker)
 
 - DO NOT CHANGE any file license headers. Those headers show the clear ownership and hard work by the creators.
@@ -21,6 +22,7 @@ backup/restore, and native LUKS1/LUKS2 decryption support.
 
 ```sh
 make linux                   # native Linux build (cmake configure + build)
+make linux-universal         # portable Linux tarball via Docker → build/recovery-qt-*.tar.gz
 make win                     # Windows cross-build via Docker → build-win/recovery-qt.exe
 cmake -B build -S .          # configure (exports build/compile_commands.json)
 cmake --build build -j       # build

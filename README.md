@@ -143,6 +143,36 @@ make linux            # or: cmake -S . -B build && cmake --build build -j
 
 Binary is at `build/recovery-qt`.
 
+### Portable Tarball (Linux)
+
+A self-contained, relocatable tarball that bundles all runtime dependencies
+(Qt6, ntfs-3g, ext2fs, OpenSSL, etc.) into a single archive. No system
+packages required beyond glibc ≥ 2.35. Built inside an Ubuntu 22.04 Docker
+container — the host stays clean.
+
+```bash
+make linux-universal  # or: ./linux-universal/build.sh
+```
+
+The first run builds the Docker image (~5 min; cached afterwards).
+Output is `build/recovery-qt-7.3.0-x86_64.tar.gz`.
+
+#### Extract and Run
+
+```bash
+tar xzf recovery-qt-7.3.0-x86_64.tar.gz
+cd recovery-qt-7.3.0-x86_64
+./AppRun
+```
+
+The application needs root privileges to access disk devices. On launch,
+it will prompt for your password via pkexec. Alternatively, run directly
+with `sudo ./AppRun`.
+
+The tarball has no external runtime requirements — no FUSE, no SquashFS,
+no container runtime. Just extract and run on any 64-bit Linux with
+glibc ≥ 2.35 (Ubuntu 22.04+, Debian 12+, Fedora 36+, etc.).
+
 ### Windows (cross-build)
 
 The Windows binary is cross-compiled from Linux inside a Docker container with
