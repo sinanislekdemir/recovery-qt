@@ -9,6 +9,9 @@
 *.tar.gz
 *.zip
 *.log
+*.deb
+*.rpm
+_CPack_Packages/
 build/
 build-win/
 temp/
