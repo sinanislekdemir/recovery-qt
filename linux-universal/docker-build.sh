@@ -41,7 +41,7 @@ export QMAKE=qmake6
 # ---------------------------------------------------------------------------
 # Create versioned tarball
 # ---------------------------------------------------------------------------
-VERSION=$(cmake /src -N 2>/dev/null | sed -n 's/.*VERSION \([0-9.]*\).*/\1/p' || echo "7.3.0")
+VERSION="${VERSION:-$(cmake /src -N 2>/dev/null | sed -n 's/.*VERSION \([0-9.]*\).*/\1/p')}"
 VERSION="${VERSION:-7.3.0}"
 OUTPUT="recovery-qt-${VERSION}-x86_64.tar.gz"
 

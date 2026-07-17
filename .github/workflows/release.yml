@@ -44,10 +44,12 @@ jobs:
 
       - name: Build DEB and RPM
         run: |
+          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^recovery-qt-v//')
           docker run --rm \
             -u "$(id -u):$(id -g)" \
             -v "$PWD:/src" \
             -w /src \
+            -e VERSION="${VERSION}" \
             ghcr.io/${{ github.repository_owner }}/recovery-qt-linux-universal-build:latest \
             /build/docker-build-packages.sh
 
@@ -81,10 +83,12 @@ jobs:
 
       - name: Build portable tarball
         run: |
+          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^recovery-qt-v//')
           docker run --rm \
             -u "$(id -u):$(id -g)" \
             -v "$PWD:/src" \
             -w /src \
+            -e VERSION="${VERSION}" \
             ghcr.io/${{ github.repository_owner }}/recovery-qt-linux-universal-build:latest \
             /build/docker-build.sh
 
