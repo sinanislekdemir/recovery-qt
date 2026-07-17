@@ -1,9 +1,9 @@
 # File: Dockerfile
 #
-# Dedicated build image for creating the portable Linux tarball of
-# recovery-qt. Builds on Ubuntu 22.04 for glibc 2.35 compatibility, bundles
-# all non-system libraries via linuxdeploy, and outputs a self-contained
-# AppDir tarball that works on any distro >= that glibc floor.
+# Dedicated build image for creating the portable Linux tarball, DEB, and RPM
+# packages of recovery-qt. Builds on Ubuntu 22.04 for glibc 2.35 compatibility.
+# The tarball bundles all non-system libraries via linuxdeploy; DEB and RPM
+# are produced by CPack from the same build.
 #
 # Copyright (C) 2026 Sinan Islekdemir <sinan@islekdemir.com>
 # GPL-2.0-or-later
@@ -30,6 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         file \
         xz-utils \
         patchelf \
+        rpm \
     && rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------------------------------
@@ -53,6 +54,9 @@ ENV APPIMAGE_EXTRACT_AND_RUN=1
 
 COPY docker-build.sh /build/docker-build.sh
 RUN chmod +x /build/docker-build.sh
+
+COPY docker-build-packages.sh /build/docker-build-packages.sh
+RUN chmod +x /build/docker-build-packages.sh
 
 WORKDIR /src
 CMD ["/build/docker-build.sh"]

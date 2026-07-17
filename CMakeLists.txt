@@ -356,14 +356,18 @@ if(NOT WIN32)
             OPTIONAL)
 
     # ---------------------------
-    # CPack / DEB packaging
+    # CPack / DEB + RPM packaging
     # ---------------------------
     set(CPACK_GENERATOR "DEB")
-    set(CPACK_DEBIAN_PACKAGE_NAME "recovery-qt")
     set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
     set(CPACK_PACKAGE_VENDOR "Sinan Islekdemir")
     set(CPACK_PACKAGE_CONTACT "sinan@islekdemir.com")
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Data recovery and file carving tool")
+    set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/COPYING)
+    set(CPACK_RESOURCE_FILE_README ${CMAKE_SOURCE_DIR}/README.md)
+
+    # DEB
+    set(CPACK_DEBIAN_PACKAGE_NAME "recovery-qt")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Sinan Islekdemir <sinan@islekdemir.com>")
     set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/sinanislekdemir/recovery-qt")
     set(CPACK_DEBIAN_PACKAGE_SECTION "utils")
@@ -371,7 +375,18 @@ if(NOT WIN32)
         "libqt6widgets6 (>= 6.2), libqt6core6 (>= 6.2), libntfs-3g89, libext2fs2, zlib1g, libuuid1, policykit-1")
     set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
     set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
-    set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/COPYING)
-    set(CPACK_RESOURCE_FILE_README ${CMAKE_SOURCE_DIR}/README.md)
+
+    # RPM
+    set(CPACK_RPM_PACKAGE_NAME "recovery-qt")
+    set(CPACK_RPM_PACKAGE_VERSION "${PROJECT_VERSION}")
+    set(CPACK_RPM_PACKAGE_VENDOR "Sinan Islekdemir")
+    set(CPACK_RPM_PACKAGE_LICENSE "GPL-2.0-or-later")
+    set(CPACK_RPM_PACKAGE_SUMMARY "Data recovery and file carving tool")
+    set(CPACK_RPM_PACKAGE_URL "https://github.com/sinanislekdemir/recovery-qt")
+    set(CPACK_RPM_PACKAGE_RELEASE "1")
+    set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
+    set(CPACK_RPM_PACKAGE_REQUIRES
+        "qt6-qtbase-gui >= 6.2, qt6-qtbase >= 6.2, ntfs-3g, e2fsprogs-libs, zlib, libuuid, polkit")
+
     include(CPack)
 endif()

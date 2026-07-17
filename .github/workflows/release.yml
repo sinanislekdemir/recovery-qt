@@ -1,10 +1,11 @@
 # File: release.yml
 #
 # Triggered when a GitHub release is published with a recovery-qt-v* tag.
-# Builds three artifacts and uploads them to the release:
-#   1. DEB package (native Linux build + CPack)
-#   2. Portable Linux tarball (Docker + linuxdeploy, glibc >= 2.35)
-#   3. Windows zip (Docker cross-build, static MinGW-w64)
+# Builds four artifacts and uploads them to the release:
+#   1. DEB package (Docker + CPack, glibc >= 2.35)
+#   2. RPM package (Docker + CPack, glibc >= 2.35)
+#   3. Portable Linux tarball (Docker + linuxdeploy, glibc >= 2.35)
+#   4. Windows zip (Docker cross-build, static MinGW-w64)
 #
 # Docker images are pushed to GHCR so subsequent releases reuse cached
 # layers via registry-type cache, avoiding a full Qt/dependency rebuild.
@@ -23,32 +24,40 @@ permissions:
   packages: write
 
 jobs:
-  build-linux-deb:
-    runs-on: ubuntu-24.04
+  build-linux-packages:
+    runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/recovery-qt-v')
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: linux-universal/
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/recovery-qt-linux-universal-build:latest
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/recovery-qt-linux-universal-build:latest
+          cache-to: type=inline
+
+      - name: Build DEB and RPM
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            build-essential cmake pkg-config \
-            qt6-base-dev qt6-base-dev-tools \
-            libntfs-3g-dev libext2fs-dev comerr-dev \
-            zlib1g-dev uuid-dev libssl-dev
-
-      - name: Configure
-        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
-
-      - name: Build
-        run: cmake --build build -j"$(nproc)"
-
-      - name: Package DEB
-        run: cmake --build build --target package
+          docker run --rm \
+            -u "$(id -u):$(id -g)" \
+            -v "$PWD:/src" \
+            -w /src \
+            ghcr.io/${{ github.repository_owner }}/recovery-qt-linux-universal-build:latest \
+            /build/docker-build-packages.sh
 
       - name: Upload DEB to release
         run: gh release upload "${{ github.ref_name }}" build/recovery-qt_*.deb --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload RPM to release
+        run: gh release upload "${{ github.ref_name }}" build/recovery-qt-*.rpm --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
