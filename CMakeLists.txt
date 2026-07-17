@@ -93,6 +93,7 @@ set(RECOVERY_C
     src/core/carver.c     src/core/backup.c      src/core/session.c
     src/core/dir.c         src/core/geometry.c     src/core/file_list.c
     src/core/utfsize.c     src/core/progress.c  src/core/default_location.c
+    src/core/ghostscan.c
 )
 
 # ---------------------------
@@ -164,6 +165,7 @@ set(CPP_SOURCES
     src/wrappers/simpleworker.cpp
     src/wrappers/luksmanager.cpp
     src/wrappers/sessionmanager.cpp
+    src/wrappers/ghostfinder.cpp
     src/ui/mainwindow.cpp
     src/ui/diskselectionwidget.cpp
     src/ui/partitionselectionwidget.cpp

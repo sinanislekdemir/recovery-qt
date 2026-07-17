@@ -46,6 +46,7 @@ signals:
   void backupRequested();
   void restoreRequested();
   void backRequested();
+  void findPartitionsRequested();
 
 private:
   void setupUi();
@@ -60,6 +61,7 @@ private:
   QPushButton *m_backupBtn;
   QPushButton *m_restoreBtn;
   QPushButton *m_backBtn;
+  QPushButton *m_findPartitionsBtn;
   QVector<PartitionInfo> m_partitions;
 };
 

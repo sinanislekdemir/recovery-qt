@@ -1,6 +1,6 @@
 /*
     
-    File: partitionlist.hpp
+    File: ghostfinder.hpp
 
     Copyright (C) 2026 Sinan Islekdemir <sinan@islekdemir.com>
 
@@ -19,59 +19,48 @@
     Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
  */
-#ifndef PHOTOREC_PARTITIONLIST_HPP
-#define PHOTOREC_PARTITIONLIST_HPP
+#ifndef PHOTOREC_GHOSTFINDER_HPP
+#define PHOTOREC_GHOSTFINDER_HPP
 
+#include <QObject>
 #include <QString>
-#include <QVector>
+#include <QTimer>
+#include <atomic>
 #include <cstdint>
+#include "wrappers/workerbase.hpp"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 #include "types.h"
 #include "common.h"
-#include "partauto.h"
-#include "fnctdsk.h"
 #ifdef __cplusplus
 }
 #endif
 
-struct PartitionInfo {
-  QString fsname;
-  QString partname;
-  QString info;
-  QString typenameStr;
-  uint64_t partOffset;
-  uint64_t partSize;
-  unsigned int partTypeI386;
-  upart_type_t upartType;
-  status_type_t status;
-  int order;
-  bool encrypted;
-  bool isGhost;
-};
-
-class PartitionList {
+class GhostFinder : public WorkerBase {
+  Q_OBJECT
 public:
-  PartitionList();
-  ~PartitionList();
+  explicit GhostFinder(QObject *parent = nullptr);
 
-  bool detect(const class Disk &disk);
-  bool detectWholeDisk(const class Disk &disk);
+  void start(disk_t *disk, const list_part_t *knownParts, uint64_t strideSectors);
 
-  QVector<PartitionInfo> partitions() const;
-  partition_t *rawAt(int index) const;
-  list_part_t *rawList() const;
-  partition_t *wholeDiskPartition(const class Disk &disk) const;
-  int count() const;
+  list_part_t *resultList() const {
+    return m_resultList;
+  }
 
-  bool isValid() const;
+  void onProgress(uint64_t scanned, uint64_t total);
+
+signals:
+  void progressUpdated(uint64_t sectorsScanned, uint64_t totalSectors);
+  void ghostFound(uint64_t offset, const QString &fsType);
+  void finished(int ghostCount);
 
 private:
-  list_part_t *m_partList;
-  list_disk_t *m_diskList;
-  int m_count;
+  list_part_t *m_resultList;
+  QTimer *m_pollTimer;
+  std::atomic<uint64_t> m_scanned;
+  std::atomic<uint64_t> m_total;
 };
 
-#endif // PHOTOREC_PARTITIONLIST_HPP
+#endif

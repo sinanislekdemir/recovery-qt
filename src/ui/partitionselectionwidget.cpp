@@ -28,7 +28,8 @@
 
 PartitionSelectionWidget::PartitionSelectionWidget(QWidget *parent)
     : QWidget(parent), m_titleLabel(nullptr), m_tableView(nullptr), m_model(nullptr), m_scanBtn(nullptr),
-      m_carveBtn(nullptr), m_deepScanBtn(nullptr), m_backupBtn(nullptr), m_restoreBtn(nullptr), m_backBtn(nullptr) {
+      m_carveBtn(nullptr), m_deepScanBtn(nullptr), m_backupBtn(nullptr), m_restoreBtn(nullptr), m_backBtn(nullptr),
+      m_findPartitionsBtn(nullptr) {
   setupUi();
   applyTheme();
 }
@@ -95,6 +96,16 @@ void PartitionSelectionWidget::setupUi() {
   btnLayout2->addStretch();
   mainLayout->addLayout(btnLayout2);
 
+  QHBoxLayout *btnLayout3 = new QHBoxLayout();
+  btnLayout3->setSpacing(12);
+  btnLayout3->addStretch();
+
+  m_findPartitionsBtn = new QPushButton(tr("Find Deleted Partitions"), this);
+  m_findPartitionsBtn->setToolTip(tr("Scan the entire disk for filesystem signatures at any offset"));
+  btnLayout3->addWidget(m_findPartitionsBtn);
+  btnLayout3->addStretch();
+  mainLayout->addLayout(btnLayout3);
+
   setMinimumSize(640, 480);
 
   connect(m_scanBtn, &QPushButton::clicked, this, &PartitionSelectionWidget::scanRequested);
@@ -103,6 +114,7 @@ void PartitionSelectionWidget::setupUi() {
   connect(m_backupBtn, &QPushButton::clicked, this, &PartitionSelectionWidget::backupRequested);
   connect(m_restoreBtn, &QPushButton::clicked, this, &PartitionSelectionWidget::restoreRequested);
   connect(m_backBtn, &QPushButton::clicked, this, &PartitionSelectionWidget::backRequested);
+  connect(m_findPartitionsBtn, &QPushButton::clicked, this, &PartitionSelectionWidget::findPartitionsRequested);
   connect(m_tableView->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this]() {
     int idx = selectedPartitionIndex();
     bool partValid = idx >= 0;
@@ -147,6 +159,9 @@ void PartitionSelectionWidget::setPartitions(const QVector<PartitionInfo> &parts
 
   for (int i = 0; i < parts.size(); i++) {
     const PartitionInfo &p = parts[i];
+    if (p.isGhost)
+      continue;
+
     QList<QStandardItem *> row;
     row.append(new QStandardItem(p.partname.isEmpty() ? QString("Partition %1").arg(i + 1) : p.partname));
     row.append(new QStandardItem(p.encrypted ? "LUKS" : (p.fsname.isEmpty() ? "-" : p.fsname)));
@@ -165,10 +180,69 @@ void PartitionSelectionWidget::setPartitions(const QVector<PartitionInfo> &parts
 
     QColor fg = p.encrypted ? QColor("#B48EAD") : QColor("#ECEFF4");
     for (auto *item : row) {
+      item->setData(i, Qt::UserRole);
       item->setForeground(fg);
       item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     }
     m_model->appendRow(row);
+  }
+
+  {
+    bool headerAdded = false;
+    for (int i = 0; i < parts.size(); i++) {
+      const PartitionInfo &p = parts[i];
+      if (!p.isGhost)
+        continue;
+
+      if (!headerAdded) {
+        QList<QStandardItem *> sepRow;
+        QStandardItem *sep = new QStandardItem(tr("--- Found Deleted ---"));
+        sep->setForeground(QColor("#616E88"));
+        QFont sepFont;
+        sepFont.setItalic(true);
+        sep->setFont(sepFont);
+        sep->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        sep->setSelectable(false);
+        sep->setFlags(sep->flags() & ~Qt::ItemIsSelectable);
+        sepRow.append(sep);
+        for (int c = 1; c < 5; c++) {
+          QStandardItem *empty = new QStandardItem("");
+          empty->setSelectable(false);
+          empty->setFlags(empty->flags() & ~Qt::ItemIsSelectable);
+          sepRow.append(empty);
+        }
+        m_model->appendRow(sepRow);
+        headerAdded = true;
+      }
+
+      QList<QStandardItem *> row;
+      QString name = QString("[found] at %1").arg(formatSize(p.partOffset));
+      if (!p.partname.isEmpty())
+        name = QString("[found] %1").arg(p.partname);
+
+      row.append(new QStandardItem(name));
+      row.append(new QStandardItem(p.encrypted ? "LUKS" : (p.fsname.isEmpty() ? "-" : p.fsname)));
+      row.append(new QStandardItem(formatSize(p.partSize)));
+
+      QString typeStr = p.typenameStr;
+      if (typeStr.isEmpty() && p.encrypted)
+        typeStr = "LUKS";
+      if (typeStr.isEmpty())
+        typeStr = p.info.isEmpty() ? "Unknown" : p.info;
+      row.append(new QStandardItem(typeStr));
+      row.append(new QStandardItem(p.encrypted ? "(encrypted)" : ""));
+
+      QColor ghostFg("#BF616A");
+      QFont ghostFont;
+      ghostFont.setItalic(true);
+      for (auto *item : row) {
+        item->setData(i, Qt::UserRole);
+        item->setForeground(ghostFg);
+        item->setFont(ghostFont);
+        item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+      }
+      m_model->appendRow(row);
+    }
   }
 }
 
@@ -179,5 +253,10 @@ int PartitionSelectionWidget::selectedPartitionIndex() const {
   int row = sel.first().row();
   if (row == 0)
     return -2;
-  return row - 1;
+  QStandardItem *item = m_model->item(row, 0);
+  if (!item)
+    return -1;
+  bool ok = false;
+  int idx = item->data(Qt::UserRole).toInt(&ok);
+  return ok ? idx : -1;
 }

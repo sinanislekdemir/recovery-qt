@@ -42,6 +42,7 @@ class Restorer;
 class LUKSManager;
 class SimpleWorker;
 class SessionManager;
+class GhostFinder;
 
 class MainWindow : public QMainWindow {
   Q_OBJECT
@@ -62,6 +63,7 @@ private slots:
   void onBrowserQuit();
   void onAbout();
   void onContinueSession();
+  void onFindPartitionsRequested();
 
 private:
   void setupUi();
@@ -84,6 +86,7 @@ private:
   SimpleWorker *m_simpleWorker;
   LUKSManager *m_luks;
   SessionManager *m_sessionManager;
+  GhostFinder *m_ghostFinder;
 
   Disk m_currentDisk;
   QVector<PartitionInfo> m_partitions;

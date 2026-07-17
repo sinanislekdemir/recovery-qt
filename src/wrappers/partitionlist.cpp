@@ -265,6 +265,7 @@ QVector<PartitionInfo> PartitionList::partitions() const {
       info.status = part->status;
       info.order = part->order;
       info.encrypted = (strncmp(part->fsname, "LUKS", 4) == 0);
+      info.isGhost = false;
 
       {
         const char *tname = part->arch ? part->arch->get_partition_typename(part) : NULL;
@@ -290,6 +291,10 @@ partition_t *PartitionList::rawAt(int index) const {
     i++;
   }
   return nullptr;
+}
+
+list_part_t *PartitionList::rawList() const {
+  return m_partList;
 }
 
 partition_t *PartitionList::wholeDiskPartition(const Disk &disk) const {

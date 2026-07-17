@@ -35,6 +35,7 @@
 #include "wrappers/luksmanager.hpp"
 #include "wrappers/signatureregistry.hpp"
 #include "wrappers/sessionmanager.hpp"
+#include "wrappers/ghostfinder.hpp"
 #include "common/format_utils.hpp"
 #include "common/theme.hpp"
 #include "recovery.h"
@@ -46,22 +47,45 @@
 extern "C" {
 #include "backup.h"
 }
+extern "C" {
+extern const arch_fnct_t arch_none;
+}
+#include "ghostscan.h"
+extern "C" {
+#include "fnctdsk.h"
+}
 #include <QMenu>
 #include <QAction>
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QApplication>
 #include <QDir>
+#include <QInputDialog>
 #include <QStatusBar>
 #include <QTimer>
 #include <QImage>
 #include <cstring>
 
+static partition_t *partitionFromGhostInfo(const PartitionInfo &info) {
+  partition_t *part = partition_new(&arch_none);
+  if (!part)
+    return nullptr;
+  part->part_offset = info.partOffset;
+  part->part_size = info.partSize;
+  part->upart_type = info.upartType;
+  part->status = info.status;
+  part->part_type_i386 = info.partTypeI386;
+  strncpy(part->fsname, info.fsname.toLocal8Bit().constData(), sizeof(part->fsname) - 1);
+  strncpy(part->partname, info.partname.toLocal8Bit().constData(), sizeof(part->partname) - 1);
+  strncpy(part->info, info.info.toLocal8Bit().constData(), sizeof(part->info) - 1);
+  return part;
+}
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), m_stack(nullptr), m_diskPage(nullptr), m_partPage(nullptr), m_browserPage(nullptr),
       m_fileModel(nullptr), m_progressCb(nullptr), m_scanner(nullptr), m_carver(nullptr), m_restorer(nullptr),
-      m_luks(new LUKSManager(this)), m_sessionManager(new SessionManager(this)), m_selectedPartIdx(-1),
-      m_scanTree(nullptr)
+      m_luks(new LUKSManager(this)), m_sessionManager(new SessionManager(this)), m_ghostFinder(new GhostFinder(this)),
+      m_selectedPartIdx(-1), m_scanTree(nullptr)
 /*
  * ARCHITECTURE NOTE: Operation Lifecycle Pattern
  *
@@ -136,6 +160,7 @@ void MainWindow::setupUi() {
   connect(m_partPage, &PartitionSelectionWidget::backupRequested, this, &MainWindow::onBackupRequested);
   connect(m_partPage, &PartitionSelectionWidget::restoreRequested, this, &MainWindow::onRestoreRequested);
   connect(m_partPage, &PartitionSelectionWidget::backRequested, this, &MainWindow::onBackToDisks);
+  connect(m_partPage, &PartitionSelectionWidget::findPartitionsRequested, this, &MainWindow::onFindPartitionsRequested);
   connect(m_browserPage, &BrowserWidget::restoreRequested, this, &MainWindow::onRestoreFromBrowser);
   connect(m_browserPage, &BrowserWidget::quitRequested, this, &MainWindow::onBrowserQuit);
   connect(m_browserPage, &BrowserWidget::previewRequested, this, &MainWindow::onPreviewRequested);
@@ -268,9 +293,18 @@ void MainWindow::runScannerOperation(bool deep) {
     if (m_selectedPartIdx < 0 || m_selectedPartIdx >= m_partitions.size())
       return;
 
-    part = m_partList.rawAt(m_selectedPartIdx);
-    if (!part)
-      return;
+    const PartitionInfo &pinfo = m_partitions[m_selectedPartIdx];
+
+    if (pinfo.isGhost) {
+      part = partitionFromGhostInfo(pinfo);
+      if (!part)
+        return;
+      wholeDiskPart = part;
+    } else {
+      part = m_partList.rawAt(m_selectedPartIdx);
+      if (!part)
+        return;
+    }
 
     if (m_partitions[m_selectedPartIdx].encrypted) {
       part = decryptLUKSAndRedetect();
@@ -401,9 +435,18 @@ void MainWindow::onCarveRequested() {
     if (m_selectedPartIdx < 0 || m_selectedPartIdx >= m_partitions.size())
       return;
 
-    part = m_partList.rawAt(m_selectedPartIdx);
-    if (!part)
-      return;
+    const PartitionInfo &cpinfo = m_partitions[m_selectedPartIdx];
+
+    if (cpinfo.isGhost) {
+      part = partitionFromGhostInfo(cpinfo);
+      if (!part)
+        return;
+      wholeDiskPart = part;
+    } else {
+      part = m_partList.rawAt(m_selectedPartIdx);
+      if (!part)
+        return;
+    }
 
     if (m_partitions[m_selectedPartIdx].encrypted) {
       QMessageBox::StandardButton reply =
@@ -497,6 +540,97 @@ void MainWindow::onCarveRequested() {
   if (m_scanTree && m_scanTree->root)
     showBrowser();
 }
+void MainWindow::onFindPartitionsRequested() {
+  QStringList modes = {tr("Quick (1 MB stride)"), tr("Thorough (4 KB stride)"), tr("Forensic (512 B stride)")};
+  bool ok = false;
+  QString choice =
+      QInputDialog::getItem(this, tr("Scan Mode"), tr("Select scanning thoroughness:"), modes, 0, false, &ok);
+  if (!ok)
+    return;
+
+  uint64_t strideSectors = GHOSTSCAN_STRIDE_QUICK;
+  if (choice == modes[1])
+    strideSectors = GHOSTSCAN_STRIDE_THOROUGH;
+  else if (choice == modes[2])
+    strideSectors = GHOSTSCAN_STRIDE_FORENSIC;
+
+  disk_t *rawDisk = m_currentDisk.raw();
+  if (!rawDisk)
+    return;
+
+  ProgressDialog dlg(this);
+  dlg.setWindowTitle(tr("Finding Deleted Partitions"));
+  dlg.setStatusText(tr("Scanning disk for filesystem signatures..."));
+  dlg.showCancelButton(true);
+  dlg.showFileName(false);
+  dlg.setIndeterminate(true);
+
+  connect(&dlg, &ProgressDialog::cancelled, m_ghostFinder, &GhostFinder::cancel);
+
+  {
+    bool clearedAny = false;
+    for (int i = m_partitions.size() - 1; i >= 0; i--) {
+      if (m_partitions[i].isGhost) {
+        m_partitions.removeAt(i);
+        clearedAny = true;
+      }
+    }
+    if (clearedAny)
+      m_partPage->setPartitions(m_partitions);
+  }
+
+  disconnect(m_ghostFinder, &GhostFinder::finished, nullptr, nullptr);
+
+  QMetaObject::Connection conn1 =
+      connect(m_ghostFinder, &GhostFinder::progressUpdated, this,
+              [&dlg, rawDisk](uint64_t sectorsScanned, uint64_t totalSectors) {
+                uint64_t totalGB = (totalSectors * rawDisk->sector_size) / (1024ULL * 1024ULL * 1024ULL);
+                uint64_t scannedGB = (sectorsScanned * rawDisk->sector_size) / (1024ULL * 1024ULL * 1024ULL);
+                unsigned int pct = (totalSectors > 0) ? (unsigned int)(sectorsScanned * 100 / totalSectors) : 0;
+                if (pct > 100)
+                  pct = 100;
+                dlg.setIndeterminate(false);
+                dlg.updateProgress((int)pct, QString::asprintf("%llu / %llu GB scanned", (unsigned long long)scannedGB,
+                                                               (unsigned long long)totalGB));
+              });
+
+  list_part_t *ghostList = nullptr;
+  QMetaObject::Connection conn2 =
+      connect(m_ghostFinder, &GhostFinder::finished, this, [&dlg, conn1, &conn2](int count) {
+        disconnect(conn1);
+        disconnect(conn2);
+        if (count >= 0)
+          dlg.setFinished(true, tr("Found %1 possible deleted partition(s).").arg(count));
+        else
+          dlg.setFinished(false, tr("No deleted partitions found."));
+      });
+
+  m_ghostFinder->start(rawDisk, m_partList.rawList(), strideSectors);
+  dlg.exec();
+
+  ghostList = m_ghostFinder->resultList();
+  if (ghostList) {
+    for (list_part_t *p = ghostList; p != NULL; p = p->next) {
+      if (!p->part)
+        continue;
+      PartitionInfo info;
+      info.fsname = QString::fromLocal8Bit(p->part->fsname);
+      info.partname = QString::fromLocal8Bit(p->part->partname);
+      info.info = QString::fromLocal8Bit(p->part->info);
+      info.partOffset = p->part->part_offset;
+      info.partSize = p->part->part_size;
+      info.partTypeI386 = p->part->part_type_i386;
+      info.upartType = p->part->upart_type;
+      info.status = p->part->status;
+      info.order = p->part->order;
+      info.encrypted = (strncmp(p->part->fsname, "LUKS", 4) == 0);
+      info.isGhost = true;
+      m_partitions.append(info);
+    }
+    part_free_list(ghostList);
+    m_partPage->setPartitions(m_partitions);
+  }
+}
 
 /*
  * BACKUP operation: Live filesystem index backup to .dsk file.
@@ -510,6 +644,11 @@ void MainWindow::onBackupRequested() {
     return;
 
   partition_t *part = m_partList.rawAt(m_selectedPartIdx);
+  partition_t *ghostPart = nullptr;
+  if (!part && m_partitions[m_selectedPartIdx].isGhost) {
+    ghostPart = partitionFromGhostInfo(m_partitions[m_selectedPartIdx]);
+    part = ghostPart;
+  }
   if (!part)
     return;
 
@@ -534,6 +673,9 @@ void MainWindow::onBackupRequested() {
   m_simpleWorker->start([diskPtr, part, dirBytes]() { return backup_create(diskPtr, part, dirBytes.constData()); });
 
   dlg.exec();
+
+  if (ghostPart)
+    free(ghostPart);
 }
 
 /*
@@ -548,6 +690,11 @@ void MainWindow::onRestoreRequested() {
     return;
 
   partition_t *part = m_partList.rawAt(m_selectedPartIdx);
+  partition_t *restoreGhostPart = nullptr;
+  if (!part && m_partitions[m_selectedPartIdx].isGhost) {
+    restoreGhostPart = partitionFromGhostInfo(m_partitions[m_selectedPartIdx]);
+    part = restoreGhostPart;
+  }
   if (!part)
     return;
 
@@ -582,6 +729,10 @@ void MainWindow::onRestoreRequested() {
 
   dlg.exec();
   m_progressCb->uninstallAllCallbacks();
+
+  if (restoreGhostPart)
+    free(restoreGhostPart);
+
   if (m_scanTree)
     showBrowser();
 }
