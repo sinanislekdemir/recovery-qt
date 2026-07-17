@@ -1,0 +1,125 @@
+# File: release.yml
+#
+# Triggered when a GitHub release is published with a recovery-qt-v* tag.
+# Builds three artifacts and uploads them to the release:
+#   1. DEB package (native Linux build + CPack)
+#   2. Portable Linux tarball (Docker + linuxdeploy, glibc >= 2.35)
+#   3. Windows zip (Docker cross-build, static MinGW-w64)
+#
+# Docker images are pushed to GHCR so subsequent releases reuse cached
+# layers via registry-type cache, avoiding a full Qt/dependency rebuild.
+#
+# Copyright (C) 2026 Sinan Islekdemir <sinan@islekdemir.com>
+# GPL-2.0-or-later
+
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-linux-deb:
+    runs-on: ubuntu-24.04
+    if: startsWith(github.ref, 'refs/tags/recovery-qt-v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake pkg-config \
+            qt6-base-dev qt6-base-dev-tools \
+            libntfs-3g-dev libext2fs-dev comerr-dev \
+            zlib1g-dev uuid-dev libssl-dev
+
+      - name: Configure
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+
+      - name: Package DEB
+        run: cmake --build build --target package
+
+      - name: Upload DEB to release
+        run: gh release upload "${{ github.ref_name }}" build/recovery-qt_*.deb --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-linux-universal:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/recovery-qt-v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: linux-universal/
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/recovery-qt-linux-universal-build:latest
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/recovery-qt-linux-universal-build:latest
+          cache-to: type=inline
+
+      - name: Build portable tarball
+        run: |
+          docker run --rm \
+            -u "$(id -u):$(id -g)" \
+            -v "$PWD:/src" \
+            -w /src \
+            ghcr.io/${{ github.repository_owner }}/recovery-qt-linux-universal-build:latest \
+            /build/docker-build.sh
+
+      - name: Upload tarball to release
+        run: gh release upload "${{ github.ref_name }}" build/recovery-qt-*.tar.gz --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/recovery-qt-v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: win/
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/recovery-qt-win-build:latest
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/recovery-qt-win-build:latest
+          cache-to: type=inline
+
+      - name: Build Windows exe
+        run: |
+          docker run --rm \
+            -u "$(id -u):$(id -g)" \
+            -v "$PWD:/src" \
+            -w /src \
+            ghcr.io/${{ github.repository_owner }}/recovery-qt-win-build:latest \
+            win/docker-build.sh
+
+      - name: Package Windows zip
+        run: |
+          VERSION=$(echo "${{ github.ref_name }}" | sed 's/^recovery-qt-v//')
+          mkdir -p dist
+          cp build-win/recovery-qt.exe dist/
+          cd dist && zip "recovery-qt-${VERSION}-windows-x86_64.zip" recovery-qt.exe
+          mv "recovery-qt-${VERSION}-windows-x86_64.zip" ../
+
+      - name: Upload Windows zip to release
+        run: gh release upload "${{ github.ref_name }}" recovery-qt-*-windows-x86_64.zip --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
