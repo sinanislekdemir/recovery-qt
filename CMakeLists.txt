@@ -359,6 +359,7 @@ if(NOT WIN32)
     # CPack / DEB + RPM packaging
     # ---------------------------
     set(CPACK_GENERATOR "DEB")
+    set(CPACK_PACKAGE_NAME "recovery-qt")
     set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
     set(CPACK_PACKAGE_VENDOR "Sinan Islekdemir")
     set(CPACK_PACKAGE_CONTACT "sinan@islekdemir.com")
