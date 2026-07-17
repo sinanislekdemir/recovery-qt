@@ -4,6 +4,7 @@
 
     Copyright (C) 1998-2007,2011 Christophe GRENIER <grenier@cgsecurity.org>
     Copyright (C) 2011 Nick Schrader <nick.schrader@iserv-gis.de>
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
   
     This software is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

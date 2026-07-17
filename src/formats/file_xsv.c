@@ -3,6 +3,7 @@
     File: file_xsv.c
 
     Copyright (C) 2008 Christophe GRENIER <grenier@cgsecurity.org>
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
     Thanks to Günter Schäffler
   
     This software is free software; you can redistribute it and/or modify

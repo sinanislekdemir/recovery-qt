@@ -6,6 +6,7 @@
  * Copyright (c) 2002-2005 Richard Russon
  * Copyright (c) 2004-2005 Holger Ohmacht
  * Copyright (c) 2005 Anton Altaparmakov
+ Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
  *
  * This utility will recover deleted files from an NTFS volume.
  *

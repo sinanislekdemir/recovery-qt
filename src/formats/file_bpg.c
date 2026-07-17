@@ -4,6 +4,7 @@
 
     Copyright (C) 1998-2007 Christophe GRENIER <grenier@cgsecurity.org>
     Copyright (C) 2016 Dmitry Brant <me@dmitrybrant.com>
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
     
     BPG specification can be found at:
     https://bellard.org/bpg/bpg_spec.txt

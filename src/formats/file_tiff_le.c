@@ -3,6 +3,7 @@
     File: file_tiff_le.c
 
     Copyright (C) 1998-2005,2007-2009, 2017 Christophe GRENIER <grenier@cgsecurity.org>
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
   
     This software is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

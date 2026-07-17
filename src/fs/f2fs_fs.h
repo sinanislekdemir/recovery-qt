@@ -2,6 +2,7 @@
     File: f2fs_fs.h
 
     Copyright (C) 2018 Christophe GRENIER <grenier@cgsecurity.org>
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
 
     Superblock information from Samsung Electronics Co., Ltd. http://www.samsung.com/
 

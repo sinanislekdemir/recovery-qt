@@ -2,6 +2,7 @@
      File: lvm.h, TestDisk
 
     Copyright (C) 2003-2008 Christophe GRENIER <grenier@cgsecurity.org>
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
     Same wunderfull license.
  */
 /* gm_hmlvm.h -- gpart Linux LVM physical volume guessing module header

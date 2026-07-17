@@ -3,6 +3,7 @@
     file: exfat.h
 
     Copyright (C) 2010-2011 Christophe GRENIER <grenier@cgsecurity.org>
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
   
     this software is free software; you can redistribute it and/or modify
     it under the terms of the gnu general public license as published by

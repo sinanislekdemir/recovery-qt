@@ -5,6 +5,7 @@
     Original header comes from libhfs - library for reading and writing
     Macintosh HFS volumes
     Copyright (C) 2000 Klaus Halfmann <klaus.halfmann@feri.de>
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
     Original work by 1996-1998 Robert Leslie <rob@mars.org>
     other work 2000 from Brad Boyer (flar@pants.nu)
 

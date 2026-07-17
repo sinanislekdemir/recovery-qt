@@ -3,6 +3,7 @@
     File: rfs_dir.c
 
     Copyright (C) 1998-2008 Christophe GRENIER <grenier@cgsecurity.org>
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
     Some code from Yury Umanets <torque@ukrpost.net>
   
     This software is free software; you can redistribute it and/or modify

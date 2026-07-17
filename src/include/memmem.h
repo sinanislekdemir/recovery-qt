@@ -4,6 +4,7 @@
 
     Copyright (C) 2005-2007 Christophe GRENIER <grenier@cgsecurity.org>
     Copyright (C) 1991,92,93,94,96,97,98,2000,2004 Free Software Foundation, Inc.
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
     The function has been copied from glibc 2.7
 
     This software is free software; you can redistribute it and/or modify

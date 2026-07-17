@@ -22,6 +22,7 @@
 /*
    physical layout of Linux RAID devices
           Copyright (C) 1996-98 Ingo Molnar, Gadi Oxman
+          Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
 */
 
 #ifndef _MD_P_H

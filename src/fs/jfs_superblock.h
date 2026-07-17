@@ -2,6 +2,7 @@
  *   File: jfs_superblock.h
  *   Copyright (C) 2004 Christophe GRENIER <grenier@cgsecurity.org>
  *   Copyright (c) International Business Machines Corp., 2000-2002
+ Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
  *
  *   This program is free software;  you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by

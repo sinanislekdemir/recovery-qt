@@ -3,6 +3,7 @@
     File: partmac.c
 
     Copyright (C) 2005 Christophe GRENIER <grenier@cgsecurity.org>
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
     Some information has been found in mac-fdisk software
   
     This software is free software; you can redistribute it and/or modify

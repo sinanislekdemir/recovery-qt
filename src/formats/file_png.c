@@ -3,6 +3,7 @@
     File: file_png.c
 
     Copyright (C) 1998-2009 Christophe GRENIER <grenier@cgsecurity.org>
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
     Thanks to Holger Klemm for JNG (JPEG Network Graphics) and
     MNG (Multiple-Image Network Graphics) support (2006)
   

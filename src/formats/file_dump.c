@@ -3,6 +3,7 @@
     File: file_dump.c
 
     Copyright (C) 2007 Christophe GRENIER <grenier@cgsecurity.org>
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
   
     This software is free software; you can redistribute it and/or modify
     it under the tedumps of the GNU General Public License as published by

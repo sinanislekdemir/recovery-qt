@@ -3,6 +3,7 @@
     File: rfs_dir.h
 
     Copyright (C) 2005-2006  Christophe GRENIER <grenier@cgsecurity.org>
+    Modified 2026 by Sinan Islekdemir <sinan@islekdemir.com>
   
     This software is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
