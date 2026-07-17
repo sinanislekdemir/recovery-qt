@@ -21,14 +21,14 @@ cmake --build /tmp/build-pkg --parallel
 # ---------------------------------------------------------------------------
 # DEB
 # ---------------------------------------------------------------------------
-cpack --config /tmp/build-pkg/CPackConfig.cmake -G DEB
 mkdir -p /src/build
-cp /tmp/build-pkg/recovery-qt_*.deb /src/build/
+cd /tmp/build-pkg && cpack -G DEB
+cp recovery-qt_*.deb /src/build/
 echo "Done: build/recovery-qt_*.deb"
 
 # ---------------------------------------------------------------------------
 # RPM
 # ---------------------------------------------------------------------------
-cpack --config /tmp/build-pkg/CPackConfig.cmake -G RPM
-cp /tmp/build-pkg/recovery-qt-*.rpm /src/build/
+cd /tmp/build-pkg && cpack -G RPM
+cp recovery-qt-*.rpm /src/build/
 echo "Done: build/recovery-qt-*.rpm"
