@@ -21,6 +21,11 @@ cmake -S /src -B /tmp/build-appdir \
 cmake --build /tmp/build-appdir --parallel
 
 # ---------------------------------------------------------------------------
+# Strip debug symbols for smaller tarball
+# ---------------------------------------------------------------------------
+strip /tmp/build-appdir/recovery-qt
+
+# ---------------------------------------------------------------------------
 # Staged install into /tmp/appdir (becomes the portable AppDir root)
 # ---------------------------------------------------------------------------
 cmake --install /tmp/build-appdir --prefix /tmp/appdir/usr
